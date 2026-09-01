@@ -57,10 +57,10 @@ export function NarrativeSummaryStatusPanel({
           ) : (
             <>
               <div className="flex flex-wrap gap-x-2 gap-y-1.5 text-muted font-medium select-none">
-                <span className="bg-element text-fg px-2.5 py-0.5 rounded-full text-[9px]">{t("analysis.review.summary.allCount", { count: status.totalCount })}</span>
-                <span className="bg-surface text-muted px-2.5 py-0.5 rounded-full text-[9px] border border-border">{t("analysis.review.summary.staleCount", { count: status.staleCount })}</span>
+                <span className="bg-element text-fg px-2.5 py-0.5 rounded-full text-[10px]">{t("analysis.review.summary.allCount", { count: status.totalCount })}</span>
+                <span className="bg-surface text-muted px-2.5 py-0.5 rounded-full text-[10px] border border-border">{t("analysis.review.summary.staleCount", { count: status.staleCount })}</span>
                 {byTypeEntries.map(([type, count]) => (
-                  <span key={type} className="bg-element text-fg px-2.5 py-0.5 rounded-full text-[9px]">
+                  <span key={type} className="bg-element text-fg px-2.5 py-0.5 rounded-full text-[10px]">
                     {formatSummaryType(type)} {count}
                   </span>
                 ))}
@@ -76,13 +76,13 @@ export function NarrativeSummaryStatusPanel({
                         <div className="font-semibold text-fg/80 truncate text-[11px]">
                           {summary.title}
                         </div>
-                        <div className="text-muted text-[9px] mt-0.5">
+                        <div className="text-muted text-[10px] mt-0.5">
                           {summary.scopeType}:{summary.scopeId ?? "global"} ·{" "}
                           {formatSummaryType(summary.summaryType)}
                         </div>
                       </div>
                       <span
-                        className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded border ${
+                        className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
                           summary.isStale
                             ? "bg-surface text-muted border-border"
                             : "bg-element text-fg border-border"
@@ -91,7 +91,7 @@ export function NarrativeSummaryStatusPanel({
                         {summary.isStale ? "stale" : "fresh"}
                       </span>
                     </div>
-                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-muted font-medium">
+                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted font-medium">
                       <span>{t("analysis.review.summary.evidenceCount", { count: summary.sourceCount })}</span>
                       <span>{t("analysis.review.summary.confidence", { count: summary.confidence })}</span>
                       <span>{summary.status}</span>

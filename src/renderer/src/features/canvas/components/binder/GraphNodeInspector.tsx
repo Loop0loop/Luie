@@ -49,7 +49,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
           <div className="flex items-center justify-between">
             <h2 className="text-[18px] font-black tracking-tight text-fg">{activeNode.data.label}</h2>
             {activeNode.data.type && (
-              <span className="text-[9px] uppercase tracking-widest font-black text-accent bg-accent/10 border border-accent/25 px-2 py-0.5 rounded">
+              <span className="text-[10px] uppercase tracking-widest font-black text-accent bg-accent/10 border border-accent/25 px-2 py-0.5 rounded">
                 {t(`canvas.node.kind.${activeNode.data.type}` as never, activeNode.data.type)}
               </span>
             )}
@@ -77,14 +77,14 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
                 >
                   <div className="flex items-center justify-between text-[11px] font-extrabold text-fg">
                     <span className="text-fg">{activeNode.data.label}</span>
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-panel text-[9.5px] text-muted border border-border shrink-0 font-bold">
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-panel text-[10px] text-muted border border-border shrink-0 font-bold">
                       <span>{rel.type}</span>
                       <ArrowRight className="h-2.5 w-2.5 text-accent/60" />
                     </div>
                     <span className="text-fg">{rel.targetName}</span>
                   </div>
                   {rel.details && (
-                    <span className="text-[9.5px] text-muted pl-2 border-l border-border break-keep font-medium leading-normal">
+                    <span className="text-[10px] text-muted pl-2 border-l border-border break-keep font-medium leading-normal">
                       {rel.details}
                     </span>
                   )}
@@ -106,7 +106,7 @@ function GraphNodeInspector({ nodeId }: GraphNodeInspectorProps) {
               {activeNode.data.relatedChapters.map((chapter, index) => (
                 <span 
                   key={index}
-                  className="text-[9.5px] font-bold text-fg bg-element/40 border border-border px-2.5 py-1 rounded-full hover:bg-element cursor-default transition-colors duration-200"
+                  className="text-[10px] font-bold text-fg bg-element/40 border border-border px-2.5 py-1 rounded-full hover:bg-element cursor-default transition-colors duration-200"
                 >
                   {chapter}
                 </span>

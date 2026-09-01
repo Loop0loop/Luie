@@ -119,7 +119,7 @@ export const RecoveryTab = memo(function RecoveryTab({
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-3xl items-start justify-center py-8">
-      <section className="w-full rounded-[28px] border border-border bg-surface px-8 py-7 shadow-panel">
+      <section className="w-full rounded-[28px] border border-border bg-surface px-8 py-7 shadow-modal">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm font-semibold text-fg">
@@ -224,7 +224,7 @@ export const RecoveryTab = memo(function RecoveryTab({
             disabled={
               !recoveryAvailable || isRecovering || isRecoveryStatusLoading
             }
-            className="rounded-panel bg-accent px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
+            className="rounded-panel bg-accent px-5 py-3 text-sm font-semibold text-on-accent transition-colors hover:bg-accent/90 disabled:opacity-50"
           >
             {isRecovering
               ? t("settings.recovery.running")

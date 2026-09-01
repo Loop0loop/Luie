@@ -116,6 +116,10 @@
   --radius-panel: 0.875rem;
   --radius-editor-shell: 1.5rem;
   --shadow-panel: 0 10px 28px rgba(15, 23, 42, 0.14);
+  /* NOTE: modal처럼 화면 위에 뜨는 표면은 위쪽 그림자가 어색하게 보인다(설정 모달
+      사용자 확인). spread를 음수로 두고 y-offset만 크게 해 **아래 방향으로만**
+      떨어지게 한다. tint는 theme을 따라간다(위 shadow-control NOTE 참조). */
+  --shadow-modal: 0 20px 40px -16px var(--elevation-tint), 0 6px 12px -6px var(--elevation-tint);
   /* NOTE: Tailwind 기본 `shadow-sm`/`shadow-xs`는 검정 그림자라 light·sepia의 종이
      표면 위에서 회색 얼룩으로 보인다. control 크기의 그림자도 panel과 같이 theme
      tint를 따르게 한다.
@@ -145,6 +149,9 @@
   --z-index-toolbar: 120;
   --z-index-toast: 150;
   --z-index-modal: 1000;
+  /* NOTE: 종료 오버레이(QuitOverlay)는 앱을 닫는 절차 동안 모든 모달 위에 떠야 한다.
+     modal(1000)보다 위여야 하므로 별도 계층으로 둔다. */
+  --z-index-quit: 9999;
 }
 
 @utility z-dropdown {
@@ -161,6 +168,9 @@
 }
 @utility z-modal {
   z-index: var(--z-index-modal);
+}
+@utility z-quit {
+  z-index: var(--z-index-quit);
 }
 
 /* NOTE: Research는 하나의 연속된 작업 표면을 쓴다. 평탄화 대상은 **배경뿐**이다.
@@ -271,7 +281,11 @@
   --accent-bg: #2563eb;
   --accent-bg-hover: #1d4ed8;
   --accent-fg: #ffffff;
-  --success-fg: #16a34a;
+  /* NOTE: green-700(#15803d)으로 올렸다. green-600(#16a34a)은 종이(#f9f9f7) 위 3.13:1로
+     WCAG AA(4.5:1)에 미달해 "synced"·모델 상태 배지 등 `text-success` 소비처가 light에서
+     읽히지 않았다. #15803d는 종이 4.76:1로 통과하고 warning(#b45309, 4.76)과 같은 대역이라
+     시각 일관성도 유지된다. dark(#22c55e, 7.63)·sepia(#2e7d32, 4.61)는 이미 통과라 그대로. */
+  --success-fg: #15803d;
   --danger-fg: #dc2626;
   /* NOTE: danger와 같은 대비 대역에 맞춘 amber다(panel 5.02 : danger 4.83). red와의 색거리
      114로 SyncTab처럼 경고 박스와 오류 박스가 나란히 놓일 때 구분된다. */

@@ -96,7 +96,7 @@ export function SidebarCollapseStrip({
               />
               <span
                 style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-                className="text-[8px] text-muted/40 group-hover:text-accent transition-colors leading-none"
+                className="text-[10px] text-muted/40 group-hover:text-accent transition-colors leading-none"
               >
                 {t("sidebar.expand")}
               </span>

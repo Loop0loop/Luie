@@ -126,7 +126,7 @@ export function RestoreBackupDialog({
             </button>
             <button
               type="button"
-              className="px-4 py-2 bg-accent border-none rounded-control text-white text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-accent border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={() => {
                 if (selectedCandidate) {
                   void onRestore(selectedCandidate);

@@ -27,7 +27,7 @@ export function GraphHoverCard({
       <div className="flex items-center justify-between border-b border-border pb-2.5 relative z-10">
         <h4 className="text-[13px] font-black tracking-tight text-fg">{hoverNode.data.label}</h4>
         {hoverNode.data.type && (
-          <span className="text-[9px] uppercase tracking-wider font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold text-accent bg-accent/10 border border-accent/20 px-2 py-0.5 rounded">
             {t(`canvas.node.kind.${hoverNode.data.type}` as never, hoverNode.data.type)}
           </span>
         )}
@@ -42,7 +42,7 @@ export function GraphHoverCard({
       {hoverNode.data.relationships && hoverNode.data.relationships.length > 0 && (
         <div className="flex flex-col gap-2 pt-0.5 relative z-10">
           <div className="flex items-center gap-1 border-b border-border pb-1.5">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-muted">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted">
               {t("canvas.graph.details.relationships", "얽힌 인물 관계")}
             </span>
           </div>
@@ -54,13 +54,13 @@ export function GraphHoverCard({
               >
                 <div className="flex items-center justify-between font-extrabold">
                   <span className="text-fg">{hoverNode.data.label}</span>
-                  <span className="text-[8.5px] bg-panel px-1.5 py-0.5 rounded text-muted border border-border shrink-0 font-bold">
+                  <span className="text-[10px] bg-panel px-1.5 py-0.5 rounded text-muted border border-border shrink-0 font-bold">
                     {rel.type}
                   </span>
                   <span className="text-fg">{rel.targetName}</span>
                 </div>
                 {rel.details && (
-                  <span className="text-[9px] text-muted pl-1.5 border-l border-border leading-normal break-keep font-medium">
+                  <span className="text-[10px] text-muted pl-1.5 border-l border-border leading-normal break-keep font-medium">
                     {rel.details}
                   </span>
                 )}
@@ -73,7 +73,7 @@ export function GraphHoverCard({
       {hoverNode.data.relatedChapters && hoverNode.data.relatedChapters.length > 0 && (
         <div className="flex flex-col gap-2 pt-0.5 relative z-10">
           <div className="flex items-center gap-1 border-b border-border pb-1.5">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-muted">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted">
               {t("canvas.graph.details.chapters", "연관 등장 챕터")}
             </span>
           </div>
@@ -81,7 +81,7 @@ export function GraphHoverCard({
             {hoverNode.data.relatedChapters.map((chapter, index) => (
               <span
                 key={index}
-                className="text-[9px] font-bold text-fg bg-element/60 border border-border px-2.5 py-1 rounded-full hover:bg-element transition-colors cursor-default"
+                className="text-[10px] font-bold text-fg bg-element/60 border border-border px-2.5 py-1 rounded-full hover:bg-element transition-colors cursor-default"
               >
                 {chapter}
               </span>

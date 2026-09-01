@@ -119,7 +119,7 @@ export function ExportSidebar({
                             >
                                 <span className="font-bold text-lg mb-1">{t("exportWindow.format.hwp_label")}</span>
                                 <span className="text-[10px] opacity-80">{t("exportWindow.format.hwp")}</span>
-                                <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 bg-accent text-on-accent rounded font-bold">{t("exportWindow.format.beta")}</span>
+                                <span className="absolute top-1 right-1 text-[10px] px-1.5 py-0.5 bg-accent text-on-accent rounded font-bold">{t("exportWindow.format.beta")}</span>
                             </button>
                             <button
                                 onClick={() => setFormat("word")}
@@ -246,7 +246,7 @@ export function ExportSidebar({
                                             className={cn(
                                                 "flex-1 py-1.5 text-xs rounded transition-colors",
                                                 lineHeight === lh
-                                                    ? "bg-accent text-white font-medium"
+                                                    ? "bg-accent text-on-accent font-medium"
                                                     : "text-muted hover:text-fg"
                                             )}
                                         >
@@ -328,7 +328,7 @@ export function ExportSidebar({
                 <button
                     onClick={handleExport}
                     disabled={isExporting || !hasChapter}
-                    className="w-full h-11 bg-accent hover:bg-accent-hover text-white font-bold rounded-panel transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-11 bg-accent hover:bg-accent-hover text-on-accent font-bold rounded-panel transition-colors flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Download className="w-5 h-5" />
                     {isExporting ? t("exportWindow.button.exporting") : t("exportWindow.button.export", { format: format.toUpperCase() })}

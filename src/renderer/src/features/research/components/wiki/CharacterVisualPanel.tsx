@@ -252,7 +252,7 @@ function ColorTheme({ value, onChange }: ColorThemeProps) {
             onChange={(e) => onChange(e.target.value)}
             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
           />
-          <span className="text-[8px] text-muted pointer-events-none leading-none">+</span>
+          <span className="text-[10px] text-muted pointer-events-none leading-none">+</span>
         </label>
       </div>
     </div>

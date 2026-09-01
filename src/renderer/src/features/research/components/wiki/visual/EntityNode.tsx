@@ -37,7 +37,7 @@ function EntityNodeImpl({ data }: NodeProps<EntityNodeData>) {
         position={Position.Top}
         className="opacity-0! pointer-events-none!"
       />
-      <div className="flex items-center justify-center gap-1 text-[9px] uppercase tracking-widest text-muted/60 mb-1">
+      <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-widest text-muted/60 mb-1">
         <Icon size={9} style={{ color: tint }} />
         {t(ENTITY_KIND_LABEL_KEY[kind])}
       </div>

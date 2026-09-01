@@ -241,7 +241,7 @@ export function SyncConflictResolverModal({
             <button
               onClick={handleRefresh}
               disabled={refreshDisabled}
-              className="px-4 py-2 mr-2 bg-accent text-white rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
+              className="px-4 py-2 mr-2 bg-accent text-on-accent rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 inline-flex items-center gap-2"
             >
               <RefreshCcw className="w-4 h-4" />
               {isRefreshing

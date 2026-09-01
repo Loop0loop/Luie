@@ -72,7 +72,7 @@ export const GraphFilterSidebar = memo(() => {
       <ScrollArea className="flex-1 py-2 px-2.5 min-w-0">
         <div className="flex flex-col gap-3 min-w-0">
           <div className="flex flex-col gap-1.5 min-w-0">
-            <label className="text-[9px] uppercase font-bold tracking-wider text-muted/70 pl-0.5">
+            <label className="text-[10px] uppercase font-bold tracking-wider text-muted/70 pl-0.5">
               {t("canvas.graph.chapterRange", "Chapter Range")}
             </label>
             <div className="flex items-center gap-1.5 min-w-0">
@@ -93,7 +93,7 @@ export const GraphFilterSidebar = memo(() => {
                 </div>
               </div>
 
-              <span className="text-[9px] text-muted/50 font-medium">—</span>
+              <span className="text-[10px] text-muted/50 font-medium">—</span>
 
               <div className="relative min-w-0">
                 <select
@@ -115,7 +115,7 @@ export const GraphFilterSidebar = memo(() => {
           </div>
 
           <div className="flex flex-col gap-1.5 min-w-0">
-            <label className="text-[9px] uppercase font-bold tracking-wider text-muted/70 pl-0.5">
+            <label className="text-[10px] uppercase font-bold tracking-wider text-muted/70 pl-0.5">
               {activeMode === "character"
                 ? t("canvas.graph.characterFocus", "Focus Character")
                 : t("canvas.graph.eventFocus", "Focus Event")}

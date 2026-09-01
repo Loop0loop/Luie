@@ -114,7 +114,7 @@ export const SyncTab = memo(function SyncTab({
         <div className="flex flex-wrap gap-3">
           {showAuthAction ? (
             <button
-              className="px-4 py-2 bg-accent text-white rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-accent text-on-accent rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
               onClick={showReconnect ? onReconnectGoogle : onConnectGoogle}
               disabled={connectDisabled}
             >
@@ -123,7 +123,7 @@ export const SyncTab = memo(function SyncTab({
           ) : (
             <>
               <button
-                className="px-4 py-2 bg-accent text-white rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-accent text-on-accent rounded-panel text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50"
                 onClick={onSyncNow}
                 disabled={isBusy}
               >

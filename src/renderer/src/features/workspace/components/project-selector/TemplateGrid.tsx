@@ -83,7 +83,7 @@ export function TemplateGrid({
                 {template.type === "novel" && (
                   <div className="w-full h-full bg-[var(--bg-secondary)] p-5 flex flex-col">
                     <div className="h-full bg-editor-bg mx-auto w-full flex flex-col p-3 shadow-inner">
-                      <div className="text-[8px] tracking-[2px] text-[var(--text-tertiary)] text-center uppercase mb-3 font-serif">
+                      <div className="text-[10px] tracking-[2px] text-[var(--text-tertiary)] text-center uppercase mb-3 font-serif">
                         {t("settings.projectTemplate.preview.standardFormat")}
                       </div>
                       <div className="font-serif text-lg text-[var(--text-primary)] text-center font-bold pb-2 border-b border-border mb-4">
@@ -103,7 +103,7 @@ export function TemplateGrid({
                 )}
 
                 {template.type === "script" && (
-                  <div className="w-full h-full bg-[var(--bg-secondary)] p-5 font-mono text-[9px] text-[var(--text-secondary)] flex flex-col items-start leading-relaxed border-l-[6px] border-border-strong group-hover:border-accent transition-colors">
+                  <div className="w-full h-full bg-[var(--bg-secondary)] p-5 font-mono text-[10px] text-[var(--text-secondary)] flex flex-col items-start leading-relaxed border-l-[6px] border-border-strong group-hover:border-accent transition-colors">
                     <div className="flex w-full justify-between opacity-50 mb-4 tracking-widest uppercase">
                       <span>
                         {t("settings.projectTemplate.preview.script.int")}

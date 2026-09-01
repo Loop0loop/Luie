@@ -53,7 +53,7 @@ function PensiveNode({ data, selected }: NodeProps<GraphNodeData>) {
       <div className="absolute top-full mt-2 whitespace-nowrap pointer-events-none px-2 py-1 rounded-md bg-panel/90 border border-border shadow-control text-fg z-10">
         <span className="text-[11px] font-bold tracking-tight text-fg">{data.label}</span>
         {data.type && (
-          <span className="ml-1.5 text-[8px] uppercase tracking-wider font-semibold text-muted">
+          <span className="ml-1.5 text-[10px] uppercase tracking-wider font-semibold text-muted">
             {t(`canvas.node.kind.${data.type}` as never, data.type)}
           </span>
         )}

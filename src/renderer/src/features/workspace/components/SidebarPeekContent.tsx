@@ -61,7 +61,7 @@ export function SidebarPeekContent({
                   : "text-fg/55 hover:text-fg",
               ].join(" ")}
             >
-              <span className="text-[9px] text-muted/35 shrink-0 w-3.5 text-right tabular-nums mt-px">
+              <span className="text-[10px] text-muted/35 shrink-0 w-3.5 text-right tabular-nums mt-px">
                 {i + 1}.
               </span>
               <span className="min-w-0 flex flex-col">

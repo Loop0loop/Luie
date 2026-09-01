@@ -88,7 +88,7 @@ export default function ExportPreviewPanel({ title }: ExportPreviewPanelProps) {
         </div>
 
         <button
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white rounded-control text-xs font-medium hover:brightness-110 transition-all shadow-control"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-accent text-on-accent rounded-control text-xs font-medium hover:brightness-110 transition-all shadow-control"
           onClick={handleExport}
         >
           <Download className="w-3.5 h-3.5" />

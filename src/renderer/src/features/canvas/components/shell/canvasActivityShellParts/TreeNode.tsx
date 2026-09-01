@@ -84,7 +84,7 @@ export const TreeNode = memo(({
         {node.type === "canvas" && (
           <Badge
             variant="outline"
-            className="shrink-0 scale-75 origin-right border-border bg-app/50 px-1 py-0 text-[9px] uppercase tracking-wider text-muted"
+            className="shrink-0 scale-75 origin-right border-border bg-app/50 px-1 py-0 text-[10px] uppercase tracking-wider text-muted"
           >
             {t("canvas.activity.canvas")}
           </Badge>

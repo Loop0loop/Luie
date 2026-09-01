@@ -98,7 +98,7 @@ type PromptComposerProps = {
 const menuRowClass =
   "w-full px-3.5 py-2 text-xs text-left hover:bg-surface-hover flex items-center justify-between text-fg transition-colors rounded-control";
 const sectionLabelClass =
-  "px-3.5 pt-2 pb-1 text-[9px] font-bold text-muted tracking-widest uppercase";
+  "px-3.5 pt-2 pb-1 text-[10px] font-bold text-muted tracking-widest uppercase";
 
 export function PromptComposer({
   input,
@@ -275,7 +275,7 @@ export function PromptComposer({
               aria-label={t("analysis.composer.timelineChapterSelect")}
               value={timelineChapterId}
               onChange={(event) => onChangeTimelineChapter(event.target.value)}
-              className="mt-1 w-full truncate rounded-control border border-border-strong bg-element/30 hover:bg-element/50 px-2 py-0.5 text-[9px] leading-tight text-muted/95 focus:outline-hidden focus:ring-2 focus:ring-ring transition-colors duration-150 select-none cursor-pointer"
+              className="mt-1 w-full truncate rounded-control border border-border-strong bg-element/30 hover:bg-element/50 px-2 py-0.5 text-[10px] leading-tight text-muted/95 focus:outline-hidden focus:ring-2 focus:ring-ring transition-colors duration-150 select-none cursor-pointer"
             >
               {timelineChapters.map((chapter) => (
                 <option key={chapter.id} value={chapter.id}>
@@ -284,12 +284,12 @@ export function PromptComposer({
               ))}
             </select>
           ) : (
-            <div className="truncate text-[9px] leading-tight text-muted">
+            <div className="truncate text-[10px] leading-tight text-muted">
               {timelineScopeLabel}
             </div>
           )}
           {timelineChapters.length > 1 && (
-            <div className="truncate text-[9px] leading-tight text-muted">
+            <div className="truncate text-[10px] leading-tight text-muted">
               {timelineScopeLabel}
             </div>
           )}

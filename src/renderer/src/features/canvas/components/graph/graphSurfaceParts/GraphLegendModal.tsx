@@ -32,14 +32,14 @@ export function GraphLegendModal({
             <HelpCircle className="h-4.5 w-4.5 text-accent" />
             {t("canvas.graph.legend.title", "그래프 범례")}
           </h2>
-          <p className="text-[9px] text-muted font-semibold uppercase tracking-wider">
+          <p className="text-[10px] text-muted font-semibold uppercase tracking-wider">
             Graph Legend Map
           </p>
         </div>
 
         <div className="flex flex-col gap-4 mt-1 border-t border-border pt-3">
           <div className="flex flex-col gap-2">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-muted">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
               {t("canvas.graph.legend.nodes", "노드 (개체)")}
             </span>
             <div className="grid grid-cols-1 gap-2 pl-0.5">
@@ -59,7 +59,7 @@ export function GraphLegendModal({
           </div>
 
           <div className="flex flex-col gap-2 border-t border-border pt-3">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-muted">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
               {t("canvas.graph.legend.edges", "에지 (관계)")}
             </span>
             <div className="grid grid-cols-1 gap-2 pl-0.5">
