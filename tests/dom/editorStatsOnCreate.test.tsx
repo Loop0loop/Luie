@@ -193,4 +193,22 @@ describe("Editor 초기 본문 통계 계산", () => {
 
     expect(mocked.updateStats).toHaveBeenCalledWith("Hello world");
   });
+
+  it("readOnly 에디터는 onCreate에서 updateStats를 호출하지 않는다", () => {
+    // 스냅샷 뷰어 같은 readonly 에디터는 원래 통계를 쓰지 않던 라이터다. 마운트만으로
+    // 공유 스토어를 덮어쓰면 본문 푸터 카운트가 스냅샷 내용으로 바뀐다.
+    act(() => {
+      root.render(<Editor readOnly initialContent="<p>Snapshot body</p>" />);
+    });
+
+    const options = mocked.useEditor.mock.calls[0]?.[0] as
+      | { onCreate?: (context: { editor: typeof mocked.editor }) => void }
+      | undefined;
+
+    act(() => {
+      options?.onCreate?.({ editor: mocked.editor });
+    });
+
+    expect(mocked.updateStats).not.toHaveBeenCalled();
+  });
 });

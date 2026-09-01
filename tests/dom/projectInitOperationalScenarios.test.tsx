@@ -9,6 +9,8 @@ import { useProjectStore } from "../../src/renderer/src/features/project/stores/
 import { useChapterStore } from "../../src/renderer/src/features/manuscript/stores/chapterStore.js";
 import { useEditorStore } from "../../src/renderer/src/features/editor/stores/editorStore.js";
 import { useCharacterStore } from "../../src/renderer/src/features/research/stores/characterStore.js";
+import { useEventStore } from "../../src/renderer/src/features/research/stores/eventStore.js";
+import { useFactionStore } from "../../src/renderer/src/features/research/stores/factionStore.js";
 import { useTermStore } from "../../src/renderer/src/features/research/stores/termStore.js";
 
 type ResettableStore = {
@@ -82,6 +84,8 @@ describe("project init operational scenarios", () => {
     resetStore(useChapterStore as unknown as ResettableStore);
     resetStore(useEditorStore as unknown as ResettableStore);
     resetStore(useCharacterStore as unknown as ResettableStore);
+    resetStore(useEventStore as unknown as ResettableStore);
+    resetStore(useFactionStore as unknown as ResettableStore);
     resetStore(useTermStore as unknown as ResettableStore);
   });
 
@@ -131,6 +135,8 @@ describe("project init operational scenarios", () => {
     const loadSettings = vi.fn().mockResolvedValue(undefined);
     const loadChapters = vi.fn().mockResolvedValue(undefined);
     const loadCharacters = vi.fn().mockResolvedValue(undefined);
+    const loadEvents = vi.fn().mockResolvedValue(undefined);
+    const loadFactions = vi.fn().mockResolvedValue(undefined);
     const loadTerms = vi.fn().mockResolvedValue(undefined);
 
     useProjectStore.setState({
@@ -141,6 +147,8 @@ describe("project init operational scenarios", () => {
     useEditorStore.setState({ loadSettings });
     useChapterStore.setState({ loadAll: loadChapters });
     useCharacterStore.setState({ loadCharacters });
+    useEventStore.setState({ loadEvents });
+    useFactionStore.setState({ loadFactions });
     useTermStore.setState({ loadTerms });
 
     const Probe = () => {
@@ -162,6 +170,8 @@ describe("project init operational scenarios", () => {
 
     expect(loadChapters).toHaveBeenCalledWith("project-1");
     expect(loadCharacters).toHaveBeenCalledWith("project-1");
+    expect(loadEvents).toHaveBeenCalledWith("project-1");
+    expect(loadFactions).toHaveBeenCalledWith("project-1");
     expect(loadTerms).toHaveBeenCalledWith("project-1");
     expect(window.api.logger.info).toHaveBeenCalledWith(
       "project-init.project-switch-loads",

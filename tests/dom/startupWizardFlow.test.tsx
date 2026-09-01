@@ -451,4 +451,28 @@ describe("startup wizard flow", () => {
     expect(characters[0]?.name).toBe("실제 소설 주인공");
     expect(characters.some((c) => c.id === "wizard-preview-character-1")).toBe(false);
   });
+
+  it("연구 패널이 이미 열려 있는 상태에서 스마트링크 클릭 시 중복 Panel ID 없이 탭이 전환된다", async () => {
+    const { useUIStore } = await import(
+      "../../src/renderer/src/features/workspace/stores/uiStore.js"
+    );
+    const { smartLinkService } = await import(
+      "../../src/renderer/src/features/editor/services/smartLinkService.js"
+    );
+
+    // 1. 사건(event) 패널 오픈
+    useUIStore.getState().addPanel({ type: "research", tab: "event" });
+    expect(useUIStore.getState().panels.length).toBe(1);
+    expect(useUIStore.getState().panels[0]?.id).toBe("research");
+    expect(useUIStore.getState().panels[0]?.content.tab).toBe("event");
+
+    // 2. 스마트링크를 통해 인물(character) 클릭 시뮬레이션
+    smartLinkService.openItem("wizard-preview-character-1", "character");
+
+    // 3. 중복 패널이 추가되지 않고 기존 research 패널이 character 탭으로 전환되었는지 검증
+    const panels = useUIStore.getState().panels;
+    expect(panels.length).toBe(1);
+    expect(panels[0]?.id).toBe("research");
+    expect(panels[0]?.content.tab).toBe("character");
+  });
 });

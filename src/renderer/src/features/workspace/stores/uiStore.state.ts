@@ -146,7 +146,48 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
             content,
           };
           nextFocusedPanelId = nextPanels[existingEditorIndex].id;
-          return { panels: nextPanels };
+          return {
+            ...state,
+            panels: nextPanels,
+          };
+        }
+      }
+
+      if (content.type === "research") {
+        const existingResearchIndex = compatiblePanels.findIndex(
+          (panel) => panel.content.type === "research",
+        );
+        if (existingResearchIndex >= 0) {
+          const existingResearch = compatiblePanels[existingResearchIndex];
+          if (
+            existingResearch.content.tab === content.tab &&
+            existingResearch.content.id === content.id &&
+            !removedIncompatiblePanel
+          ) {
+            return state;
+          }
+          const nextPanels = [...compatiblePanels];
+          nextPanels[existingResearchIndex] = {
+            ...existingResearch,
+            id: buildStablePanelId(content),
+            content,
+          };
+          nextFocusedPanelId = nextPanels[existingResearchIndex].id;
+          return {
+            ...state,
+            panels: nextPanels,
+          };
+        }
+      }
+
+      if (content.type === "export") {
+        const existingExportIndex = compatiblePanels.findIndex(
+          (panel) => panel.content.type === "export",
+        );
+        if (existingExportIndex >= 0) {
+          return removedIncompatiblePanel
+            ? { ...state, panels: compatiblePanels }
+            : state;
         }
       }
 
@@ -160,11 +201,31 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
       if (existing || compatiblePanels.length >= 3) {
         if (!removedIncompatiblePanel) return state;
         // NOTE: 100/n 재분배는 하지 않는다. 아래 newPanel 주석 참고.
-        return { panels: compatiblePanels };
+        return {
+          ...state,
+          panels: compatiblePanels,
+        };
+      }
+
+      const targetPanelId = buildStablePanelId(content);
+      const duplicateIdIndex = compatiblePanels.findIndex(
+        (p) => p.id === targetPanelId,
+      );
+      if (duplicateIdIndex >= 0) {
+        const nextPanels = [...compatiblePanels];
+        nextPanels[duplicateIdIndex] = {
+          ...nextPanels[duplicateIdIndex],
+          content,
+        };
+        nextFocusedPanelId = targetPanelId;
+        return {
+          ...state,
+          panels: nextPanels,
+        };
       }
 
       const newPanel: ResizablePanelData = {
-        id: buildStablePanelId(content),
+        id: targetPanelId,
         content,
         size:
           typeof initialSize === "number" && Number.isFinite(initialSize)
