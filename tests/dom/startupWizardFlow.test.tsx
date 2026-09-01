@@ -27,6 +27,14 @@ const mocked = vi.hoisted(() => ({
     },
   })),
   markOpened: vi.fn(async () => ({ success: true, data: null })),
+  createChapter: vi.fn(async () => ({
+    success: true,
+    data: { id: "chapter-1" },
+  })),
+  updateChapter: vi.fn(async () => ({
+    success: true,
+    data: { id: "chapter-1" },
+  })),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -49,6 +57,10 @@ vi.mock("@shared/api", () => ({
     project: {
       create: mocked.createProject,
       markOpened: mocked.markOpened,
+    },
+    chapter: {
+      create: mocked.createChapter,
+      update: mocked.updateChapter,
     },
   },
 }));
@@ -234,6 +246,16 @@ describe("startup wizard flow", () => {
     });
 
     expect(mocked.createProject).toHaveBeenCalledWith({ title: "내 첫 소설" });
+    expect(mocked.createChapter).toHaveBeenCalledWith({
+      projectId: "project-1",
+      title: "1장",
+    });
+    expect(mocked.updateChapter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "chapter-1",
+        title: "1장",
+      }),
+    );
     expect(mocked.markOpened).toHaveBeenCalledWith("project-1");
     expect(mocked.getReadiness).toHaveBeenCalled();
     expect(mocked.completeWizard).toHaveBeenCalled();

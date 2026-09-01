@@ -1,6 +1,11 @@
 import { promises as fs } from "fs";
+import os from "os";
 import path from "path";
-import { LUIE_SNAPSHOTS_DIR } from "../../../../shared/constants/index.js";
+import { app } from "electron";
+import {
+  LUIE_PACKAGE_EXTENSION,
+  LUIE_SNAPSHOTS_DIR,
+} from "../../../../shared/constants/index.js";
 import { sanitizeName } from "../../../../shared/utils/sanitize.js";
 import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import { ensureLuieExtension } from "../../../utils/package/index.js";
@@ -13,6 +18,62 @@ type LoggerLike = {
 const toProjectPathKey = (projectPath: string): string => {
   const resolved = path.resolve(projectPath);
   return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+};
+
+const getDocumentsDirectory = (): string => {
+  try {
+    if (typeof app?.getPath === "function") {
+      const docPath = app.getPath("documents");
+      if (typeof docPath === "string" && docPath.trim().length > 0) {
+        return docPath;
+      }
+    }
+  } catch {
+    // Electron app 비활성/테스트 환경 fallback
+  }
+  return path.join(os.homedir(), "Documents");
+};
+
+export const resolveDefaultProjectPath = async (
+  title?: string,
+): Promise<string> => {
+  const docsDir = getDocumentsDirectory();
+  try {
+    await fs.mkdir(docsDir, { recursive: true });
+  } catch {
+    // 디렉토리가 이미 존재하거나 권한 예외 방지
+  }
+
+  const rawTitle = typeof title === "string" ? title.trim() : "";
+  const sanitized = sanitizeName(rawTitle, "untitled") || "untitled";
+
+  let candidatePath = path.join(
+    docsDir,
+    `${sanitized}${LUIE_PACKAGE_EXTENSION}`,
+  );
+  let index = 1;
+
+  while (true) {
+    let existsOnDisk = false;
+    try {
+      await fs.access(candidatePath);
+      existsOnDisk = true;
+    } catch {
+      existsOnDisk = false;
+    }
+
+    const conflict = await findProjectPathConflict(candidatePath);
+
+    if (!existsOnDisk && !conflict) {
+      return candidatePath;
+    }
+
+    candidatePath = path.join(
+      docsDir,
+      `${sanitized} (${index})${LUIE_PACKAGE_EXTENSION}`,
+    );
+    index++;
+  }
 };
 
 export const normalizeProjectPath = (inputPath: string | undefined): string | undefined => {

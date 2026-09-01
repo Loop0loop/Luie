@@ -165,6 +165,25 @@ export default function App() {
   }, [currentProject, projects, setCurrentProject, windowMode]);
 
   useEffect(() => {
+    if (!bootstrapStatus.isReady || currentProject || projects.length === 0) return;
+    try {
+      const wizardAutoOpenId = localStorage.getItem(
+        "luie:wizard-auto-open-project",
+      );
+      if (wizardAutoOpenId) {
+        localStorage.removeItem("luie:wizard-auto-open-project");
+        const target = projects.find((p) => p.id === wizardAutoOpenId);
+        if (target) {
+          setCurrentProject(target);
+          useUIStore.getState().setView("editor");
+        }
+      }
+    } catch {
+      // storage disabled
+    }
+  }, [bootstrapStatus.isReady, currentProject, projects, setCurrentProject]);
+
+  useEffect(() => {
     const unsubscribe = api.lifecycle.onQuitPhase((payload) => {
       if (!payload || typeof payload !== "object") return;
       const next = payload as Partial<AppQuitPhasePayload>;

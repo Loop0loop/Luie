@@ -27,30 +27,43 @@ const WIZARD_RESIZE_TICK_MS = 16;
 
 let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
 
-// 작은 디스플레이에서 확장 크기(1300×800)가 화면을 넘지 않게 한다.
-const clampWizardSize = (
+// 디스플레이 작업 영역(workArea) 내에서 대상 영역을 계산한다.
+// 최대 크기(workArea 이상)를 요청하면 여백 없이 workArea 전체를 꽉 채우고,
+// 가로형(1300×800) 등 일반 크기는 workArea 내 중앙 정렬한다.
+const getTargetWizardBounds = (
   win: BrowserWindow,
   width: number,
   height: number,
-): [number, number] => {
+): { x: number; y: number; width: number; height: number } => {
   const workArea = screen.getDisplayMatching(win.getBounds()).workArea;
-  return [
-    Math.min(width, workArea.width - 40),
-    Math.min(height, workArea.height - 40),
-  ];
+  const clampedWidth = Math.min(width, workArea.width);
+  const clampedHeight = Math.min(height, workArea.height);
+
+  if (width >= workArea.width && height >= workArea.height) {
+    return {
+      x: workArea.x,
+      y: workArea.y,
+      width: workArea.width,
+      height: workArea.height,
+    };
+  }
+
+  return {
+    x: Math.round(workArea.x + (workArea.width - clampedWidth) / 2),
+    y: Math.round(workArea.y + (workArea.height - clampedHeight) / 2),
+    width: clampedWidth,
+    height: clampedHeight,
+  };
 };
 
 const animateWizardResize = (
   win: BrowserWindow,
-  targetWidth: number,
-  targetHeight: number,
+  target: { x: number; y: number; width: number; height: number },
 ): void => {
   if (wizardResizeTimer) clearTimeout(wizardResizeTimer);
 
   const [startWidth, startHeight] = win.getSize();
   const [startX, startY] = win.getPosition();
-  const centerX = startX + startWidth / 2;
-  const centerY = startY + startHeight / 2;
   const startedAt = Date.now();
 
   const tick = () => {
@@ -59,16 +72,20 @@ const animateWizardResize = (
       (Date.now() - startedAt) / WIZARD_RESIZE_ANIMATION_MS,
     );
     const eased = 1 - Math.pow(1 - progress, 3);
-    const width = Math.round(startWidth + (targetWidth - startWidth) * eased);
+    const width = Math.round(startWidth + (target.width - startWidth) * eased);
     const height = Math.round(
-      startHeight + (targetHeight - startHeight) * eased,
+      startHeight + (target.height - startHeight) * eased,
     );
+    const x = Math.round(startX + (target.x - startX) * eased);
+    const y = Math.round(startY + (target.y - startY) * eased);
+
     win.setBounds({
-      x: Math.round(centerX - width / 2),
-      y: Math.round(centerY - height / 2),
+      x,
+      y,
       width,
       height,
     });
+
     if (progress < 1) {
       wizardResizeTimer = setTimeout(tick, WIZARD_RESIZE_TICK_MS);
     } else {
@@ -257,22 +274,16 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
         // renderer의 enableAnimations(및 OS reduced-motion) 판정을 그대로 받는다.
         const win = windowManager.getStartupWizardWindow();
         if (!win) return false;
+        const targetBounds = getTargetWizardBounds(win, width, height);
         if (!animate) {
           if (wizardResizeTimer) {
             clearTimeout(wizardResizeTimer);
             wizardResizeTimer = null;
           }
-          const [clampedWidth, clampedHeight] = clampWizardSize(
-            win,
-            width,
-            height,
-          );
-          win.setSize(clampedWidth, clampedHeight);
-          win.center();
+          win.setBounds(targetBounds);
           return true;
         }
-        const [clampedWidth, clampedHeight] = clampWizardSize(win, width, height);
-        animateWizardResize(win, clampedWidth, clampedHeight);
+        animateWizardResize(win, targetBounds);
         return true;
       },
     },

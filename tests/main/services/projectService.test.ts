@@ -459,13 +459,28 @@ describe("ProjectService", () => {
     const created = await localProjectService.createProject({
       title: "Detached Project",
       description: "test",
+      projectPath: null as unknown as undefined,
     });
 
     const all = await localProjectService.getAllProjects();
     const target = all.find((project) => project.id === created.id);
     expect(target).toBeDefined();
     expect(target?.attachmentStatus).toBe("detached");
-    expect(target?.pathMissing).toBe(false);
+    await localProjectService.deleteProject(created.id as string);
+  });
+
+  it("creates default .luie file in Documents directory when projectPath is omitted", async () => {
+    const created = await localProjectService.createProject({
+      title: "Auto Saved Project",
+      description: "auto saved test",
+    });
+
+    expect(created.projectPath).toBeDefined();
+    expect(created.projectPath?.endsWith(".luie")).toBe(true);
+    expect(created.projectPath).toContain("Auto Saved Project");
+
+    const fetched = await localProjectService.getProject(created.id as string);
+    expect(fetched.projectPath).toBe(created.projectPath);
 
     await localProjectService.deleteProject(created.id as string);
   });

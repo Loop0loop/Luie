@@ -138,13 +138,39 @@ export function useStartupWizardState() {
     setIsCreatingProject(true);
     setProjectError(null);
     try {
+      // 1. 새 프로젝트 생성 (기본 Documents 폴더에 .luie 패키지 할당)
       const createdResponse = await api.project.create({ title });
       if (!createdResponse.success || !createdResponse.data) {
         throw new Error(
           createdResponse.error?.message ?? "Failed to create project",
         );
       }
-      await api.project.markOpened(createdResponse.data.id);
+      const projectId = createdResponse.data.id;
+
+      // 2-1. 기본 챕터 1개 추가
+      const chapterResponse = await api.chapter.create({
+        projectId,
+        title: "1장",
+      });
+
+      // 2-2. 기본 본문 1개 추가
+      if (chapterResponse.success && chapterResponse.data?.id) {
+        await api.chapter.update({
+          id: chapterResponse.data.id,
+          title: "1장",
+          content: "<p>첫 문장을 적어보세요.</p>",
+        });
+      }
+
+      await api.project.markOpened(projectId);
+
+      // 위저드를 통해 시작할 때만 템플릿 화면을 건너뛰고 에디터로 직행하도록 플래그 기록
+      try {
+        localStorage.setItem("luie:wizard-auto-open-project", projectId);
+      } catch {
+        // storage disabled fallback
+      }
+
       setFinalizingPhase("finishing");
       setStep("finalizing");
       await completeStartup();

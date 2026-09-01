@@ -14,6 +14,7 @@ import {
   findProjectPathConflict,
   normalizeProjectPath,
   renameSnapshotDirectoryForProjectTitleChange,
+  resolveDefaultProjectPath,
 } from "./projectPathPolicy.js";
 import {
   getProjectAttachmentPath,
@@ -37,7 +38,12 @@ export const createProjectRecord = async (
 ) => {
   try {
     hooks.logger.info("Creating project", input);
-    const projectPath = normalizeProjectPath(input.projectPath);
+    let projectPath: string | undefined = undefined;
+    if (input.projectPath === undefined) {
+      projectPath = await resolveDefaultProjectPath(input.title);
+    } else if (input.projectPath !== null) {
+      projectPath = normalizeProjectPath(input.projectPath);
+    }
     if (projectPath) {
       const conflict = await findProjectPathConflict(projectPath);
       if (conflict) {
