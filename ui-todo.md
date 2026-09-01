@@ -588,7 +588,7 @@ border 대비: 장식선 1.26 → **1.45**, 상태선 1.52 → **2.00**, UI 경�
 - [x] **`--border-strong`을 대화형 control 경계에 연결** — 소비처가 0이던 토큰을 input·select·토글·checkbox 32곳에 연결하고 기준면을 `--bg-element` → `--bg-panel`로 교정했다. 아래 상세
 - [x] Tailwind 기본 검정 그림자(`shadow-sm`/`shadow-xs`) → theme tint 계열. 아래 상세
 - [x] **v3 → v4 클래스 이름 이동 잔재 정리** — v4로 올릴 때 config만 옮기고 클래스 이름을 안 바꿔서, 같은 이름이 다른 값으로 조용히 렌더되고 있었다. 아래 상세
-- [ ] `--radius-editor-shell` 중복 하드코딩 제거 — `rounded-[24px]` **3곳**(`GoogleDocsLayout.tsx:209` · `SnapshotList.tsx:223` · `ProjectTemplateSelector.tsx:232`), `Editor.tsx:330` `rounded-[48px]`
+- [x] `--radius-editor-shell` 중복 하드코딩 제거 — **`rounded-[24px]` 3곳 + `rounded-r-[24px]` 1곳 → `rounded-editor-shell`/`rounded-r-editor-shell`** (2026-09-01). `SnapshotList.tsx:223` · `GoogleDocsLayout.tsx:209` · `ProjectTemplateSelector.tsx:232` · **`GoogleDocsRightPanel.tsx:429`(목록에 없던 4번째 — `rounded-r-` 변형이라 이전 조사에서 새어 나갔다)**. `arbitraryPx` 417 → 414. `Editor.tsx:330`의 `rounded-[48px]`는 기기 외형 표현이라 §6의 scoped token 항목에서 다룬다
 - [ ] **형광펜 대비가 전 theme에서 약하다** (§3에서 이관). `--highlight-default`가 종이 대비 light **1.104** · sepia **1.166** · dark는 `rgba(250,204,21,0.32)` 알파. 형광펜은 은은해야 하지만 1.1은 거의 안 보이는 수준이다. 세 theme 공통 목표를 정하고 함께 조정한다
   - 조사 결과 **규범이 없다.** WCAG 1.4.11은 장식 배경에 대비를 요구하지 않고, 요구하는 것은 "그 위 글자가 4.5:1"뿐이다. 따라서 이전에 적었던 목표 `~1.35`는 근거 없는 숫자다. 값을 정하기 전에 **현재 형광펜 위 본문 글자 대비가 얼마나 남는지** 먼저 측정하고, 그 여유 안에서 형광펜을 진하게 하는 순서로 간다
 
@@ -841,8 +841,9 @@ soft 값은 **`--bg-element`(파인 control) 위에서 대비 1.016~1.048로 사
 - `focus:ring-0` 2곳(`SynopsisEditor:347` 본문 · `InspectorPanel:99` 노트)은 **의도된 예외**다. 전면 집필 표면에서는 캐럿이 focus를 알린다. 기록만 남긴다
 - **토글 off 상태가 `bg-border` 트랙이라 대비 1.16이다.** 켜짐(`bg-accent`)과 꺼짐의 구분은 되지만 트랙 자체가 표면과 거의 붙는다. Radix 모델에서는 트랙이 대화형 표면(step 3~5)이지 border가 아니다 — §5의 "버튼 상태 일관화"와 함께 다룬다
 - **`--border-focus`의 이름과 역할이 어긋난다.** focus 표시는 accent ring이 담당하도록 확정했으므로 이 토큰의 소비처는 `--canvas-handle-bg` 하나뿐이다. 실제 역할은 "neutral 계단의 최강 단계"다. `DESIGN.md:344`의 border 치트시트(`border  border-active  border-focus`)도 `--border-strong` 신설 이후로 낡았다 → 이름 정리는 `DESIGN.md` 갱신과 함께
-- **Tailwind v4가 문서·스킬 마크다운을 소스로 스캔한다.** 빌드 CSS에 `focus:outline-none`·`focus:ring-blue-500`·`focus:ring-4`가 남아 있는데 출처가 앱 코드가 아니라 `.kiro/skills/**/*.md`·`.agents/skills/**/*.md`의 예제 코드다(git 추적 대상이라 자동 소스 감지에 걸린다). 죽은 CSS가 실려 있고 §8의 guard 신호도 흐려진다 → `@source not` 또는 `.gitignore` 정리 필요
-  - **2026-09-01 추가 증거**: `rounded-sm`을 앱 코드에서 0건으로 만든 뒤에도 `.rounded-sm` 유틸이 계속 생성된다. 출처는 `docs/superpowers/plans/*.md`와 **`ui-todo.md` 자신**이다. 즉 이 문서가 클래스 이름을 기록하는 행위 자체가 빌드 CSS를 늘린다. md 유래로 확인된 것: `focus:outline-none` 27파일 · `focus:ring-blue-500` 16파일 · `focus:ring-4` 12파일. **`@source not "**/*.md"`가 가장 단순한 해법이다**
+- [x] **Tailwind v4가 앱 밖 파일을 소스로 스캔하는 문제 — 해소 (2026-09-01).** `global.css`에 `@source not` 6줄을 추가해 `**/*.md` · `.agents` · `.kiro` · `scripts` · `tests` · `dist`를 제외했다. **빌드 CSS 197,869 → 155,232 bytes (−42,637 · 21.6%).** `rounded-sm` · `shadow-sm` · `outline-none` · `focus:ring-blue-500` · `focus:outline-none` 전부 0건이 되고, 실사용 유틸(`shadow-control` · `shadow-panel` · `animate-in/out` · `slide-out-to-left` · `border-border-strong` · `outline-hidden`)은 그대로 생성된다
+  - 원인이 문서·스킬 md만이 아니었다. **`.agents/context-mode/insight/`에 별개 React 프로젝트가 통째로 들어 있고** git 추적 대상이라 그쪽 `.tsx`의 클래스가 전부 실렸다. `scripts/*.mjs` · 스킬 `.py` · `dist/**`도 같은 경로다
+  - **함정 2개를 토큰 파일 주석에 남겼다.** ① `@source`는 반드시 모든 `@import` 뒤에 와야 한다 — `@import` 사이에 끼우면 CSS 규격상 뒤따르는 `@import`가 무효가 되어 `global.tokens.css`가 로드되지 않고 `@theme` 토큰이 사라진다(CSS 91KB, `shadow-control` 0건으로 관측). ② `@import "tailwindcss" source("…")`로 기준을 `src/`에 고정하는 편이 개념적으로 깨끗하지만 상대·절대 어느 경로를 줘도 감지가 통째로 꺼진다(197KB → 87KB). 4.3.1의 경로 해석이 문서와 어긋나는 것으로 보여 채택하지 않았다
 
 ---
 
@@ -978,7 +979,8 @@ toolbar/constants.ts
 
 - [ ] `.editor-adjacent-surface` 그라디언트 — Light는 양끝이 `#ffffff`/`#f5f5f7`라 둥근 모서리와 border가 붕 뜨고, Sepia는 세 값이 달라 경계가 띠로 보인다 *(진단 수치는 §2·§3 이전 값. §1-A 부수 효과로 일부 해소돼 재측정 필요)*
 - [x] `--editor-adjacent-surface` 폴백 부재 → `var(--editor-adjacent-surface, var(--bg-sidebar))`
-- [ ] `bg-[var(--ai-panel-bg)]` arbitrary value → `bg-ai-panel` 유틸. **7곳** — `MainLayout.tsx:268,573,588` · `AIPanel.tsx:91,94,204` · `GoogleDocsLayout.tsx:200`(`to-[var(--ai-panel-bg)]`). *2026-09-01 재조사: 이전 기록은 `AIPanel` 3곳을 빠뜨려 4곳으로 적혀 있었다*
+- [x] `bg-[var(--ai-panel-bg)]` arbitrary value → `bg-ai-panel` 유틸 (2026-09-01). `@theme`에 `--color-ai-panel: var(--ai-panel-bg)` 매핑을 신설하고 **8곳** 치환 — `MainLayout.tsx:268,573,588` · `AIPanel.tsx:91,94,204` · `GoogleDocsLayout.tsx:200`(`to-ai-panel`) · **`GoogleDocsRightPanel.tsx:429`(`bg-[var(--ai-panel-bg,#323232)]` — 폴백이 붙어 있어 이전 조사에서 새어 나갔다. dark `--ai-panel-bg`가 `#323232`라 폴백은 죽은 값이었다)**. §7이 "`--color-ai-panel` 매핑이 아직 없어 var 형태로 남겼다"고 적어둔 것도 함께 해소
+  - **렌더 결과 동일함을 확인했다.** `.research-surface`의 평탄화 목록에 `--ai-panel-bg`가 없으므로 `bg-[var(--ai-panel-bg)]`도 원래 평탄화되지 않았다. 새 매핑도 같은 조건이라 Research 안에서의 거동이 바뀌지 않는다
 - [x] `h-11` WebkitAppRegion drag 스트립 배경 부재 → `bg-app` (`workspace/components/layout/EditorLayout.tsx:295`). 아래 상세
 - [x] `GoogleDocsEditorColumn.tsx`의 A4 페이지 `bg-transparent` → `bg-editor-bg`
 - [ ] 모바일 프레임의 하드코딩 정리 — `Editor.tsx:330`의 `rounded-[48px]`(`--radius-editor-shell` 중복)·`border-[#2c2c2e]`·`shadow-[0_0_0_2px_rgba(...)]`. 기기 외형 표현이라 theme을 따르지 않는 건 의도된 것이므로 **토큰화가 아니라 의도를 명시한 scoped token으로 이동**
@@ -1123,8 +1125,8 @@ dark `--bg-sidebar`가 정확히 `#212123`이라 **dark 렌더는 변하지 않�
 
 **게이트 동작 검증**: 컴포넌트 코드에 hex 추가 → 146/145 REGRESSION + exit 1 · 주석에 hex 추가 → 무변화(주석 제거 동작 증거) · 토큰 정의 파일에 hex 추가 → 게이트 무영향, 참고 수치만 262 → 263.
 
-- [ ] **`arbitraryPx` 417은 실제 부채다.** 왜곡이 아니라 컴포넌트의 진짜 arbitrary px다. 별도 정리 대상 (§4의 `rounded-[24px]`·`rounded-[48px]`가 그 일부)
-- [x] 여유가 생긴 `shadowBig` baseline을 21로 낮췄다 (2026-09-01, 감소 방향 갱신). guard가 스스로 권고 출력하던 항목이다
+- [x] **`arbitraryPx` 417 → 414** (2026-09-01, `rounded-[24px]` 계열 4곳 이관). 나머지 414는 대부분 정당한 크기 지정(`min-w-[150px]` · `text-[10px]` 등)이고, 남은 토큰화 후보는 `Editor.tsx:330` `rounded-[48px]`와 `PromptComposer:154,159` `rounded-[12px]`·`rounded-[6px]` 정도다
+- [x] `shadowBig` baseline 21 · `rawHex` 144 · `rawColor` 98로 하향 (감소 방향 갱신). guard가 스스로 권고 출력하던 항목이다
 
 ---
 
@@ -1210,13 +1212,14 @@ Scrivener Inspector → 시놉시스 탭의 노란 메모지다. `bg-yellow-50 d
 | `project-selector/RecentProjectsSection.tsx` | 123 |
 | `workspace/components/ProjectTemplateSelector.tsx` | 306 |
 
-- [ ] `--border-subtle` 6곳 → 역할 판정 후 `border-border`(카드·구분선) 또는 `border-border-strong`(대화형)으로 이관. 같은 파일들이 `bg-[var(--bg-secondary)]`·`text-[var(--text-primary)]` arbitrary value도 쓰고 있어 **`@theme` 매핑 유틸로 함께 옮기는 것이 맞다** — 프로젝트 선택 화면 전체가 토큰 마이그레이션에서 빠져 있다
+- [x] `--border-subtle` 6곳 이관 완료 (2026-09-01). 역할별로 갈랐다 — 구분선·드롭존은 `border-border`, `border-l-[6px]` 장식 바는 **`border-border-strong`**(그 바가 `--bg-element` 위에 놓이는데 soft는 그 표면에서 대비 1.03으로 사라진다), 버튼 2곳은 §4 결정대로 `border-border`(배경이 히트 영역을 알리므로 step 6 유지). **`--bg-tertiary`도 미정의였다** — `TemplateGrid:85` 템플릿 미리보기의 종이면이 투명해져 바깥 면 색이 그대로 보였다 → `bg-editor-bg`, `ProjectTemplateSelector:306` hover → `hover:bg-element-hover`. 덤으로 `TemplateGrid:77`의 **`dashed`가 유효 클래스가 아니었다**(다른 9곳은 모두 `border-dashed`) → 점선이 아예 안 그려지던 것도 함께 고쳤다
+  - [ ] 남은 것: 같은 파일들의 `bg-[var(--bg-secondary)]`·`text-[var(--text-primary)]`·`text-[var(--text-tertiary)]` arbitrary value. **토큰은 정의돼 있어 렌더는 정상**이므로 이번 묶음(판단 불필요·실제 버그) 범위 밖으로 뒀다. 프로젝트 선택 화면 단위 이관으로 별도 처리한다
 
 #### 10-2. prefix important가 v4에서 동작하지 않는다 — 2곳
 
 v3는 `!opacity-0`, v4는 후치 `opacity-0!`다. `wiki/visual/EntityNode.tsx:38,58`의 React Flow `Handle`에 `!opacity-0 !pointer-events-none`이 붙어 있어 **핸들 숨김이 실패한다** — 보이고 포인터 이벤트도 잡는다.
 
-- [ ] `!opacity-0 !pointer-events-none` → `opacity-0! pointer-events-none!` (2곳)
+- [x] `!opacity-0 !pointer-events-none` → `opacity-0! pointer-events-none!` (2곳, 2026-09-01). 빌드 CSS에 `opacity:0!important`·`pointer-events:none!important`가 생성되는 것을 확인했다. **`!important`는 실제로 필요하다** — `reactflow/dist/style.css`는 layer 없이 import되고 Tailwind 유틸은 `@layer utilities`에 들어가므로, 선언 순서와 무관하게 unlayered인 `.react-flow__handle`이 항상 이긴다
 
 #### 10-3. 검정 그림자 잔여 71건 — §4 체크박스가 실제보다 넓게 적혀 있었다
 
@@ -1235,20 +1238,22 @@ v3는 `!opacity-0`, v4는 후치 `opacity-0!`다. `wiki/visual/EntityNode.tsx:38
 - [ ] `shadow-xs`(26) · `shadow-2xs`(5) → `shadow-control`로 수렴 검토. v4 `shadow-xs`는 v3 `shadow-sm`(`0 1px 2px 0 rgb(0 0 0/.05)`)이라 `--shadow-control`보다 한 단계 약하다. 같은 tint 계열의 더 약한 token을 하나 더 만들 것인지, `shadow-control`로 합칠 것인지 결정이 필요하다
 - [ ] `shadow-md`(16) · `shadow-lg`(20) · `shadow-xl`(4) → `--shadow-panel`(`0 10px 28px`)과 크기가 겹치는 것만 수렴. 전부 옮기면 부유 표면 위계가 무너진다
 
-#### 10-4. `bg-gradient-to-*` → `bg-linear-to-*` — 3곳
+#### 10-4. `bg-gradient-to-*` → `bg-linear-to-*` — 완료 (2026-09-01)
 
-v4에서 이름이 바뀌었고 구 이름은 deprecated 상태로 아직 동작한다. 우선순위 낮음.
+v4에서 이름이 바뀌었고 구 이름은 deprecated 상태로 동작했다. 빌드 CSS에서 `.bg-gradient-to-r`·`.bg-gradient-to-t` 0건 · `.bg-linear-to-r`·`.bg-linear-to-t` 생성 확인.
 
-- [ ] `CharacterVisualPanel.tsx:52` · `GoogleDocsLayout.tsx:200,201`
+- [x] `CharacterVisualPanel.tsx:52` · `GoogleDocsLayout.tsx:200,201`
 
 #### 10-5. dark 전용 가정 잔재 — light·sepia에서 hover가 사라진다
 
 v3/v4와 무관한 팔레트 부채지만 같은 조사에서 나왔다. `bg-white/N` 33 · `text-white` 29 · `bg-black/N` 11 · `text-black` 2.
 
-- [ ] **`hover:bg-white/5|10`이 light·sepia에서 무효다.** `manuscript/components/sections/` 6파일(`SidebarWorldList` · `SidebarEventList` · `SidebarMemoList` · `SidebarCharacterList` · `SidebarFactionList`) + `ScrivenerSidebar.tsx:64,198`. §5에서 확정한 `hover:bg-surface-hover`로 수렴한다
-- [ ] `PromptComposer.tsx:154,161,162`의 `bg-white/6` · `border-white/10` · `text-zinc-400` 글래스가 dark 전용이다
-- [ ] `ExportSidebar.tsx:122` `bg-accent text-white` → `text-on-accent` (§1-B에서 `Modal`만 처리했다)
-- [ ] `AppearanceTab.tsx:138` `border-black/10` — §1 진단이 지목한 `EntityGallery`와 별개로 남아 있던 1건
+- [x] **`hover:bg-white/5|10`이 light·sepia에서 무효였다** — 해소 (2026-09-01). `manuscript/components/sections/` 5파일(`SidebarWorldList` 2 · `SidebarEventList` · `SidebarMemoList` 3 · `SidebarCharacterList` · `SidebarFactionList`) + `ScrivenerSidebar` 2곳 → `hover:bg-surface-hover`. 이 토큰은 theme별 알파 오버레이(light `rgba(0,0,0,.04)` · dark `rgba(255,255,255,.06)` · sepia `rgba(95,75,50,.05)`)라 `bg-white/N`이 dark에서만 맞던 문제가 사라진다. `SidebarMemoList:76`의 `bg-white/10`은 hover가 아니라 **선택 상태**였으므로 `bg-active`로 갈랐다(§7 방언 표의 `manuscript/Sidebar.tsx` 변형과 같은 조합). manuscript 전역 `bg-white|black/N` 잔여 0건
+- [x] `PromptComposer.tsx:154,161,162`의 dark 전용 글래스 해소 (2026-09-01). `bg-white/6` → `bg-surface-hover`, `border-white/10` · `focus-within:border-white/20` → `border-border` · `focus-within:border-accent`, `bg-white/15 text-white` → `bg-accent/15 text-accent`, `text-zinc-400 hover:bg-white/10 hover:text-white` → `text-muted hover:bg-surface-hover hover:text-fg`
+  - **불투명 표면 토큰을 쓸 수 없는 자리다.** 이 컴포저는 floating과 docked 양쪽에서 쓰여 부모 표면이 고정되지 않는다. `--bg-surface-hover`는 theme별 알파 오버레이(light `rgba(0,0,0,.04)` · dark `rgba(255,255,255,.06)` · sepia `rgba(95,75,50,.05)`)라 `bg-white/6`이 노리던 반투명 성질과 `backdrop-blur`를 유지하면서 세 theme 전부에서 성립한다
+  - active 상태는 **새 방언을 만들지 않고** §7 표의 최다수(`bg-accent/15 + text-accent`, 8곳)를 따랐다. 방언 수렴을 하든 안 하든 이 자리가 추가 부채가 되지 않는다
+- [x] `ExportSidebar.tsx:122` `bg-accent text-white` → `text-on-accent` (§1-B에서 `Modal`만 처리했다). 2026-09-01
+- [x] `AppearanceTab.tsx:138` `border-black/10` → `border-border-strong`. 색 스와치 윤곽이므로 theme 무관 검정이 아니라 경계 토큰이 맞다. 전역 `border-black/N` 잔여 0건
 
 #### 배제한 오탐 (조사해서 문제 없음을 확인)
 
@@ -1290,7 +1295,7 @@ v3/v4와 무관한 팔레트 부채지만 같은 조사에서 나왔다. `bg-whi
 
 ### 3. v3 잔재 정리의 시각 영향
 
-- [ ] **`rounded-sm` → `rounded-xs`** (18곳, 반경 4px → 2px). 스냅샷 diff 하이라이트 · 그래프 범례 스와치 · 작은 칩. 너무 각져 보이는지
+- [ ] **`rounded-sm` → `rounded-xs`** (20곳, 반경 4px → 2px). 스냅샷 diff 하이라이트 · 그래프 범례 스와치 · 작은 칩. 너무 각져 보이는지
 - [ ] **`backdrop-blur` 역할 분기.** 전면 오버레이 8px 유지 / 소형 부유 요소 4px. canvas 엣지 라벨과 위키 사이드 레일이 대상
 - [ ] **`shadow-sm` → `shadow-control`** (52곳). 검정 그림자가 theme tint로 바뀌었다. sepia 종이 위에서 회색 얼룩이 사라졌는지
 

@@ -24,10 +24,13 @@ const TOKEN_DEFINITION_FILES = [path.join(ROOT, "styles/global.tokens.css")];
 // NOTE: 2026-08-31 실측값으로 재설정했다. 이전 baseline은 왜곡된 수치 위에 세워져 있었다.
 // 2026-09-01 shadowBig 22 → 21. §4의 `shadow-sm` → `shadow-control` 수렴으로 1건 줄어든 것을
 // 확정한다(감소 방향 갱신). 검정 그림자 잔여 `shadow-xs`/`2xs`/`md`/`lg`/`xl`은 별도 항목이다.
+// 2026-09-01 §10 A그룹으로 rawHex 145 → 144(`#323232` 폴백 제거) · rawColor 99 → 98
+// (`text-zinc-400` 제거) · arbitraryPx 417 → 414(`rounded-[24px]` 3 + `rounded-r-[24px]` 1이
+// `rounded-editor-shell`로, 대신 `rounded-[12px]` 1건은 남아 net −3).
 const BASELINE = {
-  rawHex: 145,
-  rawColor: 99,
-  arbitraryPx: 417,
+  rawHex: 144,
+  rawColor: 98,
+  arbitraryPx: 414,
   roundedBig: 155,
   shadowBig: 21,
   shadcnVocab: 0, // Phase 1: shadcn long-form vocab fully removed (banned going forward)

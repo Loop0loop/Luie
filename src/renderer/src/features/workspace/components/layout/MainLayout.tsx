@@ -265,7 +265,7 @@ export default function MainLayout({
   const contentSurfaceClass = hasCustomAdjacentSurface
     ? "bg-research border-0 outline-hidden"
     : shouldRenderContext
-      ? "bg-[var(--ai-panel-bg)]"
+      ? "bg-ai-panel"
       : "";
   const layoutGapSurfaceClass = contentSurfaceClass;
 
@@ -570,7 +570,7 @@ export default function MainLayout({
             defaultSize={isContextOpen ? contextDefaultSize : 0}
             minSize={mainContextSize.minSize}
             maxSize={mainContextSize.maxSize}
-            className={`relative z-10 flex flex-col overflow-hidden bg-[var(--ai-panel-bg)] ${
+            className={`relative z-10 flex flex-col overflow-hidden bg-ai-panel ${
               shouldRenderContext
                 ? "rounded-l-[var(--radius-editor-shell)]"
                 : ""
@@ -585,7 +585,7 @@ export default function MainLayout({
             }`}
           >
             {shouldRenderContext ? (
-              <div className="flex h-full flex-col overflow-hidden bg-[var(--ai-panel-bg)]">
+              <div className="flex h-full flex-col overflow-hidden bg-ai-panel">
                 <AIPanel
                   onClose={toggleContextPanel}
                   onMinimize={toggleContextPanel}

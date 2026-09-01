@@ -3,6 +3,9 @@
   --color-sidebar: var(--bg-sidebar);
   --color-panel: var(--bg-panel);
   --color-research: var(--bg-research);
+  /* NOTE: AI 패널 표면. 매핑이 없어 소비처 7곳이 `bg-[var(--ai-panel-bg)]` arbitrary
+     value로 우회하고 있었다(§6). 매핑을 두면 `bg-ai-panel`/`to-ai-panel`로 쓸 수 있다. */
+  --color-ai-panel: var(--ai-panel-bg);
   --color-surface: var(--bg-surface);
   --color-surface-hover: var(--bg-surface-hover);
   --color-element: var(--bg-element);

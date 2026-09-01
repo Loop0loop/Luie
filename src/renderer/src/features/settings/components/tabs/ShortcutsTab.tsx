@@ -3,6 +3,11 @@ import type { TFunction } from "i18next";
 import { X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ShortcutGroupMap } from "@renderer/features/settings/components/tabs/types";
+import {
+  findAcceleratorConflicts,
+  validateAccelerator,
+  type AcceleratorRejection,
+} from "@shared/utils/shortcutAccelerator";
 
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta"]);
 
@@ -75,6 +80,8 @@ interface ShortcutRowProps {
   disabled?: boolean;
   isRecording: boolean;
   conflictWith?: string;
+  /** 이 행에서 기록이 거부된 이유. 기록 중일 때만 표시한다. */
+  rejectedReason?: AcceleratorRejection | null;
   t: TFunction;
   onRecordStart: (actionId: string) => void;
   onClear: (actionId: string) => void;
@@ -88,6 +95,7 @@ const ShortcutRow = memo(function ShortcutRow({
   disabled = false,
   isRecording,
   conflictWith,
+  rejectedReason,
   t,
   onRecordStart,
   onClear,
@@ -152,6 +160,11 @@ const ShortcutRow = memo(function ShortcutRow({
       {conflictWith && !isRecording && (
         <p className="mt-1 text-[11px] text-warning">{t("settings.shortcuts.conflict")}</p>
       )}
+      {rejectedReason && isRecording && (
+        <p className="mt-1 text-[11px] text-warning" role="alert">
+          {t("settings.shortcuts.needsModifier")}
+        </p>
+      )}
     </div>
   );
 });
@@ -182,6 +195,8 @@ export const ShortcutsTab = memo(function ShortcutsTab({
   const [shortcutDrafts, setShortcutDrafts] = useState<Record<string, string>>(shortcutValues);
   const shortcutDraftsRef = useRef<Record<string, string>>(shortcutValues);
   const [recordingId, setRecordingId] = useState<string | null>(null);
+  /** 기록이 거부된 이유. 기록 모드를 유지한 채 사용자에게 이유를 알린다. */
+  const [rejectedReason, setRejectedReason] = useState<AcceleratorRejection | null>(null);
 
   useEffect(() => {
     if (areShortcutMapsEqual(shortcutDraftsRef.current, shortcutValues)) return;
@@ -199,6 +214,7 @@ export const ShortcutsTab = memo(function ShortcutsTab({
       e.stopPropagation();
       if (e.key === "Escape") {
         setRecordingId(null);
+        setRejectedReason(null);
         return;
       }
       if (MODIFIER_KEYS.has(e.key)) return;
@@ -214,6 +230,20 @@ export const ShortcutsTab = memo(function ShortcutsTab({
       parts.push(key.toLowerCase());
 
       const accelerator = parts.join("+");
+
+      /**
+       * WHY 여기서 거부하는가: 수정자 없는 인쇄 문자를 저장하면 그 액션이
+       * `ALLOW_IN_EDITORS`에 속한 경우 집필 중 해당 문자를 입력할 때마다 발화한다.
+       * 실제로 `app.openSettings`에 콤마만 기록되면 본문에 콤마를 칠 때마다
+       * 설정 모달이 열렸다. 기록 모드를 유지해 사용자가 다시 시도할 수 있게 한다.
+       */
+      const validation = validateAccelerator(accelerator);
+      if (!validation.ok) {
+        setRejectedReason(validation.reason);
+        return;
+      }
+
+      setRejectedReason(null);
       setShortcutDrafts((prev) => {
         const next = { ...prev, [recordingId]: accelerator };
         shortcutDraftsRef.current = next;
@@ -234,21 +264,7 @@ export const ShortcutsTab = memo(function ShortcutsTab({
     });
   }, []);
 
-  const conflictMap = useMemo(() => {
-    const map = new Map<string, string>();
-    const entries = Object.entries(shortcutDrafts).filter(([, v]) => v);
-    for (let i = 0; i < entries.length; i++) {
-      const [idA, valA] = entries[i];
-      for (let j = i + 1; j < entries.length; j++) {
-        const [idB, valB] = entries[j];
-        if (valA === valB) {
-          map.set(idA, idB);
-          map.set(idB, idA);
-        }
-      }
-    }
-    return map;
-  }, [shortcutDrafts]);
+  const conflictMap = useMemo(() => findAcceleratorConflicts(shortcutDrafts), [shortcutDrafts]);
 
   return (
     <div className="max-w-2xl space-y-8 pb-20">
@@ -284,8 +300,12 @@ export const ShortcutsTab = memo(function ShortcutsTab({
                     disabled={isSaving}
                     isRecording={recordingId === action.id}
                     conflictWith={conflictMap.get(action.id)}
+                    rejectedReason={recordingId === action.id ? rejectedReason : null}
                     t={t}
-                    onRecordStart={(id) => setRecordingId(id)}
+                    onRecordStart={(id) => {
+                      setRecordingId(id);
+                      setRejectedReason(null);
+                    }}
                     onClear={handleClear}
                     onBlur={() => onCommitShortcuts(shortcutDraftsRef.current)}
                   />

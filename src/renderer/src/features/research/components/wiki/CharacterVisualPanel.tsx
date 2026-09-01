@@ -49,7 +49,7 @@ function HeroImage({
           alt={characterName}
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-black/40 to-transparent pointer-events-none" />
         <button
           type="button"
           onClick={onRegenerate}

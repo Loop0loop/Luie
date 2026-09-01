@@ -197,8 +197,8 @@ export function GoogleDocsLayout({
               // NOTE: 이전에는 dark token 값을 literal로 복제해 light·sepia에서도 우측
               // 절반이 dark로 남았다. 우측 stop은 그 자리에 오는 패널 표면을 따라간다.
               activeRightTab === "analysis"
-                ? "bg-gradient-to-r from-sidebar from-50% to-[var(--ai-panel-bg)] to-50%"
-                : "bg-gradient-to-r from-sidebar from-50% to-research to-50%",
+                ? "bg-linear-to-r from-sidebar from-50% to-ai-panel to-50%"
+                : "bg-linear-to-r from-sidebar from-50% to-research to-50%",
             )}
             id="docs-content-group"
             onLayoutChanged={onRightLayoutChanged}
@@ -206,7 +206,7 @@ export function GoogleDocsLayout({
             <Panel
               id="docs-center-shell"
               minSize={toPanelPercentSize(10)}
-              className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[24px] bg-app"
+              className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-editor-shell bg-app"
             >
               {/* NOTE: 열기 버튼은 사이드바 닫기 버튼(패널 좌측 상단 px-3, mt-10+h-16 중앙 =
                   12px, 52px)과 같은 자리에 둬야 토글 시 버튼이 점프하지 않는다. 이 Panel은

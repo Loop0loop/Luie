@@ -95,7 +95,7 @@ export default function SidebarCharacterList({
     <div className="flex flex-col h-full bg-sidebar/50">
       <div className="flex items-center justify-end px-2 py-1 gap-1 border-b border-border">
         <button
-          className="p-1 hover:bg-white/10 rounded text-muted hover:text-fg transition-colors"
+          className="p-1 hover:bg-surface-hover rounded text-muted hover:text-fg transition-colors"
           onClick={() => setIsTemplateModalOpen(true)}
           title={t("character.addTitle")}
         >

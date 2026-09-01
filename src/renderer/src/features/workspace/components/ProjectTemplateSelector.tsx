@@ -229,7 +229,7 @@ export default function ProjectTemplateSelector({
           onSelectCategory={setActiveCategory}
         />
 
-        <div className="flex flex-1 min-w-0 flex-col overflow-hidden bg-app border border-border rounded-[24px]">
+        <div className="flex flex-1 min-w-0 flex-col overflow-hidden bg-app border border-border rounded-editor-shell">
           {isMacOS && (
             <div
               className="h-10 shrink-0"
@@ -303,7 +303,7 @@ export default function ProjectTemplateSelector({
                 <button
                   type="button"
                   onClick={() => setActiveCategory("all")}
-                  className="flex items-center gap-2 px-4 py-2 rounded-panel bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-panel bg-[var(--bg-secondary)] border border-border text-[var(--text-primary)] hover:bg-element-hover transition-colors"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   {t("back", "Back")}

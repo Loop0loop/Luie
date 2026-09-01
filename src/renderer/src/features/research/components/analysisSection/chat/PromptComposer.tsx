@@ -151,15 +151,20 @@ export function PromptComposer({
       : t("analysis.composer.timelineCurrentOnly");
 
   return (
-    <div className="flex items-center gap-2 rounded-[12px] bg-white/6 border border-white/10 backdrop-blur-2xl pl-3 pr-2 py-1.5 shadow-control focus-within:border-white/20 transition-all duration-150">
+    // NOTE: 이전에는 `bg-white/6` · `border-white/10` · `focus-within:border-white/20`으로
+    // 유리면을 만들어 dark에서만 맞았다. `--bg-surface-hover`는 theme별 알파 오버레이
+    // (light `rgba(0,0,0,.04)` · dark `rgba(255,255,255,.06)` · sepia `rgba(95,75,50,.05)`)라
+    // 반투명 성질과 blur를 유지하면서 light·sepia에서도 성립한다. 이 컴포저는 floating과
+    // docked 양쪽에서 쓰여 부모 표면이 고정되지 않으므로 불투명 표면 토큰을 쓸 수 없다.
+    <div className="flex items-center gap-2 rounded-[12px] bg-surface-hover border border-border backdrop-blur-2xl pl-3 pr-2 py-1.5 shadow-control focus-within:border-accent transition-all duration-150">
       <div className="relative shrink-0" ref={menuRef}>
         <button
           type="button"
           onClick={() => setShowMenu((prev) => !prev)}
           className={`flex size-6 items-center justify-center rounded-[6px] transition-colors duration-150 cursor-pointer ${
             showMenu
-              ? "bg-white/15 text-white"
-              : "text-zinc-400 hover:bg-white/10 hover:text-white"
+              ? "bg-accent/15 text-accent"
+              : "text-muted hover:bg-surface-hover hover:text-fg"
           }`}
           title={t("analysis.composer.options")}
           aria-label={t("analysis.composer.options")}

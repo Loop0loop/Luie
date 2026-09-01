@@ -88,10 +88,10 @@ export function AIPanel({ onMenuToggle, onClose }: AIPanelProps) {
   }, [messages, isLoading]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[var(--ai-panel-bg)] font-sans text-fg select-none">
+    <div className="flex h-full flex-col overflow-hidden bg-ai-panel font-sans text-fg select-none">
       {/* 1. Header Bar: New Chat Dropdown and New Chat Button */}
       <div
-        className="flex h-11 shrink-0 items-center justify-between bg-[var(--ai-panel-bg)] px-3.5"
+        className="flex h-11 shrink-0 items-center justify-between bg-ai-panel px-3.5"
         style={{ WebkitAppRegion: "drag" } as CSSProperties}
       >
         <button
@@ -201,7 +201,7 @@ export function AIPanel({ onMenuToggle, onClose }: AIPanelProps) {
       </div>
 
       {/* 3. Bottom Prompt Input Pill & Toolbar (Reference Image Matched) */}
-      <div className="shrink-0 bg-[var(--ai-panel-bg)] p-3">
+      <div className="shrink-0 bg-ai-panel p-3">
         {/* Main Pill Capsule Input */}
         <div className="relative flex h-11 items-center gap-2 rounded-full border border-border bg-element px-2.5 shadow-inner transition-all focus-within:border-border-active focus-within:bg-element-hover">
           <button

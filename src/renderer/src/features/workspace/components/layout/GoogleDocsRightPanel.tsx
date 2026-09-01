@@ -426,7 +426,7 @@ export function GoogleDocsRightPanel({
            sidebar 계단을 따른다 — dark에서는 값이 같아 렌더 결과가 바뀌지 않는다. */
         className={`flex min-w-0 shrink-0 flex-col overflow-hidden ${
           renderedTab === "analysis"
-            ? "rounded-r-[24px] bg-[var(--ai-panel-bg,#323232)]"
+            ? "rounded-r-editor-shell bg-ai-panel"
             : isResearchTab
               ? "research-surface bg-research"
               : "bg-sidebar"

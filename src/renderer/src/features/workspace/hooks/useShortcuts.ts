@@ -1,55 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { ShortcutAction, ShortcutMap } from "@shared/types";
+import {
+  matchesAccelerator,
+  parseAccelerator,
+  validateAccelerator,
+  type ParsedAccelerator,
+} from "@shared/utils/shortcutAccelerator";
 import { useShortcutStore } from "@renderer/features/workspace/stores/shortcutStore";
 
 export type ShortcutHandlers = Partial<Record<ShortcutAction, () => void>>;
-
-const MODIFIER_KEYS = new Set(["cmd", "command", "ctrl", "control", "shift", "alt", "option"]);
-
-const normalizeKey = (key: string): string => {
-  if (key === ",") return "comma";
-  if (key === " ") return "space";
-  return key.toLowerCase();
-};
-
-const parseAccelerator = (accelerator: string) => {
-  const parts = accelerator
-    .split("+")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => part.toLowerCase());
-
-  const modifiers = new Set<string>();
-  let key = "";
-
-  for (const part of parts) {
-    if (MODIFIER_KEYS.has(part)) {
-      modifiers.add(part);
-    } else {
-      key = part;
-    }
-  }
-
-  return { key, modifiers };
-};
-
-const matchShortcut = (event: KeyboardEvent, accelerator: string): boolean => {
-  if (!accelerator) return false;
-  const { key, modifiers } = parseAccelerator(accelerator);
-  if (!key) return false;
-
-  const wantsCmd = modifiers.has("cmd") || modifiers.has("command");
-  const wantsCtrl = modifiers.has("ctrl") || modifiers.has("control");
-  const wantsShift = modifiers.has("shift");
-  const wantsAlt = modifiers.has("alt") || modifiers.has("option");
-
-  if (wantsCmd !== event.metaKey) return false;
-  if (wantsCtrl !== event.ctrlKey) return false;
-  if (wantsShift !== event.shiftKey) return false;
-  if (wantsAlt !== event.altKey) return false;
-
-  return normalizeKey(event.key) === normalizeKey(key);
-};
 
 const isEditableTarget = (event: KeyboardEvent): boolean => {
   const target = event.target as HTMLElement | null;
@@ -113,20 +72,57 @@ const REQUIRE_PRIMARY_MODIFIER = new Set<ShortcutAction>([
 export function useShortcuts(handlers: ShortcutHandlers, enabled: boolean = true): void {
   const shortcuts = useShortcutStore((state) => state.shortcuts) as ShortcutMap;
 
+  /**
+   * WHY 미리 파싱하는가: 이 리스너는 집필 중 모든 키 입력을 통과한다. accelerator는
+   * `shortcuts`가 바뀔 때만 변하는 정적 값인데, keydown마다 재파싱하면 키 입력 1회
+   * 비용이 등록된 단축키 수에 비례한다.
+   *
+   * WHY 무효 바인딩을 여기서 걸러내는가: 이미 저장된 값도 방어해야 한다. 설정 화면에서
+   * 수정자 없이 콤마만 기록하면 `comma`가 영속화되고, `app.openSettings`는 편집 중
+   * 허용 액션이라 집필 중 콤마 입력마다 설정이 열렸다. 기록 단계 검증만으로는
+   * 이미 깨진 설정 파일을 되돌릴 수 없다.
+   */
+  const bindings = useMemo(() => {
+    const parsed: Array<[ShortcutAction, ParsedAccelerator]> = [];
+    for (const [action, accelerator] of Object.entries(shortcuts)) {
+      if (!accelerator) continue;
+      if (!validateAccelerator(accelerator).ok) continue;
+      const binding = parseAccelerator(accelerator);
+      if (!binding) continue;
+      parsed.push([action as ShortcutAction, binding]);
+    }
+    return parsed;
+  }, [shortcuts]);
+
+  /**
+   * WHY ref인가: `handlers`는 호출부(`useEditorRootShortcuts`)의 useMemo가 만드는
+   * 약 60개 핸들러 맵이고 그 의존성에 `isSidebarOpen`·`fontSize`가 있다. effect
+   * 의존성에 두면 사이드바를 토글할 때마다 전역 keydown 리스너가 해제·재등록된다.
+   */
+  const handlersRef = useRef(handlers);
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
+
   useEffect(() => {
     if (!enabled) return undefined;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      const entries = Object.entries(shortcuts) as Array<[ShortcutAction, string]>;
-      for (const [action, accelerator] of entries) {
-        if (!handlers[action]) continue;
-        if (isEditableTarget(event) && !ALLOW_IN_EDITORS.has(action)) continue;
+      // WHY 루프 밖인가: 편집 영역 여부는 이벤트당 한 번 정해진다. 루프 안에서 읽으면
+      // DOM 프로퍼티 접근이 액션 수만큼 반복된다.
+      const editable = isEditableTarget(event);
+      const currentHandlers = handlersRef.current;
+
+      for (const [action, binding] of bindings) {
+        const handler = currentHandlers[action];
+        if (!handler) continue;
+        if (editable && !ALLOW_IN_EDITORS.has(action)) continue;
         if (REQUIRE_PRIMARY_MODIFIER.has(action) && !event.metaKey && !event.ctrlKey) {
           continue;
         }
-        if (matchShortcut(event, accelerator)) {
+        if (matchesAccelerator(event, binding)) {
           event.preventDefault();
-          handlers[action]?.();
+          handler();
           break;
         }
       }
@@ -134,5 +130,5 @@ export function useShortcuts(handlers: ShortcutHandlers, enabled: boolean = true
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handlers, shortcuts, enabled]);
+  }, [bindings, enabled]);
 }

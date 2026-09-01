@@ -135,7 +135,7 @@ export const AppearanceTab = memo(function AppearanceTab({
                                 : "border-border text-muted hover:text-fg hover:bg-surface-hover hover:border-border-active"
                         }`}
                     >
-                        <div className="relative size-3.5 rounded-full shrink-0 overflow-hidden border border-black/10">
+                        <div className="relative size-3.5 rounded-full shrink-0 overflow-hidden border border-border-strong">
                             <input
                                 type="color"
                                 value={themeAccent?.startsWith("#") ? themeAccent : "#3b82f6"}

@@ -220,7 +220,7 @@ export const SnapshotList = memo(function SnapshotList({
       <div className="p-2">
         <button
           onClick={handleManualSnapshot}
-          className="rounded-[24px] border border-border px-3 py-1.5 text-xs text-accent transition-colors hover:border-accent hover:text-fg"
+          className="rounded-editor-shell border border-border px-3 py-1.5 text-xs text-accent transition-colors hover:border-accent hover:text-fg"
         >
           {t("snapshot.list.manualButton")}
         </button>

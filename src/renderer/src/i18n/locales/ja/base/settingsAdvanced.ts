@@ -217,6 +217,7 @@ export const jaBaseSettingsAdvanced = {
       clear: "クリア",
       empty: "クリックして設定",
       conflict: "別の動作で既に使用中です",
+      needsModifier: "Cmd または Ctrl と一緒に押してください。文字キーのみでは執筆中の入力と重なります",
       openSettings: "設定を開く",
       closeWindow: "ウィンドウを閉じる",
       quitApp: "アプリを終了",

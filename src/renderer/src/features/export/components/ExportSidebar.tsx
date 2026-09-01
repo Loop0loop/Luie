@@ -119,7 +119,7 @@ export function ExportSidebar({
                             >
                                 <span className="font-bold text-lg mb-1">{t("exportWindow.format.hwp_label")}</span>
                                 <span className="text-[10px] opacity-80">{t("exportWindow.format.hwp")}</span>
-                                <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 bg-accent text-white rounded font-bold">{t("exportWindow.format.beta")}</span>
+                                <span className="absolute top-1 right-1 text-[9px] px-1.5 py-0.5 bg-accent text-on-accent rounded font-bold">{t("exportWindow.format.beta")}</span>
                             </button>
                             <button
                                 onClick={() => setFormat("word")}

@@ -35,7 +35,7 @@ function EntityNodeImpl({ data }: NodeProps<EntityNodeData>) {
       <Handle
         type="target"
         position={Position.Top}
-        className="!opacity-0 !pointer-events-none"
+        className="opacity-0! pointer-events-none!"
       />
       <div className="flex items-center justify-center gap-1 text-[9px] uppercase tracking-widest text-muted/60 mb-1">
         <Icon size={9} style={{ color: tint }} />
@@ -55,7 +55,7 @@ function EntityNodeImpl({ data }: NodeProps<EntityNodeData>) {
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!opacity-0 !pointer-events-none"
+        className="opacity-0! pointer-events-none!"
       />
     </div>
   );

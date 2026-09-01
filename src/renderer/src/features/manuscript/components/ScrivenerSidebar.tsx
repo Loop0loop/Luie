@@ -61,7 +61,7 @@ export default function ScrivenerSidebar({
           onToggle={() => toggleSection("manuscript")}
           actions={
             <button
-              className="p-0.5 hover:bg-white/10 rounded"
+              className="p-0.5 hover:bg-surface-hover rounded"
               onClick={(e) => {
                 e.stopPropagation();
                 void handleAddChapter();
@@ -195,7 +195,7 @@ function CollapsibleSection({
   return (
     <div className="flex flex-col border-b border-border">
       <div
-        className="flex items-center px-1 py-1 cursor-pointer hover:bg-white/5 transition-colors group"
+        className="flex items-center px-1 py-1 cursor-pointer hover:bg-surface-hover transition-colors group"
         onClick={onToggle}
       >
         <div className="p-0.5 text-muted group-hover:text-fg">

@@ -92,7 +92,7 @@ export default function SidebarWorldList({
           </span>
           {isScrap && (
             <button
-              className="p-1 hover:bg-white/10 rounded text-muted hover:text-fg transition-colors"
+              className="p-1 hover:bg-surface-hover rounded text-muted hover:text-fg transition-colors"
               onClick={handleAddTerm}
               title={t("world.term.addLabel")}
             >
@@ -116,7 +116,7 @@ export default function SidebarWorldList({
                       setMainView({ type: "world" });
                       setWorldTab(subview);
                     }}
-                    className="text-xs text-left px-2 py-1 rounded hover:bg-white/5 text-muted hover:text-fg transition-colors truncate"
+                    className="text-xs text-left px-2 py-1 rounded hover:bg-surface-hover text-muted hover:text-fg transition-colors truncate"
                   >
                     {label}
                   </button>
