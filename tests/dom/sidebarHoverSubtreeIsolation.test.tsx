@@ -132,4 +132,28 @@ describe("사이드바 hover가 무거운 서브트리로 번지지 않는다 (O
       memoTag,
     );
   });
+
+  it("hover 상태 자체가 제거됐다 — hover는 CSS group-hover로 처리한다", async () => {
+    // 근거: hoveredItemId JS state는 마우스 스윕마다 사이드바 목록 전체를 리렌더했다.
+    // 상태 제거를 소스 구조로 고정해 재유입을 차단한다.
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const root = join(__dirname, "../..");
+
+    const logic = readFileSync(
+      join(
+        root,
+        "src/renderer/src/features/manuscript/components/useSidebarLogic.ts",
+      ),
+      "utf8",
+    );
+    expect(logic).not.toContain("hoveredItemId");
+
+    const sidebar = readFileSync(
+      join(root, "src/renderer/src/features/manuscript/components/Sidebar.tsx"),
+      "utf8",
+    );
+    expect(sidebar).not.toContain("setHoveredItemId");
+    expect(sidebar).toContain("group-hover:opacity-100");
+  });
 });

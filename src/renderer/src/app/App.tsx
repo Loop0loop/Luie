@@ -52,7 +52,7 @@ const OAuthResultPage = lazy(
   () => import("@renderer/features/auth/components/OAuthResultPage"),
 );
 const WorldSection = lazy(
-  () => import("@renderer/domains/world/WorldSection"),
+  () => import("@renderer/features/research/components/WorldSection"),
 );
 const StartupWizard = lazy(
   () => import("@renderer/features/startup/components/StartupWizard"),

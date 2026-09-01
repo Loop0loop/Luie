@@ -392,6 +392,8 @@ export function EntityGallery<T extends GalleryEntity>({
                                         <img
                                           src={image}
                                           alt={entity.name}
+                                          loading="lazy"
+                                          decoding="async"
                                           className="h-full w-full object-cover"
                                         />
                                       </div>
@@ -488,6 +490,8 @@ export function EntityGallery<T extends GalleryEntity>({
                                     <img
                                       src={image}
                                       alt=""
+                                      loading="lazy"
+                                      decoding="async"
                                       className="size-10 shrink-0 rounded-full object-cover border border-border"
                                     />
                                   ) : (

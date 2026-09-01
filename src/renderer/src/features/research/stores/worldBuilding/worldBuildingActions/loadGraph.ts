@@ -28,26 +28,29 @@ export const createLoadGraphAction = (
       state.activeProjectId === projectId ? state.graphData : null,
   }));
   try {
-    const graphResponse = await withTimeout(
-      api.worldGraph.get(projectId),
-      GRAPH_LOAD_TIMEOUT_MS,
-      "worldGraph.get",
-    );
-
-    const graphReplicaResponse = await withTimeout(
-      api.worldStorage.getDocument({ projectId, docType: "graph" }),
-      GRAPH_REPLICA_TIMEOUT_MS,
-      "worldStorage.getDocument",
-    ).catch(async (error) => {
-      await api.logger.warn(
-        "Falling back to base graph without replica document",
-        {
-          projectId,
-          error: String(error),
-        },
-      );
-      return null;
-    });
+    // NOTE: 그래프 본문과 레플리카 문서는 서로 독립적이다. 순차 await는 워터폴이라
+    // 병렬화한다(레플리카 부재는 catch로 null 폴백 — 기존 동작 유지).
+    const [graphResponse, graphReplicaResponse] = await Promise.all([
+      withTimeout(
+        api.worldGraph.get(projectId),
+        GRAPH_LOAD_TIMEOUT_MS,
+        "worldGraph.get",
+      ),
+      withTimeout(
+        api.worldStorage.getDocument({ projectId, docType: "graph" }),
+        GRAPH_REPLICA_TIMEOUT_MS,
+        "worldStorage.getDocument",
+      ).catch(async (error) => {
+        await api.logger.warn(
+          "Falling back to base graph without replica document",
+          {
+            projectId,
+            error: String(error),
+          },
+        );
+        return null;
+      }),
+    ]);
 
     if (!graphResponse.success || !graphResponse.data) {
       throw new Error(graphResponse.error?.message ?? "Graph load failed");

@@ -71,7 +71,6 @@ export function useSidebarLogic({
 
   const { menuOpenId, menuPosition, menuRef, closeMenu, toggleMenuByElement } =
     useFloatingMenu<HTMLElement>();
-  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
 
   useEffect(() => {
     setManuscriptMenuOpen(Boolean(menuOpenId));
@@ -220,8 +219,6 @@ export function useSidebarLogic({
     menuOpenId,
     menuPosition,
     menuRef,
-    hoveredItemId,
-    setHoveredItemId,
     isManuscriptOpen,
     setManuscriptOpen,
     isResearchOpen,

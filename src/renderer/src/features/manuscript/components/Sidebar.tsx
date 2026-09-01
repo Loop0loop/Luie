@@ -28,6 +28,7 @@ import {
 } from "@renderer/features/manuscript/components/useSidebarLogic";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
 import { ensureChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
+import { prefetchResearchPanel } from "@renderer/features/workspace/services/chunkPrefetch";
 import type { ResearchTab } from "@renderer/features/workspace/stores/uiStore";
 
 const SnapshotList = lazy(() =>
@@ -101,8 +102,6 @@ function Sidebar({
     menuOpenId,
     menuPosition,
     menuRef,
-    hoveredItemId,
-    setHoveredItemId,
     isManuscriptOpen,
     setManuscriptOpen,
     isResearchOpen,
@@ -161,7 +160,7 @@ function Sidebar({
         >
           <div
             className={cn(
-              "flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] transition-all",
+              "group flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] transition-all",
               activeChapterId === chapter.id
                 ? "bg-active text-fg font-medium border-l-[3px] border-accent"
                 : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
@@ -172,8 +171,6 @@ function Sidebar({
               void ensureChapterContent(chapter.id);
             }}
             onClick={() => handleSelectChapter(chapter.id)}
-            onMouseEnter={() => setHoveredItemId(chapter.id)}
-            onMouseLeave={() => setHoveredItemId(null)}
           >
             <FileText
               className={cn(
@@ -185,14 +182,17 @@ function Sidebar({
               {chapter.order}. {chapter.title}
             </span>
 
-            {(hoveredItemId === chapter.id || menuOpenId === chapter.id) && (
-              <div
-                className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
-                onClick={(e) => handleMenuClick(e, chapter.id)}
-              >
-                <MoreVertical className="icon-sm" />
-              </div>
-            )}
+            {/* NOTE: hover 표시는 JS state 대신 CSS group-hover로 처리한다. hoveredItemId
+                state는 마우스가 항목을 지날 때마다 사이드바 목록 전체를 리렌더시켰다. */}
+            <div
+              className={cn(
+                "ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg opacity-0 group-hover:opacity-100 focus-within:opacity-100",
+                menuOpenId === chapter.id && "opacity-100",
+              )}
+              onClick={(e) => handleMenuClick(e, chapter.id)}
+            >
+              <MoreVertical className="icon-sm" />
+            </div>
           </div>
         </DraggableItem>
       );
@@ -252,25 +252,27 @@ function Sidebar({
             title: meta.label,
           }}
           disabled
-          className="flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
+          className="group flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg transition-all"
         >
           <div
             className="flex items-center w-full"
             onClick={() => onSelectResearchItem(item.id)}
-            onMouseEnter={() => setHoveredItemId(meta.hoverId)}
-            onMouseLeave={() => setHoveredItemId(null)}
+            // NOTE: research 패널은 lazy 청크다. hover/pointerdown에서 미리 깐다.
+            onPointerDown={prefetchResearchPanel}
+            onMouseEnter={prefetchResearchPanel}
           >
             <meta.Icon className="mr-2 text-muted icon-sm" />
             <span>{meta.label}</span>
-            {(hoveredItemId === meta.hoverId ||
-              menuOpenId === meta.hoverId) && (
-              <div
-                className="ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg"
-                onClick={(e) => handleMenuClick(e, meta.hoverId)}
-              >
-                <MoreVertical className="icon-sm" />
-              </div>
-            )}
+            {/* NOTE: hover 표시는 CSS group-hover로 처리한다 — JS hover state 제거. */}
+            <div
+              className={cn(
+                "ml-auto p-0.5 rounded hover:bg-bg-active text-muted hover:text-fg opacity-0 group-hover:opacity-100 focus-within:opacity-100",
+                menuOpenId === meta.hoverId && "opacity-100",
+              )}
+              onClick={(e) => handleMenuClick(e, meta.hoverId)}
+            >
+              <MoreVertical className="icon-sm" />
+            </div>
           </div>
         </DraggableItem>
       );

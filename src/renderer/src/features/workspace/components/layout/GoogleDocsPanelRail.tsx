@@ -13,6 +13,7 @@ import { DraggableItem } from "@shared/ui/DraggableItem";
 import type { DragItemType } from "@shared/ui/GlobalDragContext";
 import type { DocsLayoutPanelTab } from "@renderer/shared/constants/layoutSizing";
 import { useEditorStore } from "@renderer/domains/editor";
+import { prefetchResearchPanel } from "@renderer/features/workspace/services/chunkPrefetch";
 
 const RESEARCH_RAIL_TABS = [
   {
@@ -90,6 +91,10 @@ export function GoogleDocsPanelRail({
           >
             <button
               onClick={() => onSelectTab(tab.tab)}
+              // NOTE: 클릭 직전 단계(pointerdown/hover)에서 research 청크를 미리 깐다.
+              // 첫 탭 클릭이 청크 fetch를 직렬로 기다리지 않게 하는 프리페치다.
+              onPointerDown={prefetchResearchPanel}
+              onMouseEnter={prefetchResearchPanel}
               className={cn(
                 "relative flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-fg",
                 isActive && "bg-accent/15 text-accent",

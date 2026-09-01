@@ -30,6 +30,10 @@ import { cn } from "@shared/types/utils";
 
 const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
 
+// NOTE: destructure 기본값 `= []`는 렌더마다 새 배열을 만들어 자식 memo를 무력화한다.
+// MainLayout/EditorLayout과 같은 모듈 상수 규례를 따른다.
+const NO_ADDITIONAL_PANEL_IDS: string[] = [];
+
 export function GoogleDocsLayout({
   children,
   sidebar,
@@ -41,7 +45,7 @@ export function GoogleDocsLayout({
   onRenameChapter,
   onSaveChapter,
   additionalPanels,
-  additionalPanelIds = [],
+  additionalPanelIds = NO_ADDITIONAL_PANEL_IDS,
   isMobileView = false,
   onToggleMobileView,
   onOpenExport,

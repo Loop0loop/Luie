@@ -1,6 +1,8 @@
 import {
   type CSSProperties,
   type ReactNode,
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -9,19 +11,31 @@ import {
 } from "react";
 import { type Editor } from "@tiptap/react";
 import { useTranslation } from "react-i18next";
-import { InspectorPanel, Ribbon, useEditorStatsStore, useEditorStore } from "@renderer/domains/editor";
+import { InspectorPanel, Ribbon, useEditorStore } from "@renderer/domains/editor";
 import { AIPanel } from "@renderer/features/ai";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useShallow } from "zustand/react/shallow";
 import { CanvasPane } from "@renderer/domains/canvas";
-import {
-  EventDetailView,
-  FactionDetailView,
-  MemoMainView,
-  WikiDetailView,
-  WorldSection,
-} from "@renderer/domains/world";
+// NOTE: 상세 뷰들은 research 청크 계열이다. 정적 import면 scrivener 초기 번들에
+// reactflow/canvas/wiki까지 흡수되므로 lazy로 유지한다(파일 직접 참조 — barrel 금지).
+const WikiDetailView = lazy(
+  () => import("@renderer/features/research/components/wiki/WikiDetailView"),
+);
+const EventDetailView = lazy(
+  () => import("@renderer/features/research/components/event/EventDetailView"),
+);
+const FactionDetailView = lazy(
+  () =>
+    import("@renderer/features/research/components/faction/FactionDetailView"),
+);
+const WorldSection = lazy(
+  () => import("@renderer/features/research/components/WorldSection"),
+);
+const MemoMainView = lazy(
+  () => import("@renderer/features/research/components/memo/MemoMainView"),
+);
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
+import { ScrivenerStatusBar } from "./ScrivenerStatusBar";
 import { Menu, ChevronRight } from "lucide-react";
 import {
   Panel,
@@ -117,13 +131,6 @@ export default function ScrivenerLayout({
       });
     },
     [panels, updatePanelSize],
-  );
-
-  const { wordCount, charCount } = useEditorStatsStore(
-    useShallow((state) => ({
-      wordCount: state.wordCount,
-      charCount: state.charCount,
-    }))
   );
 
   const binderConfig = getLayoutSurfaceConfig("scrivener.binder");
@@ -254,26 +261,34 @@ export default function ScrivenerLayout({
   }, [panels]);
 
   const renderMainContent = () => {
-    switch (mainView.type) {
-      case "character":
-        return <WikiDetailView characterId={mainView.id} />;
-      case "event":
-        return <EventDetailView eventId={mainView.id} />;
-      case "faction":
-        return <FactionDetailView factionId={mainView.id} />;
-      case "world":
-        return <WorldSection worldId={mainView.id} />;
-      case "memo":
-        return <MemoMainView />;
-      case "analysis":
-        // Legacy analysis routes now use the same docked AI runtime as every other entry point.
-        return <AIPanel onClose={() => setMainView({ type: "editor" })} />;
-      case "canvas":
-        return <CanvasPane />;
-      case "editor":
-      default:
-        return children;
-    }
+    const content = (() => {
+      switch (mainView.type) {
+        case "character":
+          return <WikiDetailView characterId={mainView.id} />;
+        case "event":
+          return <EventDetailView eventId={mainView.id} />;
+        case "faction":
+          return <FactionDetailView factionId={mainView.id} />;
+        case "world":
+          return <WorldSection worldId={mainView.id} />;
+        case "memo":
+          return <MemoMainView />;
+        case "analysis":
+          // Legacy analysis routes now use the same docked AI runtime as every other entry point.
+          return <AIPanel onClose={() => setMainView({ type: "editor" })} />;
+        case "canvas":
+          return <CanvasPane />;
+        case "editor":
+        default:
+          return children;
+      }
+    })();
+    // NOTE: 상세 뷰는 lazy 청크다. 로드 중 본문 대신 빈 표면을 보여준다.
+    return (
+      <Suspense fallback={<div className="h-full w-full bg-app" />}>
+        {content}
+      </Suspense>
+    );
   };
 
   return (
@@ -451,13 +466,7 @@ export default function ScrivenerLayout({
               </PanelGroup>
             </div>
 
-            <div className="h-6 bg-surface border-t border-border flex items-center px-3 text-xs text-muted shrink-0">
-              <span>
-                {t("editor.status.charLabel")} {charCount}
-                {t("editor.status.separator")}
-                {t("editor.status.wordLabel")} {wordCount}
-              </span>
-            </div>
+            <ScrivenerStatusBar />
           </Panel>
 
           {shouldRenderInspector && (

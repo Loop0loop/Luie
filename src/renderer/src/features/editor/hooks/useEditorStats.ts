@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import Worker from "@renderer/features/editor/workers/stats.worker?worker";
 import { useEditorStatsStore } from "@renderer/features/editor/stores/editorStatsStore";
+import { acquireStatsWorker } from "@renderer/features/editor/hooks/statsWorkerClient";
 
 interface Stats {
   wordCount: number;
@@ -9,16 +9,19 @@ interface Stats {
 
 export function useEditorStats() {
   const setStats = useEditorStatsStore((state) => state.setStats);
-  const workerRef = useRef<Worker | null>(null);
+  const workerRef = useRef<ReturnType<typeof acquireStatsWorker> | null>(null);
   const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const worker = new Worker();
+    // NOTE: Worker는 앱 전역 싱글턴이다(전환마다 스폰/terminate 낭비 제거). 인스턴스가
+    // 아니라 "리스너"의 수명을 이 훅이 관리한다.
+    const worker = acquireStatsWorker();
 
-    worker.onmessage = (event: MessageEvent<Stats>) => {
+    const handleMessage = (event: MessageEvent<Stats>) => {
       setStats(event.data);
     };
 
+    worker.addEventListener("message", handleMessage);
     workerRef.current = worker;
 
     return () => {
@@ -26,7 +29,7 @@ export function useEditorStats() {
         window.clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      worker.terminate();
+      worker.removeEventListener("message", handleMessage);
       workerRef.current = null;
     };
   }, [setStats]);

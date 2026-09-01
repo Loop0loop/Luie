@@ -80,6 +80,47 @@ const migrateLegacyLocalDocument = async (
   }
 };
 
+// NOTE: SynopsisEditor가 탭을 오갈 때마다 3단 폴백 로드(replica IPC → .luie 패키지 IPC →
+// 동기 localStorage JSON 파스)를 반복한다. 세션 스코프 메모 캐시로 재마운트를 IPC 없이
+// 만든다. 저장(saveSynopsis)이 캐시를 갱신하므로 세션 내 신선도는 유지된다.
+const synopsisCacheByProject = new Map<string, WorldSynopsisData>();
+
+const resolveSynopsisFromSources = async (
+  projectId: string,
+  projectPath: string | null | undefined,
+  synopsisFallback: string,
+): Promise<WorldSynopsisData> => {
+  const replica = await loadReplicaDocument(projectId, "synopsis");
+  if (replica !== null) {
+    return normalizeSynopsis(replica, synopsisFallback);
+  }
+
+  if (isLuieProjectPath(projectPath)) {
+    const data = await readLuieJson(projectPath, LUIE_WORLD_SYNOPSIS_FILE);
+    if (data !== null) {
+      const normalized = normalizeSynopsis(data, synopsisFallback);
+      await saveReplicaDocument(projectId, "synopsis", normalized);
+      removeLocalStorageJson(projectId, "synopsis");
+      return normalized;
+    }
+  }
+
+  const local = loadLocalStorageJson<unknown>(projectId, "synopsis");
+  if (local !== null) {
+    const normalized = normalizeSynopsis(local, synopsisFallback);
+    await migrateLegacyLocalDocument(
+      projectId,
+      "synopsis",
+      projectPath,
+      normalized,
+      LUIE_WORLD_SYNOPSIS_FILE,
+    );
+    return normalized;
+  }
+
+  return normalizeSynopsis(null, synopsisFallback);
+};
+
 export const worldPackageStorage = {
   async loadSynopsis(
     projectId: string,
@@ -90,35 +131,18 @@ export const worldPackageStorage = {
       return { ...DEFAULT_WORLD_SYNOPSIS, synopsis: synopsisFallback };
     }
 
-    const replica = await loadReplicaDocument(projectId, "synopsis");
-    if (replica !== null) {
-      return normalizeSynopsis(replica, synopsisFallback);
+    const cached = synopsisCacheByProject.get(projectId);
+    if (cached) {
+      return cached;
     }
 
-    if (isLuieProjectPath(projectPath)) {
-      const data = await readLuieJson(projectPath, LUIE_WORLD_SYNOPSIS_FILE);
-      if (data !== null) {
-        const normalized = normalizeSynopsis(data, synopsisFallback);
-        await saveReplicaDocument(projectId, "synopsis", normalized);
-        removeLocalStorageJson(projectId, "synopsis");
-        return normalized;
-      }
-    }
-
-    const local = loadLocalStorageJson<unknown>(projectId, "synopsis");
-    if (local !== null) {
-      const normalized = normalizeSynopsis(local, synopsisFallback);
-      await migrateLegacyLocalDocument(
-        projectId,
-        "synopsis",
-        projectPath,
-        normalized,
-        LUIE_WORLD_SYNOPSIS_FILE,
-      );
-      return normalized;
-    }
-
-    return normalizeSynopsis(null, synopsisFallback);
+    const resolved = await resolveSynopsisFromSources(
+      projectId,
+      projectPath,
+      synopsisFallback,
+    );
+    synopsisCacheByProject.set(projectId, resolved);
+    return resolved;
   },
 
   async saveSynopsis(
@@ -140,6 +164,7 @@ export const worldPackageStorage = {
         payload,
       );
     }
+    synopsisCacheByProject.set(projectId, payload);
   },
 
   async loadPlot(
