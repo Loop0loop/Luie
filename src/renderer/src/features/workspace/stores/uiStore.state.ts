@@ -73,10 +73,28 @@ export const buildStablePanelId = (content: RightPanelContent): string => {
   return `panel-${content.type}`;
 };
 
-export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, get) => ({
+export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (
+  set,
+  get,
+) => {
+  // 닫힘 애니메이션 타이머는 상태가 아니라 클로저에서 관리한다. 패널 id별로 독립 타이머를
+  // 두면 애니메이션 창 안에서 두 패널이 연달아 닫혀도 각각 완료된다(기존 단일 타이머
+  // 구조는 두 번째 닫기가 첫 번째 타이머를 지워 첫 패널이 영구 잔존하는 버그가 있었다).
+  const panelCloseTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  const clearPanelCloseTimer = (panelId: string) => {
+    const timer = panelCloseTimers.get(panelId);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      panelCloseTimers.delete(panelId);
+    }
+  };
+
+  return {
   view: DEFAULT_UI_VIEW as UIStore["view"],
   worldTab: "terms",
   panels: [],
+  closingPanelIds: [],
   isManuscriptMenuOpen: false,
   scrivenerSections: { ...DEFAULT_SCRIVENER_SECTIONS },
   hasHydrated: false,
@@ -92,6 +110,9 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
     set((state) => (state.worldTab === worldTab ? state : { worldTab })),
 
   addPanel: (content, insertAt, initialSize) => {
+    // 닫힘 애니메이션 창(150ms) 안에 같은 패널을 다시 열면 예약된 removePanel을 취소한다.
+    // 취소하지 않으면 "닫기 직후 재클릭이 무시되고 패널이 최종 닫힌다"는 race가 생긴다.
+    get().cancelPanelClose(buildStablePanelId(content));
     let nextFocusedPanelId: string | null = null;
     set((state) => {
       if (content.type === "snapshot" && content.snapshot?.id) {
@@ -251,7 +272,39 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
       setTransientFocusedClosableTarget({ kind: "panel", id: nextFocusedPanelId });
     }
   },
+  schedulePanelClose: (panelId, delayMs) => {
+    clearPanelCloseTimer(panelId);
+    set((state) =>
+      state.closingPanelIds.includes(panelId)
+        ? state
+        : { closingPanelIds: [...state.closingPanelIds, panelId] },
+    );
+    const timer = setTimeout(() => {
+      panelCloseTimers.delete(panelId);
+      set((state) => ({
+        closingPanelIds: state.closingPanelIds.filter((id) => id !== panelId),
+      }));
+      get().removePanel(panelId);
+    }, delayMs);
+    panelCloseTimers.set(panelId, timer);
+  },
+
+  cancelPanelClose: (panelId) => {
+    clearPanelCloseTimer(panelId);
+    set((state) =>
+      state.closingPanelIds.includes(panelId)
+        ? {
+            closingPanelIds: state.closingPanelIds.filter(
+              (id) => id !== panelId,
+            ),
+          }
+        : state,
+    );
+  },
+
   removePanel: (id) => {
+    // 다른 경로(레이아웃 전환, 모드 전환 등)로 직접 제거될 때도 닫힘 표식/타이머를 정리한다.
+    get().cancelPanelClose(id);
     const focusedTarget = getFocusedClosableTarget();
     set((state) => {
       // NOTE: 남은 패널 크기를 100/n으로 재분배하면 안 된다. 이 패널들은 원고 패널
@@ -265,6 +318,10 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
       clearFocusedClosableTarget();
     }
   },
+  // NOTE: 패널 드래그 커밋 배치는 시도했다가 되돌렸다. updatePanelSize의 "동기 가시성"
+  // 은 저장/복원 경로(useProjectLayoutPersistence, 레이아웃 복원 테스트)가 의존하는 계약이고
+  // 기존 테스트들이 이를 고정한다. 드래그 중 루트 리렌더의 근본 해결은 구독자 측에서
+  // size를 반응형 트리에서 분리하는 것이므로 후속 과제로 남긴다.
   updatePanelSize: (id, size) =>
     set((state) => {
       if (!Number.isFinite(size)) return state;
@@ -574,4 +631,5 @@ export const createUIStoreState: StateCreator<UIStore, [], [], UIStore> = (set, 
     }
     return handled;
   },
-});
+  };
+};

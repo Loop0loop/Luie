@@ -116,6 +116,10 @@ export interface UIStore {
   view: "template" | "editor" | "corkboard" | "outliner";
   worldTab: WorldTab;
   panels: ResizablePanelData[];
+  /** 닫힘 애니메이션 중인 패널 id. 애니메이션 완료/취소 시 제거된다. */
+  closingPanelIds: string[];
+  schedulePanelClose: (panelId: string, delayMs: number) => void;
+  cancelPanelClose: (panelId: string) => void;
   isManuscriptMenuOpen: boolean;
   scrivenerSections: ScrivenerSectionsState;
   hasHydrated: boolean;

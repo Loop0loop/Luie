@@ -5,7 +5,6 @@ import React, {
   useEffect,
   useLayoutEffect,
   useRef,
-  useState,
 } from "react";
 import {
   Panel,
@@ -32,10 +31,11 @@ import {
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
 import { RESEARCH_PANEL_MIN_WIDTH_PX } from "@renderer/features/workspace/stores/projectLayout/constants";
 
-const ResearchPanel = React.lazy(() =>
-  import("@renderer/domains/world").then((module) => ({
-    default: module.ResearchPanel,
-  })),
+// NOTE: barrel(@renderer/domains/world) 경유 시 WorldSection의 정적 import(reactflow,
+// canvas)와 AnalysisSection까지 첫 오픈 청크에 흡수됐다. 파일 직접 참조로 research 패널
+// 청크를 최소화한다.
+const ResearchPanel = React.lazy(
+  () => import("@renderer/features/research/components/ResearchPanel"),
 );
 const SnapshotViewer = React.lazy(
   () => import("@renderer/features/snapshot/components/SnapshotViewer"),
@@ -78,9 +78,22 @@ export function WorkspacePanels({
   // NOTE: close 애니메이션은 default 레이아웃의 분할 패널 전용. docs 등 다른 레이아웃의
   // 패널 동작을 바꾸지 않도록 게이트한다.
   const enableCloseAnimation = enableAnimations && uiMode === "default";
-  const closingPanelRef = useRef<PanelImperativeHandle | null>(null);
-  const [closingPanelId, setClosingPanelId] = useState<string | null>(null);
-  const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const schedulePanelClose = useUIStore((state) => state.schedulePanelClose);
+  // 닫힘 상태는 uiStore가 소유한다. 애니메이션 창 안에 같은 패널을 다시 여는(addPanel)
+  // 순간 cancelPanelClose가 닫힘을 되돌리므로, 이 컴포넌트는 표식만 구독해 시각 상태를
+  // 맞춘다. 컴포넌트 로컬 타이머였을 때는 재오픈이 예약된 removePanel과 경합했다.
+  const closingPanelIds = useUIStore((state) => state.closingPanelIds);
+  const closingPanelRefs = useRef(new Map<string, PanelImperativeHandle>());
+  const setClosingPanelRef = useCallback(
+    (panelId: string) => (handle: PanelImperativeHandle | null) => {
+      if (handle) {
+        closingPanelRefs.current.set(panelId, handle);
+      } else {
+        closingPanelRefs.current.delete(panelId);
+      }
+    },
+    [],
+  );
 
   // NOTE: removePanel은 즉시 unmount시키므로, 애니메이션이 켜져 있으면 축소 transition을
   // 보여준 뒤 실제 제거한다. 0% 커밋이 researchPanelSizes에 저장되지 않게 지속화도 억제한다.
@@ -90,32 +103,29 @@ export function WorkspacePanels({
         removePanel(panelId);
         return;
       }
-      setClosingPanelId(panelId);
       suppressLayoutPersistenceFor(WORKSPACE_PANEL_CLOSE_ANIMATION_MS + 160);
-      if (closingTimerRef.current !== null) {
-        clearTimeout(closingTimerRef.current);
-      }
-      closingTimerRef.current = setTimeout(() => {
-        closingTimerRef.current = null;
-        setClosingPanelId(null);
-        removePanel(panelId);
-      }, WORKSPACE_PANEL_CLOSE_ANIMATION_MS);
+      schedulePanelClose(panelId, WORKSPACE_PANEL_CLOSE_ANIMATION_MS);
     },
-    [enableCloseAnimation, removePanel],
+    [enableCloseAnimation, removePanel, schedulePanelClose],
   );
 
   // NOTE: data-panel-animated와 minSize 완화가 DOM에 커밋된 뒤에 resize해야 flex-grow
   // 변경이 transition과 만난다. 클릭 핸들러에서 동기로 resize하면 속성 적용 전이라
   // transition 없이 스냅된다.
+  const closingKey = closingPanelIds.join(",");
   useLayoutEffect(() => {
-    if (!closingPanelId) return undefined;
+    if (closingPanelIds.length === 0) return undefined;
+    const ids = closingPanelIds;
     const frameId = requestAnimationFrame(() => {
-      closingPanelRef.current?.resize("0%");
+      for (const panelId of ids) {
+        closingPanelRefs.current.get(panelId)?.resize("0%");
+      }
     });
     return () => {
       cancelAnimationFrame(frameId);
     };
-  }, [closingPanelId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- closingPanelIds 참조 배열을 문자열 키로만 추적한다
+  }, [closingKey]);
 
   // NOTE: cmd+W(closeFocusedSurface)로 닫는 분할 패널도 X 닫기와 동일한 close 애니메이션
   // 경로를 탄다. uiStore는 패널 애니메이션을 모르므로 이벤트로 위임받는다.
@@ -142,14 +152,8 @@ export function WorkspacePanels({
     };
   }, [removePanelWithAnimation]);
 
-  useEffect(
-    () => () => {
-      if (closingTimerRef.current !== null) {
-        clearTimeout(closingTimerRef.current);
-      }
-    },
-    [],
-  );
+  // NOTE: 닫힘 타이머는 uiStore가 소유한다. 이 컴포넌트가 언마운트돼도 예약된 removePanel은
+  // 완료돼야 한다(레이아웃 전환 중 닫힘 경합 시 패널이 유령 잔존하는 것을 막는다).
 
   const currentProjectIdRef = useRef(currentProjectId);
   useEffect(() => {
@@ -427,8 +431,8 @@ export function WorkspacePanels({
             <Panel
               id={panel.id}
               panelRef={
-                closingPanelId === panel.id
-                  ? closingPanelRef
+                closingPanelIds.includes(panel.id)
+                  ? setClosingPanelRef(panel.id)
                   : isResearchPanel
                     ? researchPanelRef
                     : isEditorPanel
@@ -436,7 +440,7 @@ export function WorkspacePanels({
                       : undefined
               }
               data-panel-animated={
-                closingPanelId === panel.id ? "true" : undefined
+                closingPanelIds.includes(panel.id) ? "true" : undefined
               }
               groupResizeBehavior="preserve-pixel-size"
               defaultSize={
@@ -454,7 +458,7 @@ export function WorkspacePanels({
                     : undefined
               }
               minSize={
-                closingPanelId === panel.id
+                closingPanelIds.includes(panel.id)
                   ? "0%"
                   : isResearchPanel
                     ? "470px"
