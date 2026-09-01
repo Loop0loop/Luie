@@ -119,7 +119,7 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
       onClick={onClose}
     >
       <div
-        className="flex h-full w-full max-h-[850px] max-w-[1000px] overflow-hidden rounded-editor-shell bg-sidebar shadow-modal animate-in zoom-in-95 duration-150"
+        className="flex h-full w-full max-h-[850px] max-w-[1000px] overflow-hidden rounded-3xl bg-sidebar shadow-modal animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex w-64 flex-col bg-sidebar pt-3">
@@ -148,7 +148,7 @@ export default function SettingsModal({ onClose, initialTab }: SettingsModalProp
           </nav>
         </div>
 
-        <div className="relative z-10 flex min-w-0 flex-1 flex-col rounded-editor-shell border border-l-0 border-border bg-panel">
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col rounded-3xl border border-l-0 border-border bg-panel">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 text-subtle hover:text-fg hover:bg-active rounded-panel transition-colors z-10"
