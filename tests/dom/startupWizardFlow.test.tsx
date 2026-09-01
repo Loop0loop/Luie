@@ -331,4 +331,124 @@ describe("startup wizard flow", () => {
       unmount();
     });
   });
+
+  it("ISTQB 조건 1: Wizard 상황일 때 6대 연구 요소 및 3개 챕터 데이터가 안전하게 시딩되고 불필요한 백엔드 조회가 차단된다", async () => {
+    const { useCharacterStore } = await import(
+      "../../src/renderer/src/features/research/stores/characterStore.js"
+    );
+    const { useEventStore } = await import(
+      "../../src/renderer/src/features/research/stores/eventStore.js"
+    );
+    const { useFactionStore } = await import(
+      "../../src/renderer/src/features/research/stores/factionStore.js"
+    );
+    const { useTermStore } = await import(
+      "../../src/renderer/src/features/research/stores/termStore.js"
+    );
+    const { useChapterStore } = await import(
+      "../../src/renderer/src/features/manuscript/stores/chapterStore.js"
+    );
+    const { useProjectStore } = await import(
+      "../../src/renderer/src/domains/project/index.js"
+    );
+    const { PREVIEW_PROJECT_ID } = await import(
+      "../../src/renderer/src/features/startup/constants/previewData.js"
+    );
+
+    const { root } = await renderWizard();
+
+    // 테마 -> 레이아웃 이동하여 프리뷰 마운트
+    await act(async () => {
+      findButton(root, "startupWizard.onboarding.startCta").click();
+    });
+    await act(async () => {
+      findButton(root, "startupWizard.onboarding.next").click();
+    });
+
+    // 1. 위저드 환경에서 3개 챕터 및 6대 연구 엔티티가 정상 시딩되었는지 검증
+    expect(useProjectStore.getState().currentItem?.id).toBe(PREVIEW_PROJECT_ID);
+    expect(useChapterStore.getState().items.length).toBe(3);
+    expect(useCharacterStore.getState().items.length).toBe(2);
+    expect(useEventStore.getState().items.length).toBe(2);
+    // 2. 프리뷰 엔티티 상세 조회(loadOne) 시 백엔드 조회 없이 인메모리로 바인딩되는지 검증
+    await act(async () => {
+      await useEventStore.getState().loadOne("wizard-preview-event-1");
+      await useFactionStore.getState().loadOne("wizard-preview-faction-1");
+    });
+    expect(useEventStore.getState().currentItem?.id).toBe("wizard-preview-event-1");
+    expect(useFactionStore.getState().currentItem?.id).toBe("wizard-preview-faction-1");
+
+    // 3. 챕터 전환(2장으로 변경) 시 백엔드 조회 없이 인메모리 본문이 정상 세팅되는지 검증
+    const { useChapterContentStore } = await import(
+      "../../src/renderer/src/features/manuscript/stores/chapterContentStore.js"
+    );
+    await act(async () => {
+      useChapterStore.getState().setCurrent(useChapterStore.getState().items[1] ?? null);
+      await useChapterContentStore.getState().ensureContent("wizard-preview-chapter-2");
+    });
+    expect(useChapterStore.getState().currentItem?.title).toBe("2장. 귀갓길");
+    expect(useChapterContentStore.getState().contentByChapterId["wizard-preview-chapter-2"]).toContain("오로라호");
+
+    // 4. 가상 프로젝트 ID로는 markOpened가 호출되지 않았음을 확인
+    expect(mocked.markOpened).not.toHaveBeenCalledWith(PREVIEW_PROJECT_ID);
+
+    const unmount = () => root.unmount();
+    act(() => {
+      unmount();
+    });
+  });
+
+  it("ISTQB 조건 2: 일반적 상황일 때 실제 프로젝트 로드 시 실제 데이터로 온전히 바인딩되며 위저드 데이터가 격리된다", async () => {
+    const { useCharacterStore } = await import(
+      "../../src/renderer/src/features/research/stores/characterStore.js"
+    );
+    const { useProjectStore } = await import(
+      "../../src/renderer/src/domains/project/index.js"
+    );
+
+    const REAL_PROJECT_ID = "real-user-project-uuid";
+    const realProject = {
+      id: REAL_PROJECT_ID,
+      title: "실제 작성 중인 원고",
+      createdAt: "2026-09-01T00:00:00.000Z",
+      updatedAt: "2026-09-01T00:00:00.000Z",
+    };
+
+    // 실제 프로젝트로 스토어 전환 (일반 작업 환경)
+    useProjectStore.setState({
+      currentItem: realProject,
+      currentProject: realProject,
+    });
+
+    // 실제 프로젝트 엔티티로 덮어쓰기/로드
+    useCharacterStore.setState({
+      items: [
+        {
+          id: "real-char-1",
+          projectId: REAL_PROJECT_ID,
+          name: "실제 소설 주인공",
+          createdAt: "2026-09-01T00:00:00.000Z",
+          updatedAt: "2026-09-01T00:00:00.000Z",
+        },
+      ],
+      characters: [
+        {
+          id: "real-char-1",
+          projectId: REAL_PROJECT_ID,
+          name: "실제 소설 주인공",
+          createdAt: "2026-09-01T00:00:00.000Z",
+          updatedAt: "2026-09-01T00:00:00.000Z",
+        },
+      ],
+      currentItem: null,
+      currentCharacter: null,
+    });
+
+    // 위저드 가상 캐릭터("강세연", "서도진")가 없고 실제 프로젝트 데이터만 남아있는지 확인
+    const characters = useCharacterStore.getState().items;
+    expect(characters.length).toBe(1);
+    expect(characters[0]?.id).toBe("real-char-1");
+    expect(characters[0]?.name).toBe("실제 소설 주인공");
+    expect(characters.some((c) => c.id === "wizard-preview-character-1")).toBe(false);
+  });
 });

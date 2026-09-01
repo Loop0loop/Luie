@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { api } from "@shared/api";
 import type { Chapter } from "@shared/types";
+import { PREVIEW_CHAPTER_CONTENTS } from "@renderer/features/startup/constants/previewData";
 
 /**
  * 챕터 본문 전용 캐시.
@@ -107,6 +108,12 @@ export const useChapterContentStore = create<ChapterContentState>((set, get) => 
   ensureContent: async (chapterId: string) => {
     if (!chapterId) return;
     if (Object.prototype.hasOwnProperty.call(get().contentByChapterId, chapterId)) {
+      return;
+    }
+
+    if (chapterId.startsWith("wizard-preview-")) {
+      const previewContent = PREVIEW_CHAPTER_CONTENTS[chapterId] ?? "";
+      get().setContent(chapterId, previewContent);
       return;
     }
 

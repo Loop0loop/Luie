@@ -23,12 +23,19 @@ import {
 } from "@renderer/features/workspace/components/layout/rootShell";
 import { WorkspacePanels } from "@renderer/features/workspace/components/panels/WorkspacePanels";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
+import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
+import { useEventStore } from "@renderer/features/research/stores/eventStore";
+import { useFactionStore } from "@renderer/features/research/stores/factionStore";
+import { useTermStore } from "@renderer/features/research/stores/termStore";
 import {
-  PREVIEW_ACTIVE_CHAPTER_ID,
   PREVIEW_CHAPTERS,
+  PREVIEW_CHAPTER_CONTENTS,
+  PREVIEW_CHARACTERS,
+  PREVIEW_EVENTS,
+  PREVIEW_FACTIONS,
   PREVIEW_PROJECT,
   PREVIEW_PROJECT_ID,
-  SAMPLE_CONTENT,
+  PREVIEW_TERMS,
 } from "../../constants/previewData";
 import type { LayoutChoice } from "../../types/wizard";
 import { WizardEditor } from "./WizardEditor";
@@ -126,7 +133,34 @@ const syncPreviewWorkspace = (uiMode: LayoutChoice): void => {
       currentItem: PREVIEW_CHAPTERS[0] ?? null,
       currentChapter: PREVIEW_CHAPTERS[0] ?? null,
     });
-    setChapterContent(PREVIEW_ACTIVE_CHAPTER_ID, SAMPLE_CONTENT);
+    Object.entries(PREVIEW_CHAPTER_CONTENTS).forEach(([id, content]) => {
+      setChapterContent(id, content);
+    });
+
+    useCharacterStore.setState({
+      items: PREVIEW_CHARACTERS,
+      characters: PREVIEW_CHARACTERS,
+      currentItem: PREVIEW_CHARACTERS[0] ?? null,
+      currentCharacter: PREVIEW_CHARACTERS[0] ?? null,
+    });
+    useEventStore.setState({
+      items: PREVIEW_EVENTS,
+      events: PREVIEW_EVENTS,
+      currentItem: PREVIEW_EVENTS[0] ?? null,
+      currentEvent: PREVIEW_EVENTS[0] ?? null,
+    });
+    useFactionStore.setState({
+      items: PREVIEW_FACTIONS,
+      factions: PREVIEW_FACTIONS,
+      currentItem: PREVIEW_FACTIONS[0] ?? null,
+      currentFaction: PREVIEW_FACTIONS[0] ?? null,
+    });
+    useTermStore.setState({
+      items: PREVIEW_TERMS,
+      terms: PREVIEW_TERMS,
+      currentItem: PREVIEW_TERMS[0] ?? null,
+      currentTerm: PREVIEW_TERMS[0] ?? null,
+    });
 
     // 위저드 프리뷰에 최적화된 컴팩트 사이드바, 리서치/인스펙터 패널 규격 및 surface ratios 주입
     const currentUiStore = useUIStore.getState();

@@ -15,6 +15,8 @@ import {
 } from "@renderer/features/research/components/world/TermCard";
 import { useTermDragDrop } from "@renderer/features/research/components/world/hooks/useTermDragDrop";
 
+import { PREVIEW_PROJECT_ID } from "@renderer/features/startup/constants/previewData";
+
 interface TermManagerProps {
   termId?: string;
 }
@@ -54,7 +56,7 @@ export function TermManager({ termId }: TermManagerProps) {
     useTermDragDrop({ terms });
 
   useEffect(() => {
-    if (currentProject) {
+    if (currentProject && currentProject.id !== PREVIEW_PROJECT_ID) {
       loadTerms(currentProject.id);
     }
   }, [currentProject, loadTerms]);

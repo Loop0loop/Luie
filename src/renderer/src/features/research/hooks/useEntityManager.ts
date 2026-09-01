@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import type { TFunction } from "i18next";
 import { useProjectStore } from "@renderer/features/project/stores/projectStore";
 
+import { PREVIEW_PROJECT_ID } from "@renderer/features/startup/constants/previewData";
+
 export interface EntityManagerStore<T> {
   items: T[];
   currentItem: T | null;
@@ -45,7 +47,7 @@ export function useEntityManager<
   }, [currentItemFromStore]);
 
   useEffect(() => {
-    if (currentProject) {
+    if (currentProject && currentProject.id !== PREVIEW_PROJECT_ID) {
       void loadAll(currentProject.id);
     }
   }, [currentProject, loadAll]);

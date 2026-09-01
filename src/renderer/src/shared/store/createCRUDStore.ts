@@ -102,13 +102,19 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
     return "__global__";
   };
 
-  return (set) => ({
+  return (set, get) => ({
     items: [],
     currentItem: null,
     isLoading: false,
     error: null,
 
     loadAll: async (parentId?: string) => {
+      // 위저드 프리뷰 프로젝트일 때는 백엔드 IPC 조회를 하지 않고 인메모리 시딩 데이터를 보존한다.
+      if (parentId === "wizard-preview-project") {
+        set({ isLoading: false, error: null });
+        return;
+      }
+
       const requestId = ++loadAllRequestId;
       set({ isLoading: true, error: null });
       try {
@@ -135,6 +141,15 @@ export function createCRUDSlice<T extends BaseItem, CreateInput, UpdateInput>(
     },
 
     loadOne: async (id: string) => {
+      // 위저드 프리뷰 엔티티인 경우 백엔드 IPC 호출 없이 인메모리 항목을 즉시 currentItem으로 세팅
+      if (id.startsWith("wizard-preview-")) {
+        const existing = get().items.find((item) => item.id === id);
+        if (existing) {
+          set({ currentItem: existing, isLoading: false, error: null });
+          return;
+        }
+      }
+
       const requestId = ++loadOneRequestId;
       set({ isLoading: true, error: null });
       try {
