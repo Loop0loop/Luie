@@ -116,7 +116,10 @@ export const registerAppReady = (
       }
     };
 
-    const startMainWindowFlow = (reason: string): void => {
+    const startMainWindowFlow = (
+      reason: string,
+      options: { fitWorkArea?: boolean } = {},
+    ): void => {
       const existingMainWindow = windowManager.getMainWindow();
       if (existingMainWindow && !existingMainWindow.isDestroyed()) {
         if (!existingMainWindow.isVisible()) {
@@ -132,7 +135,10 @@ export const registerAppReady = (
         startupElapsedMs: Date.now() - startupStartedAtMs,
       });
 
-      windowManager.createMainWindow({ deferShow: true });
+      windowManager.createMainWindow({
+        deferShow: true,
+        fitWorkArea: options.fitWorkArea,
+      });
       logger.info("Startup checkpoint: main window requested", {
         startupElapsedMs: Date.now() - startupStartedAtMs,
       });
@@ -309,7 +315,7 @@ export const registerAppReady = (
         return;
       }
       windowManager.closeStartupWizardWindow();
-      startMainWindowFlow("wizard-complete");
+      startMainWindowFlow("wizard-complete", { fitWorkArea: true });
     });
 
     app.on("activate", () => {

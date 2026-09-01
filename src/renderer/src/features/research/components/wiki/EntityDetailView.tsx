@@ -349,10 +349,19 @@ export function EntityDetailView({
             {!isInfoboxOpen && (
               <button
                 type="button"
-                onClick={() => applyInfoboxOpen(true)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  applyInfoboxOpen(true);
+                }}
+                onPointerDown={(e) => {
+                  // NOTE: ReactFlow panOnDrag/selectionOnDrag가 포인터 이벤트를 캡처하는 것을
+                  // 방지한다. stopPropagation만으로는 DnD 시작을 막을 수 없어 pointer-events를
+                  // 명시적으로 auto로 설정하고, 불필요한 이벤트 전파를 차단한다.
+                  e.stopPropagation();
+                }}
                 title={t(`${prefix}.wiki.infoboxTitle`, "프로필 요약 펼치기")}
                 aria-label={t(`${prefix}.wiki.infoboxTitle`, "프로필 요약 펼치기")}
-                className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-xs transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group cursor-pointer"
+                className="fixed right-0 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-l-panel border border-r-0 border-border bg-surface/95 px-1 py-3.5 shadow-md backdrop-blur-xs transition-all hover:bg-surface hover:border-accent/60 hover:text-accent group [touch-action:manipulation] cursor-pointer"
               >
                 <ChevronLeft size={14} className="text-muted group-hover:text-accent transition-colors" />
                 <span className="text-[10px] font-medium text-muted [writing-mode:vertical-lr] select-none tracking-tight group-hover:text-accent transition-colors">

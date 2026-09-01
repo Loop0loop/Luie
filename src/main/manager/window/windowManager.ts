@@ -1,4 +1,4 @@
-import { app, BrowserWindow, type BrowserWindowConstructorOptions } from "electron"
+import { app, BrowserWindow, screen, type BrowserWindowConstructorOptions } from "electron"
 import { join } from "path"
 import windowStateKeeper from "electron-window-state"
 import { createLogger } from "../../../shared/logger/index.js"
@@ -126,9 +126,15 @@ class WindowManager {
     }
   }
 
-  createMainWindow(options: { deferShow?: boolean } = {}): BrowserWindow {
+  createMainWindow(
+    options: { deferShow?: boolean; fitWorkArea?: boolean } = {},
+  ): BrowserWindow {
     const deferShow = options.deferShow === true
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      if (options.fitWorkArea) {
+        const workArea = screen.getPrimaryDisplay().workArea
+        this.mainWindow.setBounds(workArea)
+      }
       return this.mainWindow
     }
     this.mainWindow = null
@@ -140,11 +146,34 @@ class WindowManager {
     const environment = getRendererEnvironment()
     const windowIconPath = resolveWindowIconPath()
 
-    this.mainWindow = this.createBrowserWindow({
+    let initialBounds: {
+      x?: number
+      y?: number
+      width: number
+      height: number
+    } = {
       x: windowState.x,
       y: windowState.y,
       width: windowState.width,
       height: windowState.height,
+    }
+
+    if (options.fitWorkArea) {
+      try {
+        const primaryWorkArea = screen.getPrimaryDisplay().workArea
+        initialBounds = {
+          x: primaryWorkArea.x,
+          y: primaryWorkArea.y,
+          width: primaryWorkArea.width,
+          height: primaryWorkArea.height,
+        }
+      } catch {
+        // screen unavailable in headless/mock fallback
+      }
+    }
+
+    this.mainWindow = this.createBrowserWindow({
+      ...initialBounds,
       minWidth: WINDOW_MIN_WIDTH,
       minHeight: WINDOW_MIN_HEIGHT,
       title: APP_NAME,
@@ -159,6 +188,13 @@ class WindowManager {
 
     this.applyMenuBarMode(this.mainWindow)
     windowState.manage(this.mainWindow)
+    if (options.fitWorkArea) {
+      try {
+        this.mainWindow.setBounds(initialBounds as Electron.Rectangle)
+      } catch {
+        // fallback
+      }
+    }
 
     if (environment.useDevServer) {
       logger.info("Loading development server", {
