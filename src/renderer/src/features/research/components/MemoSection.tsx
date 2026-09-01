@@ -281,7 +281,7 @@ function MemoSectionInner({
               </div>
 
               <input
-                className="px-6 pt-5 pb-3 text-xl font-bold border-none bg-transparent outline-hidden text-fg placeholder:text-muted"
+                className="px-6 pt-5 pb-3 text-xl font-bold border-b-2 border-transparent bg-transparent outline-hidden text-fg placeholder:text-muted focus:border-accent"
                 value={activeNote.title}
                 onChange={(e) => updateActiveNote({ title: e.target.value })}
                 placeholder={t("memo.placeholder.title")}

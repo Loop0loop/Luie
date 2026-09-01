@@ -203,7 +203,7 @@ export function AIPanel({ onMenuToggle, onClose }: AIPanelProps) {
       {/* 3. Bottom Prompt Input Pill & Toolbar (Reference Image Matched) */}
       <div className="shrink-0 bg-ai-panel p-3">
         {/* Main Pill Capsule Input */}
-        <div className="relative flex h-11 items-center gap-2 rounded-full border border-border bg-element px-2.5 shadow-inner transition-all focus-within:border-border-active focus-within:bg-element-hover">
+        <div className="relative flex h-11 items-center gap-2 rounded-full border border-border bg-element px-2.5 shadow-inner transition-all focus-within:border-accent focus-within:bg-element-hover focus-within:ring-2 focus-within:ring-ring">
           <button
             type="button"
             className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-active text-fg transition-colors hover:bg-surface-hover"

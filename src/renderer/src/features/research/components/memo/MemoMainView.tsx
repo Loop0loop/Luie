@@ -29,7 +29,7 @@ export default function MemoMainView() {
       <div className="flex items-center gap-2 mb-4">
         <Tag className="w-4 h-4 text-muted" />
         <input
-          className="bg-transparent border-none outline-hidden text-sm text-muted w-full placeholder:text-muted"
+          className="bg-transparent border-b-2 border-transparent outline-hidden text-sm text-muted w-full placeholder:text-muted focus:border-accent"
           placeholder={t("memo.placeholder.tags")}
           value={activeNote.tags.join(", ")}
           onChange={(e) => {
@@ -40,7 +40,7 @@ export default function MemoMainView() {
       </div>
 
       <input
-        className="w-full pt-2 pb-4 text-3xl font-extrabold border-none bg-transparent outline-hidden text-fg placeholder:text-muted"
+        className="w-full pt-2 pb-4 text-3xl font-extrabold border-b-2 border-transparent bg-transparent outline-hidden text-fg placeholder:text-muted focus:border-accent"
         value={activeNote.title}
         onChange={(e) => updateNote(activeNote.id, { title: e.target.value })}
         placeholder={t("memo.placeholder.title")}

@@ -262,7 +262,7 @@ export function ColorPickerMenu({
               onPointerUp={commitCustomColor}
               onKeyUp={commitCustomColor}
             />
-            <div className="mt-3 flex h-8 items-center gap-2 rounded-control border border-border bg-app px-2.5">
+            <div className="mt-3 flex h-8 items-center gap-2 rounded-control border border-border bg-app px-2.5 focus-within:border-accent focus-within:ring-2 focus-within:ring-ring">
               <span className="text-[10px] font-medium text-muted">HEX</span>
               <input
                 value={hexInput}

@@ -52,7 +52,7 @@ function EditableAxisLabel({ label, onCommit }: EditableAxisLabelProps) {
           }
         }}
         onBlur={commit}
-        className="w-14 text-[11px] bg-transparent border-b border-accent/60 outline-hidden text-fg pb-0.5 shrink-0"
+        className="w-14 text-[11px] bg-transparent border-b border-accent/60 outline-hidden text-fg pb-0.5 shrink-0 focus:border-accent"
       />
     );
   }

@@ -69,7 +69,7 @@ function AddTagInline({ onAdd, placeholder }: AddTagInlineProps) {
         if (e.key === "Escape") { setValue(""); setEditing(false); }
       }}
       onBlur={commit}
-      className="text-[12px] w-20 border-b border-border-active bg-transparent pb-0.5 text-fg outline-hidden placeholder:text-muted/40"
+      className="text-[12px] w-20 border-b border-border-active bg-transparent pb-0.5 text-fg outline-hidden placeholder:text-muted/40 focus:border-accent"
       placeholder="입력 후 Enter"
     />
   );

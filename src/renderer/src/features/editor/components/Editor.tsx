@@ -345,7 +345,7 @@ function Editor({
             <input
               type="text"
               className={cn(
-                "w-full border-none bg-transparent pb-4 text-2xl font-bold text-fg outline-hidden shrink-0 placeholder:text-muted",
+                "w-full border-b-2 border-transparent bg-transparent pb-4 text-2xl font-bold text-fg outline-hidden shrink-0 placeholder:text-muted focus:border-accent",
                 isMobileView && "px-6",
                 readOnly && "pointer-events-none opacity-80",
               )}

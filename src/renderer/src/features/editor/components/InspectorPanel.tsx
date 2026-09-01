@@ -220,6 +220,8 @@ function InspectorTabButton({
     <button
       onClick={onClick}
       title={title}
+      aria-label={title}
+      aria-pressed={isActive}
       className={cn(
         "p-2 rounded transition-colors text-muted hover:text-fg",
         isActive && "bg-accent/10 text-accent",

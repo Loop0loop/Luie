@@ -163,7 +163,7 @@ export default function SidebarChapterList() {
                                         onChange={(e) => setEditValue(e.target.value)}
                                         onBlur={commitRename}
                                         onKeyDown={handleKeyDown}
-                                        className="bg-app border border-accent/50 rounded px-1 py-0.5 w-full text-fg outline-hidden text-sm h-6 leading-none"
+                                        className="bg-app border border-accent/50 rounded px-1 py-0.5 w-full text-fg outline-hidden text-sm h-6 leading-none focus:border-accent"
                                     />
                                 ) : (
                                     <span className="truncate flex-1 leading-normal">{chapter.title || t("project.defaults.untitled")}</span>

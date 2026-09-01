@@ -105,7 +105,7 @@ const CharacterNode = ({ id, data }: NodeProps<MindMapNodeData>) => {
       <div className="p-2 w-full bg-panel border-t border-border">
         {isEditingLabel ? (
           <input
-            className="w-full text-center border-none bg-transparent outline-hidden font-bold text-sm text-fg p-0"
+            className="w-full text-center border-b-2 border-transparent bg-transparent outline-hidden font-bold text-sm text-fg p-0 focus:border-accent"
             value={draft ?? data.label}
             onChange={(e) => setDraft(e.target.value)}
             onBlur={commitLabel}

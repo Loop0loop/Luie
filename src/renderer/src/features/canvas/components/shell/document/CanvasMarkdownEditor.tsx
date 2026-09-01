@@ -179,6 +179,7 @@ export function CanvasMarkdownEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
+            aria-pressed={editor.isActive("bold")}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-control transition-colors",
               editor.isActive("bold") ? "bg-active text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
@@ -190,6 +191,7 @@ export function CanvasMarkdownEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
+            aria-pressed={editor.isActive("italic")}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-control transition-colors",
               editor.isActive("italic") ? "bg-active text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
@@ -201,6 +203,7 @@ export function CanvasMarkdownEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
+            aria-pressed={editor.isActive("underline")}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-control transition-colors",
               editor.isActive("underline") ? "bg-active text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
@@ -212,6 +215,7 @@ export function CanvasMarkdownEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleStrike().run()}
+            aria-pressed={editor.isActive("strike")}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-control transition-colors",
               editor.isActive("strike") ? "bg-active text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
@@ -226,6 +230,7 @@ export function CanvasMarkdownEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHighlight({ color: "var(--highlight-default)" }).run()}
+            aria-pressed={editor.isActive("highlight")}
             className={cn(
               "flex h-7 w-7 items-center justify-center rounded-control transition-colors",
               editor.isActive("highlight") ? "bg-active text-fg" : "text-muted hover:bg-surface-hover hover:text-fg"
