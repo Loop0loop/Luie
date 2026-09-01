@@ -125,7 +125,8 @@ export type ResearchRendererApi = {
     }) => Promise<IPCResponse<SharedTypes.Snapshot>>;
     getByProject: (projectId: string) => Promise<IPCResponse<SharedTypes.Snapshot[]>>;
     getAll: (projectId: string) => Promise<IPCResponse<SharedTypes.Snapshot[]>>;
-    getByChapter: (chapterId: string) => Promise<IPCResponse<SharedTypes.Snapshot[]>>;
+    getByChapter: (chapterId: string) => Promise<IPCResponse<SharedTypes.SnapshotSummary[]>>;
+    get: (id: string) => Promise<IPCResponse<SharedTypes.Snapshot>>;
     listRestoreCandidates: () => Promise<
       IPCResponse<SharedTypes.SnapshotRestoreCandidate[]>
     >;

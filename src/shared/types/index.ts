@@ -269,6 +269,8 @@ export type {
 
 export type {
   Snapshot,
+  SnapshotSummary,
+  SnapshotRef,
   SnapshotCreateInput,
   SnapshotRestoreCandidate,
 } from "./snapshot";

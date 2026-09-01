@@ -6,7 +6,8 @@ import {
 } from "@renderer/features/workspace/stores/uiStore";
 import { useProjectStore } from "@renderer/domains/project";
 import { useProjectLayoutStore } from "@renderer/features/workspace/stores/projectLayoutStore";
-import type { Snapshot } from "@shared/types";
+import type { Snapshot, SnapshotRef } from "@shared/types";
+import { api } from "@shared/api";
 import {
   getEditorLayoutPanelSurface,
   getLayoutSurfaceDefaultRatio,
@@ -103,8 +104,23 @@ export function useSplitView(activeChapterId?: string) {
   );
 
   const handleOpenSnapshot = useCallback(
-    (snapshot: Snapshot) => {
-      addPanel({ type: "snapshot", snapshot });
+    (snapshot: SnapshotRef) => {
+      // 스냅샷 목록은 content 프로젝션(요약 행)만 내려준다. 전문이 이미 있으면 그대로
+      // 패널을 열고, 없으면(DnD payload 등) 개별 조회로 전문을 해소한 뒤 연다.
+      if (typeof snapshot.content === "string") {
+        addPanel({ type: "snapshot", snapshot: snapshot as Snapshot });
+        return;
+      }
+      void api.snapshot.get(snapshot.id).then((response) => {
+        if (response.success && response.data) {
+          addPanel({ type: "snapshot", snapshot: response.data });
+          return;
+        }
+        api.logger.error("Failed to resolve snapshot content", {
+          snapshotId: snapshot.id,
+          error: response.error?.message,
+        });
+      });
     },
     [addPanel],
   );

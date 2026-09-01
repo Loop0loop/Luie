@@ -4,7 +4,7 @@ import { Clock, RotateCcw, GitCompare, Loader2 } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
 import { api } from "@shared/api";
 import { DraggableItem } from "@shared/ui/DraggableItem";
-import type { Snapshot } from "@shared/types";
+import type { Snapshot, SnapshotRef } from "@shared/types";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useChapterStore } from "@renderer/features/manuscript/stores/chapterStore";
 import { useChapterContent } from "@renderer/domains/manuscript";
@@ -29,11 +29,11 @@ export const SnapshotList = memo(function SnapshotList({
   chapterId,
   onOpenSnapshot,
 }: SnapshotListProps) {
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [snapshots, setSnapshots] = useState<SnapshotRef[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [snapshotItems, setSnapshotItems] = useState<
-    Array<{ snapshot: Snapshot; formattedDate: string }>
+    Array<{ snapshot: SnapshotRef; formattedDate: string }>
   >([]);
   const { t } = useTranslation();
   const dialog = useDialog();
@@ -52,7 +52,7 @@ export const SnapshotList = memo(function SnapshotList({
     isLoaded: isCurrentChapterContentLoaded,
   } = useChapterContent(chapterId);
 
-  const buildSnapshotItems = useCallback((items: Snapshot[]) => {
+  const buildSnapshotItems = useCallback((items: SnapshotRef[]) => {
     return items.map((snapshot) => ({
       snapshot,
       formattedDate: snapshot.createdAt
@@ -104,15 +104,34 @@ export const SnapshotList = memo(function SnapshotList({
     [snapshotItems, buildSnapshotItems, snapshots],
   );
 
-  const handleCompare = (snapshot: Snapshot) => {
+  // NOTE: 목록 조회는 전문(content) 프로젝션이다. 뷰어 비교·복원 시딩처럼 전문이 필요한
+  // 동작만 이 헬퍼로 개별 조회해 해소한다.
+  const fetchFullSnapshot = useCallback(
+    async (id: string): Promise<Snapshot | null> => {
+      const response = await api.snapshot.get(id);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      api.logger.error("SnapshotList: failed to load snapshot content", { id });
+      return null;
+    },
+    [],
+  );
+
+  const handleCompare = async (snapshot: SnapshotRef) => {
+    const full =
+      typeof snapshot.content === "string"
+        ? (snapshot as Snapshot)
+        : await fetchFullSnapshot(snapshot.id);
+    if (!full) return;
     if (onOpenSnapshot) {
-      onOpenSnapshot(snapshot);
+      onOpenSnapshot(full);
     } else {
-      handleOpenSnapshot(snapshot);
+      handleOpenSnapshot(full);
     }
   };
 
-  const handleRestore = async (snapshot: Snapshot) => {
+  const handleRestore = async (snapshot: SnapshotRef) => {
     const confirmed = await dialog.confirm({
       title: t("snapshot.list.restoreTitle"),
       message: t("snapshot.list.confirmRestore"),
@@ -127,11 +146,10 @@ export const SnapshotList = memo(function SnapshotList({
       }
       // NOTE: SnapshotViewer와 같은 이유로 복원 본문을 캐시에 직접 채운다. 재조회를 기다리면
       // 에디터가 게이트에 걸려 깜빡이고, 그 사이 언마운트/재마운트가 한 번 더 발생한다.
+      // 목록 행에는 전문이 없으므로 개별 조회로 해소한다.
       if (response.success && snapshot.chapterId) {
-        setChapterContent(
-          snapshot.chapterId,
-          typeof snapshot.content === "string" ? snapshot.content : "",
-        );
+        const full = await fetchFullSnapshot(snapshot.id);
+        setChapterContent(snapshot.chapterId, full?.content ?? "");
       }
       // NOTE: 같은 챕터의 본문이 바뀌므로 Editor key 리비전을 올려 리마운트시킨다.
       useChapterStore.getState().bumpContentRevision();

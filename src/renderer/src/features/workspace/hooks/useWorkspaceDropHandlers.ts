@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import type { DragData } from "@shared/ui/GlobalDragContext";
 import type { EditorUiMode } from "@shared/types";
-import type { Snapshot } from "@shared/types";
+import type { SnapshotRef } from "@shared/types";
 import { openDocsRightTab } from "@renderer/features/workspace/services/docsPanelService";
 import { openEditorBinderTab } from "@renderer/features/workspace/services/layoutRegionActions";
 import type {
@@ -37,7 +37,7 @@ interface DropHandlerDependencies {
     panelInfo: ResizablePanelData["content"],
     insertAt?: number,
   ) => void;
-  handleOpenSnapshot: (snapshot: Snapshot) => void;
+  handleOpenSnapshot: (snapshot: SnapshotRef) => void;
 }
 
 export function useWorkspaceDropHandlers({
@@ -100,7 +100,7 @@ export function useWorkspaceDropHandlers({
       if (data.type === "snapshot") {
         const snapshot = data.snapshot;
         if (snapshot && typeof snapshot === "object") {
-          handleOpenSnapshot(snapshot as Snapshot);
+          handleOpenSnapshot(snapshot as SnapshotRef);
         }
         return;
       }
@@ -208,7 +208,7 @@ export function useWorkspaceDropHandlers({
       if (data.type === "snapshot") {
         const snapshot = data.snapshot;
         if (snapshot && typeof snapshot === "object") {
-          handleOpenSnapshot(snapshot as Snapshot);
+          handleOpenSnapshot(snapshot as SnapshotRef);
         }
         return;
       }

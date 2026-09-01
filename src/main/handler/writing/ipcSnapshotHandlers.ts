@@ -12,6 +12,7 @@ import type { LoggerLike } from "../core/types.js";
 
 type SnapshotServiceLike = {
   createSnapshot: (input: SnapshotCreateInput) => Promise<unknown>;
+  getSnapshot: (id: string) => Promise<unknown>;
   getSnapshotsByProject: (projectId: string) => Promise<unknown>;
   getSnapshotsByChapter: (chapterId: string) => Promise<unknown>;
   listRestoreCandidates: () => Promise<unknown>;
@@ -32,6 +33,13 @@ export function registerSnapshotIPCHandlers(
       argsSchema: z.tuple([snapshotCreateSchema]),
       handler: (input: SnapshotCreateInput) =>
         snapshotService.createSnapshot(input),
+    },
+    {
+      channel: IPC_CHANNELS.SNAPSHOT_GET,
+      logTag: "SNAPSHOT_GET",
+      failMessage: "Failed to get snapshot",
+      argsSchema: z.tuple([snapshotIdSchema]),
+      handler: (id: string) => snapshotService.getSnapshot(id),
     },
     {
       channel: IPC_CHANNELS.SNAPSHOT_GET_BY_PROJECT,

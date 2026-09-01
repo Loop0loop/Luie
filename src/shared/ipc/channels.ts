@@ -78,6 +78,7 @@ export const IPC_CHANNELS = {
   TERM_DELETE: "term:delete",
 
   SNAPSHOT_CREATE: "snapshot:create",
+  SNAPSHOT_GET: "snapshot:get",
   SNAPSHOT_GET_ALL: "snapshot:get-all",
   SNAPSHOT_GET_BY_PROJECT: "snapshot:get-by-project",
   SNAPSHOT_GET_BY_CHAPTER: "snapshot:get-by-chapter",

@@ -256,6 +256,7 @@ export function createProjectApi({
         ),
       getAll: (projectId) =>
         safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_ALL, projectId),
+      get: (id) => safeInvoke(IPC_CHANNELS.SNAPSHOT_GET, id),
       getByChapter: (chapterId) =>
         safeInvoke(IPC_CHANNELS.SNAPSHOT_GET_BY_CHAPTER, chapterId),
       importFromFile: (filePath) =>

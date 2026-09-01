@@ -219,9 +219,21 @@ export class SnapshotService {
 
   async getSnapshotsByChapter(chapterId: string) {
     try {
+      // NOTE: 목록은 렌더러에서 날짜/설명/복원 식별에만 쓰인다. content(원고 전문)까지
+      // 실어 보내면 "스냅샷 수 × 원고 크기"만큼 구조클론+직렬화 비용이 목록 열림마다
+      // 발생하므로 컬럼 프로젝션으로 제외한다. 전문이 필요한 소비자(뷰어 비교, 복원
+      // 시딩)는 getSnapshot(id)로 개별 조회한다.
       const snapshots = await db
         .getClient()
-        .select()
+        .select({
+          id: snapshot.id,
+          projectId: snapshot.projectId,
+          chapterId: snapshot.chapterId,
+          contentLength: snapshot.contentLength,
+          type: snapshot.type,
+          description: snapshot.description,
+          createdAt: snapshot.createdAt,
+        })
         .from(snapshot)
         .where(eq(snapshot.chapterId, chapterId))
         .orderBy(desc(snapshot.createdAt));

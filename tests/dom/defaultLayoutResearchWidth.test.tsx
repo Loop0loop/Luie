@@ -1,7 +1,26 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// handleOpenSnapshot은 전문 없는 스냅샷 참조를 개별 조회로 해소한다 (snapshotListProjection 참조).
+vi.mock("@shared/api", () => ({
+  api: {
+    logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
+    snapshot: {
+      get: vi.fn(async (id: string) => ({
+        success: true,
+        data: {
+          id,
+          projectId: PROJECT_ID,
+          chapterId: "chapter-1",
+          content: "restored body",
+          createdAt: "2026-01-01T00:00:00Z",
+        },
+      })),
+    },
+  },
+}));
 
 import { useSplitView } from "../../src/renderer/src/features/workspace/hooks/useSplitView.js";
 import { useProjectLayoutPersistence } from "../../src/renderer/src/features/workspace/hooks/useProjectLayoutPersistence.js";
@@ -167,6 +186,10 @@ describe("default layout research panels share one width", () => {
     await view.call((api) =>
       api.handleOpenSnapshot({ id: "snap-1", chapterId: "chapter-1" } as never),
     );
+    // 전문 해소 조회(비동기)가 끝난 뒤 패널이 추가된다.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     const snapshotId =
       useUIStore.getState().panels.find((p) => p.content.type === "snapshot")
         ?.id ?? "";
