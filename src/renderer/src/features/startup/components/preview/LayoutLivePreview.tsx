@@ -21,6 +21,7 @@ import {
   ScrivenerLayout,
   Sidebar,
 } from "@renderer/features/workspace/components/layout/rootShell";
+import { SmartLinkTooltip } from "@renderer/features/editor/components/SmartLinkTooltip";
 import { WorkspacePanels } from "@renderer/features/workspace/components/panels/WorkspacePanels";
 import { useSplitView } from "@renderer/features/workspace/hooks/useSplitView";
 import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
@@ -294,73 +295,82 @@ export function LayoutLivePreview({ uiMode }: LayoutLivePreviewProps) {
   );
   useShortcuts(shortcutHandlers);
 
-  if (uiMode === "docs") {
+  const renderLayout = () => {
+    if (uiMode === "docs") {
+      return (
+        <GoogleDocsLayout
+          sidebar={
+            <Suspense fallback={null}>
+              <DocsSidebar />
+            </Suspense>
+          }
+          activeChapterId={activeChapter?.id}
+          activeChapterTitle={activeChapter?.title}
+          currentProjectId={PREVIEW_PROJECT_ID}
+          editor={docEditor}
+          onOpenSettings={noop}
+        >
+          <WizardEditor uiMode="docs" onReady={setDocEditor} />
+        </GoogleDocsLayout>
+      );
+    }
+    if (uiMode === "editor") {
+      return (
+        <EditorLayout
+          sidebar={
+            <Suspense fallback={null}>
+              <DocsSidebar />
+            </Suspense>
+          }
+          activeChapterId={activeChapter?.id}
+          activeChapterTitle={activeChapter?.title}
+          currentProjectId={PREVIEW_PROJECT_ID}
+          editor={docEditor}
+          onOpenSettings={noop}
+        >
+          <WizardEditor uiMode="editor" onReady={setDocEditor} />
+        </EditorLayout>
+      );
+    }
+    if (uiMode === "scrivener") {
+      return (
+        <ScrivenerLayout
+          sidebar={
+            <Suspense fallback={null}>
+              <DocsSidebar />
+            </Suspense>
+          }
+          activeChapterId={activeChapter?.id}
+          activeChapterTitle={activeChapter?.title}
+          editor={docEditor}
+          onOpenSettings={noop}
+        >
+          <WizardEditor uiMode="scrivener" onReady={setDocEditor} />
+        </ScrivenerLayout>
+      );
+    }
     return (
-      <GoogleDocsLayout
+      <MainLayout
         sidebar={
           <Suspense fallback={null}>
-            <DocsSidebar />
+            <Sidebar
+              onOpenSettings={noop}
+              onSelectResearchItem={handleSelectResearchItem}
+            />
           </Suspense>
         }
-        activeChapterId={activeChapter?.id}
-        activeChapterTitle={activeChapter?.title}
-        currentProjectId={PREVIEW_PROJECT_ID}
-        editor={docEditor}
-        onOpenSettings={noop}
+        additionalPanels={additionalPanelsComponent}
+        additionalPanelIds={additionalPanelIds}
       >
-        <WizardEditor uiMode="docs" onReady={setDocEditor} />
-      </GoogleDocsLayout>
+        <WizardEditor uiMode="default" onReady={setDocEditor} />
+      </MainLayout>
     );
-  }
-  if (uiMode === "editor") {
-    return (
-      <EditorLayout
-        sidebar={
-          <Suspense fallback={null}>
-            <DocsSidebar />
-          </Suspense>
-        }
-        activeChapterId={activeChapter?.id}
-        activeChapterTitle={activeChapter?.title}
-        currentProjectId={PREVIEW_PROJECT_ID}
-        editor={docEditor}
-        onOpenSettings={noop}
-      >
-        <WizardEditor uiMode="editor" onReady={setDocEditor} />
-      </EditorLayout>
-    );
-  }
-  if (uiMode === "scrivener") {
-    return (
-      <ScrivenerLayout
-        sidebar={
-          <Suspense fallback={null}>
-            <DocsSidebar />
-          </Suspense>
-        }
-        activeChapterId={activeChapter?.id}
-        activeChapterTitle={activeChapter?.title}
-        editor={docEditor}
-        onOpenSettings={noop}
-      >
-        <WizardEditor uiMode="scrivener" onReady={setDocEditor} />
-      </ScrivenerLayout>
-    );
-  }
+  };
+
   return (
-    <MainLayout
-      sidebar={
-        <Suspense fallback={null}>
-          <Sidebar
-            onOpenSettings={noop}
-            onSelectResearchItem={handleSelectResearchItem}
-          />
-        </Suspense>
-      }
-      additionalPanels={additionalPanelsComponent}
-      additionalPanelIds={additionalPanelIds}
-    >
-      <WizardEditor uiMode="default" onReady={setDocEditor} />
-    </MainLayout>
+    <>
+      <SmartLinkTooltip />
+      {renderLayout()}
+    </>
   );
 }
