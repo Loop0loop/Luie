@@ -121,9 +121,9 @@ export default function StartupWizard() {
         />
       ) : null}
 
-      {/* 임베딩 모델 다운로드는 위저드 진행과 병렬적으로 계속된다. 남은 단계와
-          메인 창에서도 진행 상황을 보여 주고, 완료 시 재시작 안내로 바뀐다. */}
-      <EmbeddingModelStatusBar />
+      {/* 임베딩 모델 다운로드는 위저드 진행과 병렬적으로 계속된다. ModelStep 자체에
+          중앙 진행률 표시가 있으므로, model 단계에서는 하단 푸터 바를 숨긴다. */}
+      {step !== "model" ? <EmbeddingModelStatusBar /> : null}
     </div>
   );
 }

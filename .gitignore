@@ -36,24 +36,15 @@ lerna-debug.log*
 # Database
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 prisma/migrations/
 prisma/dev.db-wal
 prisma/dev.db-shm
 prisma/.tmp
 plugin/installed/*
 !plugin/installed/index.json
-dev-cache.db-shm
-dev-cache.db-wal
 /drizzle/migrations
-drizzle/cache
-drizzle/migrations
-drizzle/main/meta
-drizzle/main
-drizzle/app-dev-cache.db-shm
-drizzle/app-dev-cache.db-wal
-drizzle/app-dev.db-shm
-drizzle/app-dev.db-wal
-drizzle/cache
 drizzle/.tmp
 
 
