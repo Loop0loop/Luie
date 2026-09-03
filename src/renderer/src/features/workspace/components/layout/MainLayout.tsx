@@ -455,7 +455,7 @@ export default function MainLayout({
           <Panel
             id="main-content-panel"
             minSize={`${EDITOR_MIN_PANEL_WIDTH_PX}px`}
-            className={`relative z-0 flex min-w-0 flex-1 flex-col ${
+            className={`relative flex min-w-0 flex-1 flex-col ${
               layoutGapSurfaceClass || "bg-app"
             }`}
           >
@@ -496,7 +496,7 @@ export default function MainLayout({
             </div>
             <button
               onClick={toggleSidebar}
-              className={`absolute top-2 z-toolbar flex h-8 w-8 items-center justify-center transition-all cursor-pointer ${
+              className={`absolute top-2 z-dropdown flex h-8 w-8 items-center justify-center transition-colors cursor-pointer ${
                 isCanvasMode
                   ? "canvas-floating-toolbar text-muted hover:text-fg rounded-full"
                   : "rounded-control text-muted hover:bg-active hover:text-fg"
@@ -524,7 +524,7 @@ export default function MainLayout({
             {!isCanvasMode && (
               <button
                 onClick={toggleContextPanel}
-                className={`absolute right-2 top-2 z-toolbar flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-all cursor-pointer ${
+                className={`absolute right-2 top-2 z-dropdown flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-colors cursor-pointer ${
                   isContextOpen
                     ? "bg-accent text-accent-fg shadow-control font-semibold"
                     : "border border-border bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-control"

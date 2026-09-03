@@ -111,18 +111,45 @@ export function useSidebarLogic({
     toggleMenuByElement(id, e.currentTarget as HTMLElement);
   };
 
-  const handleRenameProject = async () => {
+  const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
+  const [isEditingProject, setIsEditingProject] = useState(false);
+
+  const startRenameChapter = (id: string) => {
+    setEditingChapterId(id);
+    closeMenu();
+  };
+
+  const commitRenameChapter = (id: string, newTitle: string) => {
+    const trimmed = newTitle.trim();
+    if (trimmed) {
+      void handleRenameChapter(id, trimmed);
+    }
+    setEditingChapterId(null);
+  };
+
+  const cancelRenameChapter = () => {
+    setEditingChapterId(null);
+  };
+
+  const startRenameProject = () => {
     if (!currentProjectId) return;
-    const nextTitle = (
-      await dialog.prompt({
-        title: t("sidebar.tooltip.renameProject"),
-        message: t("sidebar.prompt.renameProject"),
-        defaultValue: currentProjectTitle ?? "",
-        placeholder: t("sidebar.prompt.renameProject"),
-      })
-    )?.trim();
-    if (!nextTitle || nextTitle === currentProjectTitle) return;
-    await updateProject(currentProjectId, nextTitle);
+    setIsEditingProject(true);
+  };
+
+  const commitRenameProject = async (newTitle: string) => {
+    const trimmed = newTitle.trim();
+    if (currentProjectId && trimmed && trimmed !== currentProjectTitle) {
+      await updateProject(currentProjectId, trimmed);
+    }
+    setIsEditingProject(false);
+  };
+
+  const cancelRenameProject = () => {
+    setIsEditingProject(false);
+  };
+
+  const handleRenameProject = async () => {
+    startRenameProject();
   };
 
   const handleAction = async (action: string, id: string) => {
@@ -132,18 +159,7 @@ export function useSidebarLogic({
       onSplitView("vertical", id);
     }
     if (action === "rename") {
-      const current = chapters.find((c: Chapter) => c.id === id);
-      const nextTitle = (
-        await dialog.prompt({
-          title: t("sidebar.menu.rename"),
-          message: t("sidebar.prompt.renameTitle"),
-          defaultValue: current?.title ?? "",
-          placeholder: t("sidebar.prompt.renameTitle"),
-        })
-      )?.trim();
-      if (nextTitle) {
-        void handleRenameChapter(id, nextTitle);
-      }
+      startRenameChapter(id);
     }
     if (action === "duplicate") {
       void handleDuplicateChapter(id);
@@ -238,5 +254,13 @@ export function useSidebarLogic({
     handleAddChapter,
     currentProjectTitle,
     currentProjectId,
+    editingChapterId,
+    startRenameChapter,
+    commitRenameChapter,
+    cancelRenameChapter,
+    isEditingProject,
+    startRenameProject,
+    commitRenameProject,
+    cancelRenameProject,
   };
 }

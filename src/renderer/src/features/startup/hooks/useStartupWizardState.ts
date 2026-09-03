@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@shared/api";
 import type { EditorSettings } from "@shared/types";
 import type {
@@ -13,6 +13,14 @@ const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
 export function useStartupWizardState() {
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const [step, setStep] = useState<WizardStep>("intro");
   const [finalizingPhase, setFinalizingPhase] =
     useState<FinalizingPhase>("initializing");
@@ -59,6 +67,12 @@ export function useStartupWizardState() {
     // easeOutCubic으로 보간하며, 애니메이션 여부는 enableAnimations 판정을 그대로 넘긴다.
     void api.window.setStartupWizardSize(1300, 800, animationsEnabled);
     setStep("theme");
+  }, [animationsEnabled]);
+
+  const handleThemePrevious = useCallback(() => {
+    // 모델 준비(A') 단계로 돌아갈 때는 초기 콤팩트 크기로 창을 복원한다.
+    void api.window.setStartupWizardSize(-1, -1, animationsEnabled);
+    setStep("model");
   }, [animationsEnabled]);
 
   const persistEditorSettings = useCallback(async () => {
@@ -122,16 +136,20 @@ export function useStartupWizardState() {
     void (async () => {
       try {
         await persistEditorSettings();
+        if (!isMountedRef.current) return;
         setFinalizingPhase("completed");
         // 완료 피드백을 인지할 수 있도록 대기
         await new Promise((resolve) => setTimeout(resolve, 800));
+        if (!isMountedRef.current) return;
 
         // workArea 기반 화면 최대 크기로 창 확장 (main 핸들러가 workArea-40으로 clamp)
         void api.window.setStartupWizardSize(4096, 4096, animationsEnabled);
         // 확장 애니메이션(600ms) 대기
         await new Promise((resolve) => setTimeout(resolve, 650));
+        if (!isMountedRef.current) return;
         setStep("prepare");
       } catch (error) {
+        if (!isMountedRef.current) return;
         setStep("error");
         setErrorMessage(getErrorMessage(error));
       }
@@ -220,6 +238,7 @@ export function useStartupWizardState() {
     projectError,
     handleStart,
     handleModelContinue,
+    handleThemePrevious,
     persistEditorSettings,
     finalize,
     handleFinish,

@@ -18,7 +18,10 @@ import {
   windowSetTrafficLightVisibilityArgsSchema,
 } from "../../../../shared/schemas/index.js";
 import type { BrowserWindow } from "electron";
-import { calculateStartupWizardExpandedBounds } from "../../../manager/window/windowStartupWizard.js";
+import {
+  calculateStartupWizardExpandedBounds,
+  calculateStartupWizardInitialBounds,
+} from "../../../manager/window/windowStartupWizard.js";
 
 // 위저드 단계 전환(A 인트로 → B 테마)의 창 확장 애니메이션. 창이 커지는 동안 내용물이
 // 재배치되는 걸 따라갈 수 있도록 여유 있는 길이로 보간하고(easeOutCubic), 프레임마다
@@ -29,14 +32,25 @@ const WIZARD_RESIZE_TICK_MS = 16;
 let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 디스플레이 작업 영역(workArea) 내에서 대상 영역을 계산한다.
-// 1. 최대 크기(4000 이상 또는 workArea 이상): 여백 없이 workArea 100% 채움
-// 2. 가로형 확장 프리뷰(1200 이상): 화면 82% 비율 + clamp 기반 동적 bounds 적용
-// 3. 기타 크기: workArea 내 중앙 정렬
+// 1. 음수 크기(-1, -1 등): A 인트로/모델 단계의 초기 콤팩트 bounds로 복원
+// 2. 최대 크기(4000 이상 또는 workArea 이상): 여백 없이 workArea 100% 채움
+// 3. 가로형 확장 프리뷰(1200 이상): 화면 82% 비율 + clamp 기반 동적 bounds 적용
+// 4. 기타 크기: workArea 내 중앙 정렬
 const getTargetWizardBounds = (
   win: BrowserWindow,
   width: number,
   height: number,
 ): { x: number; y: number; width: number; height: number } => {
+  if (width < 0 || height < 0) {
+    const initial = calculateStartupWizardInitialBounds(win);
+    return {
+      x: initial.x,
+      y: initial.y,
+      width: initial.width,
+      height: initial.height,
+    };
+  }
+
   const workArea = screen.getDisplayMatching(win.getBounds()).workArea;
 
   if (width >= 4000 || (width >= workArea.width && height >= workArea.height)) {

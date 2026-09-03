@@ -1,4 +1,5 @@
-import { lazy, memo, Suspense, type CSSProperties, type ReactNode } from "react";
+import { lazy, memo, Suspense, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@shared/types/utils";
 import { DraggableItem } from "@shared/ui/DraggableItem";
 import {
@@ -78,6 +79,47 @@ const RESEARCH_ITEM_META: Record<
   analysis: { Icon: Sparkles, hoverId: "res-analysis", labelKey: "research.title.analysis" },
 };
 
+interface SidebarInlineInputProps {
+  initialValue: string;
+  onCommit: (value: string) => void;
+  onCancel: () => void;
+  className?: string;
+}
+
+function SidebarInlineInput({
+  initialValue,
+  onCommit,
+  onCancel,
+  className,
+}: SidebarInlineInputProps) {
+  const [value, setValue] = useState(initialValue);
+
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => onCommit(value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onCommit(value);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          onCancel();
+        }
+      }}
+      className={cn(
+        "flex-1 min-w-0 bg-input border border-accent rounded px-1.5 py-0.5 text-fg outline-hidden focus:ring-1 focus:ring-accent",
+        className,
+      )}
+      autoFocus
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    />
+  );
+}
+
 interface SidebarProps {
   onOpenSettings: () => void;
   onPrefetchSettings?: () => void;
@@ -120,6 +162,14 @@ function Sidebar({
     handleAddChapter,
     currentProjectTitle,
     currentProjectId,
+    editingChapterId,
+    startRenameChapter,
+    commitRenameChapter,
+    cancelRenameChapter,
+    isEditingProject,
+    startRenameProject,
+    commitRenameProject,
+    cancelRenameProject,
   } = useSidebarLogic({ onSplitView });
 
   const getItemKey = (index: number, item: SidebarItem): string => {
@@ -160,9 +210,9 @@ function Sidebar({
         >
           <div
             className={cn(
-              "group flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] transition-all",
+              "group flex items-center px-4 py-1.5 pl-9 cursor-pointer text-[13px] transition-colors",
               activeChapterId === chapter.id
-                ? "bg-active text-fg font-medium border-l-[3px] border-accent"
+                ? "bg-active text-fg font-medium border-l-2 border-accent"
                 : "text-muted border-l-2 border-transparent hover:bg-surface-hover hover:text-fg",
             )}
             // NOTE: click보다 먼저 발화하는 pointerdown에서 본문을 미리 받아 전환 시
@@ -174,13 +224,28 @@ function Sidebar({
           >
             <FileText
               className={cn(
-                "mr-2 icon-sm",
+                "mr-2 icon-sm shrink-0",
                 activeChapterId === chapter.id ? "text-fg" : "text-muted",
               )}
             />
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-              {chapter.order}. {chapter.title}
-            </span>
+            {editingChapterId === chapter.id ? (
+              <SidebarInlineInput
+                initialValue={chapter.title}
+                onCommit={(newTitle) => commitRenameChapter(chapter.id, newTitle)}
+                onCancel={cancelRenameChapter}
+                className="text-[13px]"
+              />
+            ) : (
+              <span
+                className="whitespace-nowrap overflow-hidden text-ellipsis flex-1"
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  startRenameChapter(chapter.id);
+                }}
+              >
+                {chapter.order}. {chapter.title}
+              </span>
+            )}
 
             {/* NOTE: hover 표시는 JS state 대신 CSS group-hover로 처리한다. hoveredItemId
                 state는 마우스가 항목을 지날 때마다 사이드바 목록 전체를 리렌더시켰다. */}
@@ -390,68 +455,84 @@ function Sidebar({
         canvasContent
       ) : (
         <>
-          {menuOpenId && (
-            <div
-              className="fixed inset-0 z-dropdown bg-transparent"
-              onPointerDown={closeMenu}
-            />
-          )}
-          {menuOpenId && (
-            <div
-              ref={menuRef}
-              className="fixed z-dropdown bg-panel border border-border rounded-panel shadow-lg min-w-42.5 p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col"
-              style={{ top: menuPosition.y, left: menuPosition.x }}
-            >
-              <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
-                onClick={() => void handleAction("open_below", menuOpenId)}
-              >
-                <ArrowDownFromLine className="icon-sm" />{" "}
-                {t("sidebar.menu.openBelow")}
-              </div>
-              <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
-                onClick={() => void handleAction("open_right", menuOpenId)}
-              >
-                <ArrowRightFromLine className="icon-sm" />{" "}
-                {t("sidebar.menu.openRight")}
-              </div>
-              <div className="h-px bg-border my-1" />
-              <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
-                onClick={() => void handleAction("rename", menuOpenId)}
-              >
-                <Edit2 className="icon-sm" /> {t("sidebar.menu.rename")}
-              </div>
-              <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
-                onClick={() => void handleAction("duplicate", menuOpenId)}
-              >
-                <Copy className="icon-sm" /> {t("sidebar.menu.duplicate")}
-              </div>
-              <div
-                className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-all hover:bg-active hover:text-fg"
-                onClick={() => void handleAction("delete", menuOpenId)}
-                style={{ color: "hsl(var(--destructive))" }}
-              >
-                <Trash2 className="icon-sm" /> {t("sidebar.menu.delete")}
-              </div>
-            </div>
-          )}
+          {menuOpenId &&
+            createPortal(
+              <>
+                <div
+                  className="fixed inset-0 z-dropdown bg-transparent"
+                  onPointerDown={closeMenu}
+                />
+                <div
+                  ref={menuRef}
+                  className="fixed z-dropdown bg-panel border border-border rounded-panel shadow-lg min-w-42.5 p-1.5 animate-in fade-in zoom-in-95 duration-100 flex flex-col text-fg"
+                  style={{ top: menuPosition.y, left: menuPosition.x }}
+                >
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-colors hover:bg-active hover:text-fg"
+                    onClick={() => void handleAction("open_below", menuOpenId)}
+                  >
+                    <ArrowDownFromLine className="icon-sm" />{" "}
+                    {t("sidebar.menu.openBelow")}
+                  </div>
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-colors hover:bg-active hover:text-fg"
+                    onClick={() => void handleAction("open_right", menuOpenId)}
+                  >
+                    <ArrowRightFromLine className="icon-sm" />{" "}
+                    {t("sidebar.menu.openRight")}
+                  </div>
+                  <div className="h-px bg-border my-1" />
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-colors hover:bg-active hover:text-fg"
+                    onClick={() => void handleAction("rename", menuOpenId)}
+                  >
+                    <Edit2 className="icon-sm" /> {t("sidebar.menu.rename")}
+                  </div>
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-colors hover:bg-active hover:text-fg"
+                    onClick={() => void handleAction("duplicate", menuOpenId)}
+                  >
+                    <Copy className="icon-sm" /> {t("sidebar.menu.duplicate")}
+                  </div>
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-fg cursor-pointer rounded-control transition-colors hover:bg-active hover:text-fg"
+                    onClick={() => void handleAction("delete", menuOpenId)}
+                    style={{ color: "hsl(var(--destructive))" }}
+                  >
+                    <Trash2 className="icon-sm" /> {t("sidebar.menu.delete")}
+                  </div>
+                </div>
+              </>,
+              document.body,
+            )}
           <div className="p-4">
             <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-sm font-bold text-fg">
-                {currentProjectTitle || t("sidebar.defaultProjectTitle")}
-              </h2>
-              <button
-                type="button"
-                className="p-1 rounded hover:bg-active text-muted hover:text-fg"
-                onClick={handleRenameProject}
-                title={t("sidebar.tooltip.renameProject")}
-                disabled={!currentProjectId}
-              >
-                <Edit2 className="icon-xs" />
-              </button>
+              {isEditingProject ? (
+                <SidebarInlineInput
+                  initialValue={currentProjectTitle || ""}
+                  onCommit={(newTitle) => void commitRenameProject(newTitle)}
+                  onCancel={cancelRenameProject}
+                  className="text-sm font-bold"
+                />
+              ) : (
+                <>
+                  <h2
+                    className="text-sm font-bold text-fg truncate cursor-pointer"
+                    onDoubleClick={startRenameProject}
+                  >
+                    {currentProjectTitle || t("sidebar.defaultProjectTitle")}
+                  </h2>
+                  <button
+                    type="button"
+                    className="p-1 rounded hover:bg-active text-muted hover:text-fg"
+                    onClick={startRenameProject}
+                    title={t("sidebar.tooltip.renameProject")}
+                    disabled={!currentProjectId}
+                  >
+                    <Edit2 className="icon-xs" />
+                  </button>
+                </>
+              )}
             </div>
             <div className="text-[11px] text-muted uppercase tracking-wider">
               {t("sidebar.binderTitle")}

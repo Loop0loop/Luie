@@ -28,6 +28,7 @@ export default function StartupWizard() {
     projectError,
     handleStart,
     handleModelContinue,
+    handleThemePrevious,
     persistEditorSettings,
     finalize,
     handleFinish,
@@ -49,33 +50,33 @@ export default function StartupWizard() {
     >
       {/* 테마·레이아웃 단계는 실제 프리뷰가 창 전체(h-screen)를 차지하므로 위저드
           고유의 헤더/본문 대신 각 스텝의 풀블리드 오버레이가 렌더링된다. */}
-      {step !== "theme" && step !== "layout" && (
+      {step !== "theme" && step !== "layout" ? (
         <header
           className="h-12 shrink-0 select-none pl-20"
           style={dragRegionStyle}
         />
-      )}
+      ) : null}
 
       {/* 단계 전환은 저장소 모션 규범(animate-in)을 따른다. 비활성화 스위치는
           data-animations → global.behaviors.css가 닫아 준다. workArea clamp 등으로
           내용이 세로로 밀리면 본문이 스스로 스크롤한다. */}
-      {step !== "theme" && step !== "layout" && (
+      {step !== "theme" && step !== "layout" ? (
         <main
           key={step}
           className="animate-in fade-in slide-in-from-bottom-2 flex min-h-0 flex-1 flex-col overflow-y-auto px-10 pb-8 duration-300"
         >
-          {step === "intro" && (
+          {step === "intro" ? (
             <IntroStep
               onStart={handleStart}
               onSkip={() => void finalize()}
             />
-          )}
+          ) : null}
 
-          {step === "model" && (
+          {step === "model" ? (
             <ModelStep onContinue={handleModelContinue} />
-          )}
+          ) : null}
 
-          {step === "prepare" && (
+          {step === "prepare" ? (
             <PrepareStep
               projectTitle={projectTitle}
               onProjectTitleChange={setProjectTitle}
@@ -84,41 +85,41 @@ export default function StartupWizard() {
               onCreateAndStart={() => void handleCreateAndStart()}
               onSkip={() => void finalize()}
             />
-          )}
+          ) : null}
 
-          {(step === "finalizing" || step === "error") && (
+          {step === "finalizing" || step === "error" ? (
             <StatusStep
               step={step}
               phase={finalizingPhase}
               errorMessage={errorMessage}
               onRetry={handleRetry}
             />
-          )}
+          ) : null}
         </main>
-      )}
+      ) : null}
 
-      {step === "theme" && (
+      {step === "theme" ? (
         <ThemeStep
           theme={theme}
           onThemeChange={setTheme}
           themeTemp={themeTemp}
           onThemeTempChange={setThemeTemp}
-          onPrevious={() => setStep("model")}
+          onPrevious={handleThemePrevious}
           onNext={() => {
             void persistEditorSettings();
             setStep("layout");
           }}
         />
-      )}
+      ) : null}
 
-      {step === "layout" && (
+      {step === "layout" ? (
         <LayoutStep
           uiMode={uiMode}
           onUiModeChange={setUiMode}
           onPrevious={() => setStep("theme")}
           onFinish={handleFinish}
         />
-      )}
+      ) : null}
 
       {/* 임베딩 모델 다운로드는 위저드 진행과 병렬적으로 계속된다. 남은 단계와
           메인 창에서도 진행 상황을 보여 주고, 완료 시 재시작 안내로 바뀐다. */}

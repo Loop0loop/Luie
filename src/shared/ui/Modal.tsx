@@ -50,7 +50,7 @@ export function Modal({
           // NOTE: Dialog.Description을 쓰지 않으므로 Radix의 describedby 경고를 끈다.
           aria-describedby={undefined}
           className={cn(
-            "fixed left-1/2 top-1/2 z-modal flex w-full -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-panel border border-border bg-panel shadow-panel",
+            "fixed left-1/2 top-1/2 z-modal flex w-full -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-editor-shell border border-border/70 bg-panel shadow-panel backdrop-blur-2xl",
             !width && "max-w-md",
           )}
           style={{
@@ -58,8 +58,8 @@ export function Modal({
             maxWidth: width ? "90vw" : undefined,
           }}
         >
-          <div className="flex items-center justify-between border-b border-border bg-secondary px-5 py-4">
-            <Dialog.Title className="text-[15px] font-semibold text-fg">
+          <div className="flex items-center justify-between px-6 pt-6 pb-2">
+            <Dialog.Title className="text-base font-semibold text-fg">
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
@@ -67,15 +67,15 @@ export function Modal({
                 type="button"
                 aria-label={t("common.close")}
                 title={t("common.close")}
-                className="flex cursor-pointer rounded border-none bg-transparent p-1 text-muted transition-colors hover:bg-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex cursor-pointer rounded-control border-none bg-transparent p-1.5 text-muted transition-colors hover:bg-active hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <X className="icon-lg" />
+                <X className="icon-md" />
               </button>
             </Dialog.Close>
           </div>
-          <div className="p-5 text-sm leading-relaxed text-muted">{children}</div>
+          <div className="px-6 py-3 text-sm leading-relaxed text-muted">{children}</div>
           {footer && (
-            <div className="border-t border-border bg-secondary px-5 py-4">
+            <div className="px-6 pb-6 pt-2">
               {footer}
             </div>
           )}
@@ -110,34 +110,44 @@ export function ConfirmDialog({
   const effectiveConfirmLabel = confirmLabel ?? t("ui.modal.confirm");
   const effectiveCancelLabel = cancelLabel ?? t("ui.modal.cancel");
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onCancel}
-      title={title}
-      footer={
-        <div className="flex justify-end gap-3 w-full">
-          <button
-            type="button"
-            className="px-4 py-2 bg-transparent border border-border rounded-control text-muted text-[13px] cursor-pointer transition-all hover:bg-hover hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={onCancel}
-          >
-            {effectiveCancelLabel}
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "px-4 py-2 border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-all hover:brightness-110 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-              isDestructive ? "bg-destructive" : "bg-accent",
-            )}
-            onClick={onConfirm}
-          >
-            {effectiveConfirmLabel}
-          </button>
-        </div>
-      }
+    <div
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          onConfirm();
+        }
+      }}
     >
-      <div className="mb-2">{message}</div>
-    </Modal>
+      <Modal
+        isOpen={isOpen}
+        onClose={onCancel}
+        title={title}
+        footer={
+          <div className="flex justify-end gap-2.5 w-full">
+            <button
+              type="button"
+              className="px-4 py-2 bg-surface/70 border border-border/70 rounded-control text-fg text-[13px] font-medium cursor-pointer transition-colors hover:bg-surface hover:text-fg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={onCancel}
+            >
+              {effectiveCancelLabel}
+            </button>
+            <button
+              type="button"
+              autoFocus
+              className={cn(
+                "px-4 py-2 border-none rounded-control text-on-accent text-[13px] font-medium cursor-pointer transition-colors hover:brightness-110 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+                isDestructive ? "bg-destructive" : "bg-accent",
+              )}
+              onClick={onConfirm}
+            >
+              {effectiveConfirmLabel}
+            </button>
+          </div>
+        }
+      >
+        <div className="text-sm leading-relaxed text-fg/80">{message}</div>
+      </Modal>
+    </div>
   );
 }
 
