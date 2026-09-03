@@ -12,6 +12,8 @@ import { Ribbon, useEditorStore } from "@renderer/domains/editor";
 import { FocusHoverSidebar } from "@renderer/domains/manuscript";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { api } from "@shared/api";
+import { WindowsWindowControls } from "@renderer/app/shell";
+import { useWindowsWindowControlsStore } from "@renderer/app/shell/windowsWindowControlsStore";
 import { EditorDropZones } from "@shared/ui/EditorDropZones";
 import { BinderBarCompactHover } from "@renderer/features/workspace/components/BinderBarCompactHover";
 import { EDITOR_WINDOW_BAR_HEIGHT_PX } from "@renderer/shared/constants/editorLayout";
@@ -22,6 +24,7 @@ import { getPanelLayoutValue } from "@renderer/features/workspace/hooks/useLayou
 import { cn } from "@shared/types/utils";
 
 const IS_MACOS = navigator.userAgent.toLowerCase().includes("mac");
+const IS_WINDOWS = navigator.userAgent.toLowerCase().includes("win");
 // NOTE: 기본값을 inline `[]`로 두면 매 render마다 새 배열이 되어 이 값을 dependency로 쓰는
 // `handleEditorLayoutChanged`가 계속 재생성된다(MainLayout과 동일한 이유).
 const EMPTY_PANEL_IDS: readonly string[] = [];
@@ -69,6 +72,12 @@ export default function EditorLayout({
 }: EditorLayoutProps) {
   const maxWidth = useEditorStore((state) => state.maxWidth);
   const updatePanelSize = useUIStore((state) => state.updatePanelSize);
+  const setPlacement = useWindowsWindowControlsStore(
+    (state) => state.setPlacement,
+  );
+  const resetPlacement = useWindowsWindowControlsStore(
+    (state) => state.resetPlacement,
+  );
   // NOTE: 챕터 ⋮ 메뉴는 body로 portal되어 사이드바 rect 밖에 뜬다. 메뉴로 포인터를 옮기는
   // 순간 hover-close가 걸리면 메뉴를 조작할 수 없으므로 열려 있는 동안 닫기를 잠근다.
   const isManuscriptMenuOpen = useUIStore((state) => state.isManuscriptMenuOpen);
@@ -229,6 +238,21 @@ export default function EditorLayout({
     };
   }, []);
 
+  // NOTE: Windows 인앱 창 버튼도 macOS 트래픽 라이트와 같은 규칙을 따른다 — 툴바
+  // hover 때만 밴드 안에 노출되고, 그 외에는 사라진다. unmount 시 배치를 되돌려야
+  // 다른 레이아웃/화면에서 버튼이 사라진 채로 남지 않는다.
+  useEffect(() => {
+    if (!IS_WINDOWS) return;
+    setPlacement({ visible: false });
+  }, [setPlacement]);
+
+  useEffect(() => {
+    if (!IS_WINDOWS) return undefined;
+    return () => {
+      resetPlacement();
+    };
+  }, [resetPlacement]);
+
   const sidebarTopOffset = IS_MACOS ? EDITOR_WINDOW_BAR_HEIGHT_PX : 0;
   // NOTE: research 사이드바/레일의 표면(배경)은 traffic lights 끝까지 확장하고,
   // 실제 콘텐츠는 기존 오프셋 아래에 유지한다. 표면 확장과 내용 위치를 분리한다.
@@ -334,6 +358,15 @@ export default function EditorLayout({
                   onControlsLeave={scheduleHide}
                   onMenuOpenChange={handleToolbarMenuOpenChange}
                 />
+                {/* NOTE: Windows 창 버튼은 macOS 트래픽 라이트처럼 툴바 hover 때만
+                    노출된다. 밴드 우측 끝에 붙인다 — research 패널이 열려 있으면 창
+                    코너가 아니라 에디터 패널의 오른쪽 끝에 뜨고, 그 아래 UI와 겹치지
+                    않는다. EditorToolbar 컨트롤은 justify-center라 밴드 우측은 비어 있다. */}
+                {IS_WINDOWS && isToolbarVisible ? (
+                  <div className="absolute top-0 right-0">
+                    <WindowsWindowControls embedded />
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex-1 h-full overflow-hidden flex flex-col relative">

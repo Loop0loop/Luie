@@ -411,6 +411,8 @@ export default function App() {
   if (windowMode === "export") {
     return (
       <>
+        {/* Windows frameless 내보내기 창도 메인 창과 같은 인앱 창 버튼을 쓴다. */}
+        <WindowsWindowControls />
         <Suspense
           fallback={
             <div className="flex items-center justify-center h-screen bg-[#333] text-white">

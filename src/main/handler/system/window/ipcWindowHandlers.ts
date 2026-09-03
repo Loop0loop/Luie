@@ -1,4 +1,8 @@
-import { app, screen } from "electron";
+import {
+  app,
+  screen,
+  BrowserWindow,
+} from "electron";
 import { windowManager } from "../../../app/windows/index.js";
 import { applyTrafficLightPosition } from "../../../manager/window/windowChrome.js";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
@@ -17,7 +21,6 @@ import {
   windowSetStartupWizardSizeArgsSchema,
   windowSetTrafficLightVisibilityArgsSchema,
 } from "../../../../shared/schemas/index.js";
-import type { BrowserWindow } from "electron";
 import {
   calculateStartupWizardExpandedBounds,
   calculateStartupWizardInitialBounds,
@@ -31,11 +34,20 @@ const WIZARD_RESIZE_TICK_MS = 16;
 
 let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
 
-// NOTE: 창 제어 채널(minimize/maximize/unmaximize/close)은 "지금 사용자가 보고 있는
-// 창"을 대상으로 한다. 시작 위저드는 메인 창 이전에 단독으로 뜨고 완료되면 닫힌 뒤
-// 메인 창이 생성되므로(동시 공존 없음 — appReady의 wizard-complete 플로우), 위저드
-// 창이 살아 있으면 그것이 곧 호출 주체다.
+// NOTE: 창 제어 채널(minimize/maximize/unmaximize/close)은 "호출한 렌더러가 속한
+// 창"을 대상으로 해야 한다(메인·내보내기 창 동시 실행 대응). 핸들러 규약상 event를
+// 받지 못하므로 포커스된 창으로 호출 주체를 판정한다 — 버튼/단축키는 클릭·포커스된
+// 창의 렌더러에서 발화하므로 성립한다. 포커스를 잃은 비정상 경로의 폴백으로, 시작
+// 위저드는 메인 창 이전에 단독으로 뜨고 완료되면 닫힌 뒤 메인 창이 생성되므로(동시
+// 공존 없음 — appReady의 wizard-complete 플로우) 위저드가 살아 있으면 그것이 곧
+// 호출 주체다.
 const resolveWindowControlTarget = (): BrowserWindow | null => {
+  if (typeof BrowserWindow.getFocusedWindow === "function") {
+    const focused = BrowserWindow.getFocusedWindow();
+    if (focused && !focused.isDestroyed()) {
+      return focused;
+    }
+  }
   const wizard = windowManager.getStartupWizardWindow();
   if (wizard && !wizard.isDestroyed()) {
     return wizard;
