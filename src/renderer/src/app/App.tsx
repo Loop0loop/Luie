@@ -463,6 +463,8 @@ export default function App() {
   if (windowMode === "startup-wizard") {
     return (
       <>
+        {/* Windows frameless 위저드도 메인 창과 같은 인앱 창 버튼을 쓴다. */}
+        <WindowsWindowControls />
         <Suspense fallback={appScreenFallback}>
           <StartupWizard />
         </Suspense>

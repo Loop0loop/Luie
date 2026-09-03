@@ -31,6 +31,18 @@ const WIZARD_RESIZE_TICK_MS = 16;
 
 let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
 
+// NOTE: 창 제어 채널(minimize/maximize/unmaximize/close)은 "지금 사용자가 보고 있는
+// 창"을 대상으로 한다. 시작 위저드는 메인 창 이전에 단독으로 뜨고 완료되면 닫힌 뒤
+// 메인 창이 생성되므로(동시 공존 없음 — appReady의 wizard-complete 플로우), 위저드
+// 창이 살아 있으면 그것이 곧 호출 주체다.
+const resolveWindowControlTarget = (): BrowserWindow | null => {
+  const wizard = windowManager.getStartupWizardWindow();
+  if (wizard && !wizard.isDestroyed()) {
+    return wizard;
+  }
+  return windowManager.getMainWindow();
+};
+
 // 디스플레이 작업 영역(workArea) 내에서 대상 영역을 계산한다.
 // 1. 음수 크기(-1, -1 등): A 인트로/모델 단계의 초기 콤팩트 bounds로 복원
 // 2. 최대 크기(4000 이상 또는 workArea 이상): 여백 없이 workArea 100% 채움
@@ -124,7 +136,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to close window",
       handler: () => {
         logger.info("WINDOW_CLOSE requested from renderer");
-        const win = windowManager.getMainWindow();
+        const win = resolveWindowControlTarget();
         if (!win) return false;
         win.close();
         return true;
@@ -203,7 +215,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_MINIMIZE",
       failMessage: "Failed to minimize window",
       handler: () => {
-        const win = windowManager.getMainWindow();
+        const win = resolveWindowControlTarget();
         if (!win) return false;
         win.minimize();
         return true;
@@ -214,7 +226,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_MAXIMIZE",
       failMessage: "Failed to maximize window",
       handler: () => {
-        const win = windowManager.getMainWindow();
+        const win = resolveWindowControlTarget();
         if (!win) return false;
         if (!win.isMaximized()) {
           win.maximize();
@@ -228,7 +240,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_UNMAXIMIZE",
       failMessage: "Failed to unmaximize window",
       handler: () => {
-        const win = windowManager.getMainWindow();
+        const win = resolveWindowControlTarget();
         if (!win) return false;
         if (win.isMaximized()) {
           win.unmaximize();

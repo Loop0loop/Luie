@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-03T13:20:06.002Z",
+  "generatedAt": "2026-09-03T13:47:07.602Z",
   "summary": {
     "definedChannels": 225,
     "errors": 0,
@@ -180,7 +180,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 181
+            "line": 193
           }
         ],
         "main_emit": [],
@@ -273,7 +273,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 163
+            "line": 175
           }
         ],
         "main_emit": [],
@@ -304,7 +304,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 175
+            "line": 187
           }
         ],
         "main_emit": [],
@@ -366,7 +366,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 193
+            "line": 205
           }
         ],
         "main_emit": [],
@@ -397,7 +397,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 169
+            "line": 181
           }
         ],
         "main_emit": [],
@@ -428,7 +428,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 155
+            "line": 167
           }
         ],
         "main_emit": [],
@@ -459,7 +459,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 134
+            "line": 146
           }
         ],
         "main_emit": [],
@@ -521,7 +521,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 144
+            "line": 156
           }
         ],
         "main_emit": [],
@@ -552,7 +552,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 187
+            "line": 199
           }
         ],
         "main_emit": [],
@@ -6268,7 +6268,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 122
+            "line": 134
           }
         ],
         "main_emit": [],
@@ -6299,7 +6299,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 213
+            "line": 225
           }
         ],
         "main_emit": [],
@@ -6356,7 +6356,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 202
+            "line": 214
           }
         ],
         "main_emit": [],
@@ -6387,7 +6387,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 293
+            "line": 305
           }
         ],
         "main_emit": [],
@@ -6418,7 +6418,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 315
+            "line": 327
           }
         ],
         "main_emit": [],
@@ -6449,7 +6449,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 257
+            "line": 269
           }
         ],
         "main_emit": [],
@@ -6480,7 +6480,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 324
+            "line": 336
           }
         ],
         "main_emit": [],
@@ -6511,7 +6511,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 275
+            "line": 287
           }
         ],
         "main_emit": [],
@@ -6563,7 +6563,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 241
+            "line": 253
           }
         ],
         "main_emit": [],
@@ -6594,7 +6594,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 227
+            "line": 239
           }
         ],
         "main_emit": [],

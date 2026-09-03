@@ -2,6 +2,7 @@ import type { BrowserWindow, BrowserWindowConstructorOptions } from "electron"
 import { app } from "electron"
 import { existsSync } from "fs"
 import { join } from "path"
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js"
 import {
   WINDOW_TRAFFIC_LIGHT_X,
   WINDOW_TRAFFIC_LIGHT_Y,
@@ -70,18 +71,42 @@ export const getTitleBarOptions = (): Partial<BrowserWindowConstructorOptions> =
 }
 
 /**
- * Windows 메인 창 전용. 타이틀바 영역(타이틀·네이티브 버튼 포함)을 통째로 제거한다.
+ * Windows에서 네이티브 타이틀바 영역(타이틀·버튼 포함)을 통째로 제거한다.
  * 최소화/최대화/닫기는 렌더러가 macOS traffic lights와 같은 방식으로 앱 안에 직접
- * 그린다(WindowsWindowControls). export/world graph/위저드 등 보조 창은 이 옵션을
- * 쓰지 않고 네이티브 프레임을 유지한다.
+ * 그린다(WindowsWindowControls). 메인 창과 시작 위저드가 이 옵션을 쓴다 — 두 창의
+ * 렌더러 모두 인앱 창 버튼을 렌더한다. export/world graph 등 보조 창은 네이티브
+ * 프레임을 유지한다.
  */
-export const getWindowsMainTitleBarOptions = (): Partial<BrowserWindowConstructorOptions> => {
+export const getWindowsFramelessTitleBarOptions = (): Partial<BrowserWindowConstructorOptions> => {
   if (process.platform !== "win32") {
     return {}
   }
 
   return {
     titleBarStyle: "hidden",
+  }
+}
+
+/**
+ * 창의 최대화 상태를 렌더러에 알린다. Windows 커스텀 창 버튼이 최대화/복원
+ * 아이콘을 전환하는 근원. 버튼 클릭뿐 아니라 Aero Snap·더블클릭 등 시스템 경로로
+ * 상태가 바뀌어도 따라가야 해서 이벤트로 흘린다. 최초 로드 시점 동기화는 창 상태
+ * 복원으로 이미 최대화된 경우를 위한 것이다. 메인 창·시작 위저드 양쪽에 붙인다.
+ */
+export const attachMaximizedStateEvents = (win: BrowserWindow): void => {
+  const sendState = () => {
+    if (win.isDestroyed()) return
+    win.webContents.send(
+      IPC_CHANNELS.WINDOW_MAXIMIZED_CHANGED,
+      win.isMaximized(),
+    )
+  }
+
+  win.on("maximize", sendState)
+  win.on("unmaximize", sendState)
+  // NOTE: 테스트용 BrowserWindow mock은 webContents 이벤트 API가 부분 구현이다.
+  if (typeof win.webContents?.on === "function") {
+    win.webContents.on("did-finish-load", sendState)
   }
 }
 
