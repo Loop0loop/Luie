@@ -174,6 +174,7 @@ export type SettingsRendererApi = {
     ) => () => void;
     onUpdateState: (callback: (status: SharedTypes.AppUpdateState) => void) => () => void;
     quit: () => Promise<IPCResponse<unknown>>;
+    relaunch: () => Promise<IPCResponse<unknown>>;
     manualSave: (
       projectId: string,
     ) => Promise<IPCResponse<{ success: boolean; exported: boolean }>>;

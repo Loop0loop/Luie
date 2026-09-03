@@ -2,6 +2,7 @@ import type { EditorSettings } from "@shared/types";
 
 export type WizardStep =
   | "intro"
+  | "model"
   | "theme"
   | "layout"
   | "prepare"

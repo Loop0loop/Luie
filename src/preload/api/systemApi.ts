@@ -55,6 +55,7 @@ export function createSystemApi({
       onUpdateState: (callback) =>
         onChannel<AppUpdateState>(IPC_CHANNELS.APP_UPDATE_STATE_CHANGED, callback),
       quit: () => safeInvoke(IPC_CHANNELS.APP_QUIT),
+      relaunch: () => safeInvoke(IPC_CHANNELS.APP_RELAUNCH),
       manualSave: async (projectId) => {
         await autoSave.flushAutoSaves();
         return await safeInvoke<{ success: boolean; exported: boolean }>(

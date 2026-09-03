@@ -441,13 +441,15 @@ export interface LlmfitInstallStatus {
   reason?: string;
 }
 
-/** 로컬 임베딩 모델(bge-m3) 설치 상태(렌더러 안전 타입). */
+/** 로컬 임베딩 모델(bge-m3) 설치 상태(렌더러 안전 타입). downloading·progressPct는 백그라운드 설치 진행 라이프사이클. */
 export interface EmbeddingModelStatusView {
   modelId: string;
   displayName: string;
   installed: boolean;
   source: "bundled" | "downloaded" | "none";
   dimension: number;
+  downloading: boolean;
+  progressPct: number | null;
 }
 
 export type ShortcutAction =

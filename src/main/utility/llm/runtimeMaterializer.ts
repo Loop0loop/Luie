@@ -144,6 +144,11 @@ export function resolveUtilityEmbeddingModelPath(): string | null {
       ? path.join(process.resourcesPath, UTILITY_BUNDLED_MODELS_DIR, filename)
       : null,
     path.join(process.cwd(), "resources", UTILITY_BUNDLED_MODELS_DIR, filename),
+    // NOTE: 위저드에서 런타임 다운로드한 위치(models)를 먼저 보고, 구버전
+    // 설치분(llm-models)을 폴백으로 인식한다.
+    process.env.LUIE_USER_DATA_PATH
+      ? path.join(process.env.LUIE_USER_DATA_PATH, "models", filename)
+      : null,
     process.env.LUIE_USER_DATA_PATH
       ? path.join(process.env.LUIE_USER_DATA_PATH, "llm-models", filename)
       : null,

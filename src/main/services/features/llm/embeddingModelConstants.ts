@@ -25,6 +25,16 @@ export type EmbeddingModelDefinition = typeof DEFAULT_EMBEDDING_MODEL;
 export const BUNDLED_MODELS_DIR = "models" as const;
 
 /**
+ * 런타임 다운로드 모델이 설치되는 userData 하위 디렉토리명.
+ * 앱 번들에 모델을 동봉하지 않으므로 패키지 빌드에서는 이 위치가 유일한 설치처다.
+ * (macOS: ~/Library/Application Support/<app>/models)
+ */
+export const USER_MODELS_DIR = "models" as const;
+
+/** 구버전이 쓰던 userData 하위 디렉토리명. 기존 설치분 인식용 폴백. */
+export const LEGACY_USER_MODELS_DIR = "llm-models" as const;
+
+/**
  * llama-server 임베딩 인스턴스 기동 기본값.
  * 임베딩 전용 인스턴스는 생성 sidecar 와 분리된 포트/프로세스로 띄운다.
  * `--embeddings` + mean pooling 으로 `/v1/embeddings` 를 활성화한다.

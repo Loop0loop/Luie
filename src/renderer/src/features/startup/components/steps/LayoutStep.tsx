@@ -51,8 +51,8 @@ export function LayoutStep({
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center px-6">
-        {/* Apple HIG Liquid Glass: 반투명 패널과 깊이 있는 블러, 넉넉한 여백의 플로팅 독 */}
-        <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-3.5 rounded-editor-shell border border-border/70 bg-panel/75 px-5 py-3 shadow-panel backdrop-blur-2xl">
+        {/* Apple HIG Liquid Glass: 투명도를 높여(55%) 배경이 투명하게 비치고 블러로 가독성을 유지하는 플로팅 독 */}
+        <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-3.5 rounded-editor-shell border border-border/70 bg-panel/55 px-5 py-3 shadow-panel backdrop-blur-2xl">
           <span className="shrink-0 pr-1 text-sm font-semibold text-fg">
             {t("startupWizard.onboarding.layoutTitle")}
           </span>

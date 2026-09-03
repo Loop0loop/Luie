@@ -48,6 +48,12 @@ export function useStartupWizardState() {
   const animationsEnabled = editorSettings?.enableAnimations ?? true;
 
   const handleStart = useCallback(() => {
+    // 모델 준비(A') 단계에서는 창 크기를 유지한다. 1300×800 가로형 확장은
+    // 테마(B) 진입 시점에 그대로 발생한다(handleModelContinue).
+    setStep("model");
+  }, []);
+
+  const handleModelContinue = useCallback(() => {
     // B 단계부터는 1300×800 가로형으로 확장한다. 작은 디스플레이는 main handler가
     // workArea에 맞춰 clamp한다. 확장 애니메이션은 main handler에서 600ms
     // easeOutCubic으로 보간하며, 애니메이션 여부는 enableAnimations 판정을 그대로 넘긴다.
@@ -213,6 +219,7 @@ export function useStartupWizardState() {
     isCreatingProject,
     projectError,
     handleStart,
+    handleModelContinue,
     persistEditorSettings,
     finalize,
     handleFinish,

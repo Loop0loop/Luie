@@ -89,6 +89,8 @@ export function createLlmfitEmbeddingHandlers(): IpcHandlerConfig[] {
           installed: status.installed,
           source: status.source,
           dimension: status.dimension,
+          downloading: status.downloading,
+          progressPct: status.progressPct,
         };
       },
     },

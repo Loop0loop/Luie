@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// NOTE: sha256이 같은 기존 모델은 다시 받지 않고 electron-builder extraResources에 포함한다.
-// WARNING: 모델이 빠진 package를 만들지 않도록 download 실패는 build를 중단한다.
+// NOTE: 개발 환경용 스테이징 스크립트다. sha256이 같은 기존 모델은 다시 받지 않는다.
+// 패키지 빌드에는 모델을 동봉하지 않고, 패키지 앱은 시작 위저드에서 userData/models로
+// 런타임 다운로드한다(embeddingModelService.ensureModel).
+// WARNING: 모델이 빠진 dev 환경이 되지 않도록 download 실패는 스크립트를 중단한다.
 
 import { createWriteStream } from "node:fs";
 import * as fsp from "node:fs/promises";

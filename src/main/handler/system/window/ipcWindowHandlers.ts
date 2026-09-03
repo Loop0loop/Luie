@@ -127,6 +127,17 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
+      channel: IPC_CHANNELS.APP_RELAUNCH,
+      logTag: "APP_RELAUNCH",
+      failMessage: "Failed to relaunch app",
+      handler: () => {
+        logger.info("APP_RELAUNCH requested from renderer");
+        app.relaunch();
+        app.quit();
+        return true;
+      },
+    },
+    {
       channel: IPC_CHANNELS.APP_GET_VERSION,
       logTag: "APP_GET_VERSION",
       failMessage: "Failed to get app version",

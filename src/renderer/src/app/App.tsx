@@ -58,6 +58,7 @@ const StartupWizard = lazy(
   () => import("@renderer/features/startup/components/StartupWizard"),
 );
 import { PREVIEW_PROJECT_ID } from "@renderer/features/startup/constants/previewData";
+import { EmbeddingModelStatusBar } from "@renderer/features/startup/components/EmbeddingModelStatusBar";
 
 export default function App() {
   const { t } = useTranslation();
@@ -501,6 +502,8 @@ export default function App() {
             onRestoreBackup={handleRestoreBackup}
           />
         </Suspense>
+        {/* 위저드에서 시작한 모델 다운로드의 진행/재시작 안내를 메인 창에서도 이어 보여 준다. */}
+        <EmbeddingModelStatusBar variant="floating" />
         {quitOverlay}
       </>
     );
@@ -511,6 +514,7 @@ export default function App() {
       <Suspense fallback={appScreenFallback}>
         <EditorRoot />
       </Suspense>
+      <EmbeddingModelStatusBar variant="floating" />
       {quitOverlay}
     </>
   );

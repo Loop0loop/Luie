@@ -202,6 +202,7 @@ export const IPC_CHANNELS = {
   APP_BOOTSTRAP_STATUS_CHANGED: "app:bootstrap-status-changed",
   APP_UPDATE_STATE_CHANGED: "app:update-state-changed",
   APP_QUIT: "app:quit",
+  APP_RELAUNCH: "app:relaunch",
 
   EXPORT_CREATE: "export:create",
 

@@ -1,8 +1,10 @@
 import { dragRegionStyle } from "../constants/previewData";
 import { useStartupWizardState } from "../hooks/useStartupWizardState";
 import { useWizardThemeEffect } from "../hooks/useWizardThemeEffect";
+import { EmbeddingModelStatusBar } from "./EmbeddingModelStatusBar";
 import { IntroStep } from "./steps/IntroStep";
 import { LayoutStep } from "./steps/LayoutStep";
+import { ModelStep } from "./steps/ModelStep";
 import { PrepareStep } from "./steps/PrepareStep";
 import { StatusStep } from "./steps/StatusStep";
 import { ThemeStep } from "./steps/ThemeStep";
@@ -25,6 +27,7 @@ export default function StartupWizard() {
     isCreatingProject,
     projectError,
     handleStart,
+    handleModelContinue,
     persistEditorSettings,
     finalize,
     handleFinish,
@@ -37,10 +40,11 @@ export default function StartupWizard() {
   // NOTE: h-screen 고정(overflow-hidden)이어야 본문(main)이 뷰포트 안에 갇힌다.
   // min-h-screen이면 콘텐츠가 세로로 밀릴 때 루트 자체가 창 밖으로 자라 하단 버튼이
   // 클립되어 누를 수 없게 된다.
+  const isBootstrapStage = step === "intro" || step === "model";
   return (
     <div
       className={`flex h-screen w-screen flex-col overflow-hidden text-fg ${
-        step === "intro" ? "bg-wizard-bootstrap" : "bg-app"
+        isBootstrapStage ? "bg-wizard-bootstrap" : "bg-app"
       }`}
     >
       {/* 테마·레이아웃 단계는 실제 프리뷰가 창 전체(h-screen)를 차지하므로 위저드
@@ -65,6 +69,10 @@ export default function StartupWizard() {
               onStart={handleStart}
               onSkip={() => void finalize()}
             />
+          )}
+
+          {step === "model" && (
+            <ModelStep onContinue={handleModelContinue} />
           )}
 
           {step === "prepare" && (
@@ -95,7 +103,7 @@ export default function StartupWizard() {
           onThemeChange={setTheme}
           themeTemp={themeTemp}
           onThemeTempChange={setThemeTemp}
-          onPrevious={() => setStep("intro")}
+          onPrevious={() => setStep("model")}
           onNext={() => {
             void persistEditorSettings();
             setStep("layout");
@@ -111,6 +119,10 @@ export default function StartupWizard() {
           onFinish={handleFinish}
         />
       )}
+
+      {/* 임베딩 모델 다운로드는 위저드 진행과 병렬적으로 계속된다. 남은 단계와
+          메인 창에서도 진행 상황을 보여 주고, 완료 시 재시작 안내로 바뀐다. */}
+      <EmbeddingModelStatusBar />
     </div>
   );
 }

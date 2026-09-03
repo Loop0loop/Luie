@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 // TEST_LEVEL: DOM_INTEGRATION
-// PROVES: 시작 위저드가 A(인트로, 고정 dark bootstrap) → B(테마, 창 리사이즈 + 라이브
-// theme 속성) → B-3(레이아웃) → 완료 대기(설정 저장 + 전체화면 확장 요청) →
-// 프로젝트 준비(프로젝트 생성 + markOpened) → 완료(readiness + completeWizard)로
-// 진행한다. completeWizard는 메인 창 플로우를 여는 신호라 반드시 마지막에 호출된다.
+// PROVES: 시작 위저드가 A(인트로) → A'(모델, 창 크기 유지 — 상세는
+// startupWizardModelStep.test.tsx) → B(테마, 창 리사이즈) → B-3(레이아웃) →
+// 완료 대기 → 프로젝트 준비 → 완료(completeWizard)로 진행한다. completeWizard는
+// 메인 창 플로우를 여는 신호라 반드시 마지막에 호출된다.
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -17,6 +17,12 @@ const mocked = vi.hoisted(() => ({
   setEditor: vi.fn(async () => ({ success: true, data: null })),
   getReadiness: vi.fn(async () => ({ success: true, data: null })),
   completeWizard: vi.fn(async () => ({ success: true, data: null })),
+  // 모델 미설치로 응답해 A' 단계가 "나중에 받기"를 노출하게 만든다.
+  getEmbeddingModelStatus: vi.fn(async () => ({
+    success: true,
+    data: { installed: false, downloading: false, progressPct: null },
+  })),
+  onEmbeddingModelDownloadProgress: vi.fn(() => () => undefined),
   createProject: vi.fn(async () => ({
     success: true,
     data: {
@@ -46,6 +52,9 @@ vi.mock("@shared/api", () => ({
     settings: {
       getEditor: mocked.getEditor,
       setEditor: mocked.setEditor,
+      getEmbeddingModelStatus: mocked.getEmbeddingModelStatus,
+      onEmbeddingModelDownloadProgress:
+        mocked.onEmbeddingModelDownloadProgress,
     },
     window: {
       setStartupWizardSize: mocked.setStartupWizardSize,
@@ -173,11 +182,17 @@ describe("startup wizard flow", () => {
     });
   });
 
-  it("시작하기를 누르면 가로형으로 창을 확장하고 저장된 테마를 documentElement에 반영한다", async () => {
+  it("시작하기는 창을 확장하지 않고, 모델 단계 건너뛰기 때 가로형으로 확장하며 테마를 반영한다", async () => {
     const { root, container } = await renderWizard();
 
     await act(async () => {
       findButton(root, "startupWizard.onboarding.startCta").click();
+    });
+    // A' 모델 단계에서는 창 크기를 유지한다.
+    expect(mocked.setStartupWizardSize).not.toHaveBeenCalled();
+
+    await act(async () => {
+      findButton(root, "startupWizard.onboarding.modelLater").click();
     });
 
     expect(mocked.setStartupWizardSize).toHaveBeenCalledWith(1300, 800, true);
@@ -198,6 +213,9 @@ describe("startup wizard flow", () => {
 
     await act(async () => {
       findButton(root, "startupWizard.onboarding.startCta").click();
+    });
+    await act(async () => {
+      findButton(root, "startupWizard.onboarding.modelLater").click();
     });
     await act(async () => {
       findButton(root, "startupWizard.onboarding.themeDark").click();
@@ -360,6 +378,9 @@ describe("startup wizard flow", () => {
     // 테마 -> 레이아웃 이동하여 프리뷰 마운트
     await act(async () => {
       findButton(root, "startupWizard.onboarding.startCta").click();
+    });
+    await act(async () => {
+      findButton(root, "startupWizard.onboarding.modelLater").click();
     });
     await act(async () => {
       findButton(root, "startupWizard.onboarding.next").click();

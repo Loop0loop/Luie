@@ -56,8 +56,8 @@ export function ThemeStep({
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center px-6">
-        {/* Apple HIG Liquid Glass: 반투명 패널과 깊이 있는 블러, 넉넉한 여백의 플로팅 독 */}
-        <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-3.5 rounded-editor-shell border border-border/70 bg-panel/75 px-5 py-3 shadow-panel backdrop-blur-2xl">
+        {/* Apple HIG Liquid Glass: 투명도를 높여(55%) 배경이 투명하게 비치고 블러로 가독성을 유지하는 플로팅 독 */}
+        <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-3.5 rounded-editor-shell border border-border/70 bg-panel/55 px-5 py-3 shadow-panel backdrop-blur-2xl">
           <span className="shrink-0 pr-1 text-sm font-semibold text-fg">
             {t("startupWizard.onboarding.themeTitle")}
           </span>
@@ -138,12 +138,12 @@ export function ThemeStep({
 
           <span aria-hidden className="mx-0.5 h-8 w-px self-center bg-border/80" />
 
-          {/* 색온도 세그먼트 컨트롤: 자연스러운 시각 어포던스로 탭하고 싶게 만드는 컨트롤 */}
+          {/* 색온도 세그먼트 컨트롤: 다크모드에서도 확실한 대비와 명확한 캡슐 하이라이트 */}
           <div className="flex shrink-0 flex-col gap-1 self-center">
-            <span className="text-[11px] font-medium text-muted">
+            <span className="text-xs font-medium text-fg/80">
               {t("startupWizard.onboarding.tempTitle")}
             </span>
-            <div className="flex items-center gap-1 rounded-control border border-border/70 bg-element/60 p-1 shadow-inner">
+            <div className="flex items-center gap-1 rounded-control border border-border/80 bg-element/80 p-1 shadow-inner">
               {TEMP_OPTIONS.map(([id, labelKey]) => (
                 <button
                   key={id}
@@ -152,22 +152,23 @@ export function ThemeStep({
                   onClick={() => onThemeTempChange(id)}
                   className={`flex items-center gap-1.5 rounded-[7px] px-2.5 py-1 text-xs transition-all duration-150 ${
                     themeTemp === id
-                      ? "bg-surface font-semibold text-fg shadow-xs border border-border/40"
-                      : "font-normal text-muted hover:bg-surface/40 hover:text-fg"
+                      ? "bg-active font-semibold text-fg shadow-xs border border-border-strong/60 scale-[1.02]"
+                      : "font-medium text-muted hover:bg-surface-hover/50 hover:text-fg"
                   }`}
                 >
                   <span
                     aria-hidden
-                    className="h-1.5 w-1.5 shrink-0 transition-opacity"
+                    className={`h-2 w-2 shrink-0 transition-all ${
+                      themeTemp === id ? "scale-110 shadow-xs" : "opacity-80"
+                    }`}
                     style={{
                       borderRadius: "50%",
                       backgroundColor:
                         id === "cool"
                           ? "#60a5fa"
                           : id === "warm"
-                            ? "#f59e0b"
-                            : "#9ca3af",
-                      opacity: themeTemp === id ? 1 : 0.6,
+                            ? "#fbbf24"
+                            : "#e4e4e7",
                     }}
                   />
                   {t(`startupWizard.onboarding.${labelKey}`)}
