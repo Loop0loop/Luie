@@ -1,5 +1,6 @@
 import {
   Suspense,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -39,6 +40,7 @@ import {
   PREVIEW_TERMS,
 } from "../../constants/previewData";
 import type { LayoutChoice } from "../../types/wizard";
+import type { ResearchTab } from "@renderer/features/workspace/stores/uiStore.types";
 import { WizardEditor } from "./WizardEditor";
 
 const noop = () => {};
@@ -48,6 +50,16 @@ let isPreviewWorkspaceSeeded = false;
 export const resetPreviewWorkspaceState = (): void => {
   isPreviewWorkspaceSeeded = false;
 };
+
+// 프리뷰 리서치 패널은 실제 research store를 쓰므로 패널을 닫았다 다시 열면
+// 마지막으로 본 엔티티(currentItem + alias 키)가 그대로 남는다. 패널을 열 때마다
+// 이 선택 상태를 지워 기본 목록에서 시작하게 한다. 메인 앱에는 영향 없음.
+export function resetPreviewResearchSelection(): void {
+  useCharacterStore.setState({ currentItem: null, currentCharacter: null });
+  useEventStore.setState({ currentItem: null, currentEvent: null });
+  useFactionStore.setState({ currentItem: null, currentFaction: null });
+  useTermStore.setState({ currentItem: null, currentTerm: null });
+}
 
 // 위저드 프리뷰에 최적화된 컴팩트 사이드바 및 패널 규격 (사이드바 16~18%, 패널 20~25%로 본문 공간 75%+ 확보)
 const WIZARD_PREVIEW_SIDEBAR_WIDTHS: Record<string, number> = {
@@ -214,8 +226,20 @@ export function LayoutLivePreview({ uiMode }: LayoutLivePreviewProps) {
   const activeChapter = PREVIEW_CHAPTERS[0];
   const lastSyncedUiModeRef = useRef<LayoutChoice | null>(null);
 
-  const { panels, removePanel, handleSelectResearchItem } = useSplitView(
-    activeChapter?.id,
+  const {
+    panels,
+    removePanel,
+    handleSelectResearchItem: selectResearchItemBase,
+  } = useSplitView(activeChapter?.id);
+
+  // 프리뷰 전용: 리서치 패널을 (다시) 열 때 마지막으로 본 엔티티가 아니라 기본
+  // 목록에서 시작한다. 닫기 전 선택이 그대로 서빙되는 것을 막는 래퍼다.
+  const handleSelectResearchItem = useCallback(
+    (type: ResearchTab) => {
+      resetPreviewResearchSelection();
+      selectResearchItemBase(type);
+    },
+    [selectResearchItemBase],
   );
   const additionalPanelIds = useMemo(
     () => panels.map((panel) => panel.id),
