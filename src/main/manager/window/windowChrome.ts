@@ -70,6 +70,22 @@ export const getTitleBarOptions = (): Partial<BrowserWindowConstructorOptions> =
 }
 
 /**
+ * Windows 메인 창 전용. 타이틀바 영역(타이틀·네이티브 버튼 포함)을 통째로 제거한다.
+ * 최소화/최대화/닫기는 렌더러가 macOS traffic lights와 같은 방식으로 앱 안에 직접
+ * 그린다(WindowsWindowControls). export/world graph/위저드 등 보조 창은 이 옵션을
+ * 쓰지 않고 네이티브 프레임을 유지한다.
+ */
+export const getWindowsMainTitleBarOptions = (): Partial<BrowserWindowConstructorOptions> => {
+  if (process.platform !== "win32") {
+    return {}
+  }
+
+  return {
+    titleBarStyle: "hidden",
+  }
+}
+
+/**
  * 커스텀 트래픽 라이트 좌표를 다시 못박는다.
  *
  * `trafficLightPosition`은 창 생성 시점 옵션일 뿐이라, macOS가 타이틀바 컨테이너를 다시

@@ -7,6 +7,12 @@ export const jaBaseCore = {
   undo: "元に戻す",
   clear: "クリア",
   exit: "終了",
+  windowControls: {
+    minimize: "最小化",
+    maximize: "最大化",
+    restore: "元に戻す",
+    close: "閉じる",
+  },
   menu: {
     file: "ファイル",
     edit: "編集",

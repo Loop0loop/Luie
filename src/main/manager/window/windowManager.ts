@@ -2,6 +2,7 @@ import { app, BrowserWindow, screen, type BrowserWindowConstructorOptions } from
 import { join } from "path"
 import windowStateKeeper from "electron-window-state"
 import { createLogger } from "../../../shared/logger/index.js"
+import { IPC_CHANNELS } from "../../../shared/ipc/channels.js"
 import {
   APP_NAME,
   WINDOW_DEFAULT_HEIGHT,
@@ -14,6 +15,7 @@ import {
   applyWindowMenuBarMode,
   createSecureWebPreferences,
   getTitleBarOptions,
+  getWindowsMainTitleBarOptions,
   resolveWindowIconPath,
   shouldShowMenuBar,
   resolveWindowBackgroundColor,
@@ -68,6 +70,29 @@ class WindowManager {
       return
     }
     session.setSpellCheckerEnabled(this.isSpellcheckEnabled())
+  }
+
+  /**
+   * 메인 창의 최대화 상태를 렌더러에 알린다. Windows 커스텀 창 버튼이
+   * 최대화/복원 아이콘을 전환하는 근원. 버튼 클릭뿐 아니라 Aero Snap·더블클릭 등
+   * 시스템 경로로 상태가 바뀌어도 따라가야 해서 이벤트로 흘린다. 최초 로드 시점
+   * 동기화는 창 상태 복원으로 이미 최대화된 경우를 위한 것이다.
+   */
+  private attachMaximizedStateEvents(win: BrowserWindow) {
+    const sendState = () => {
+      if (win.isDestroyed()) return
+      win.webContents.send(
+        IPC_CHANNELS.WINDOW_MAXIMIZED_CHANGED,
+        win.isMaximized(),
+      )
+    }
+
+    win.on("maximize", sendState)
+    win.on("unmaximize", sendState)
+    // NOTE: 테스트용 BrowserWindow mock은 webContents 이벤트 API가 부분 구현이다.
+    if (typeof win.webContents?.on === "function") {
+      win.webContents.on("did-finish-load", sendState)
+    }
   }
 
   private createBrowserWindow(
@@ -183,10 +208,13 @@ class WindowManager {
       backgroundColor: resolveWindowBackgroundColor(),
       ...withWindowIcon(windowIconPath),
       ...getTitleBarOptions(),
+      ...getWindowsMainTitleBarOptions(),
       ...(process.platform !== "darwin"
         ? { autoHideMenuBar: !shouldShowMenuBar(this.getMenuBarMode()) }
         : {}),
     })
+
+    this.attachMaximizedStateEvents(this.mainWindow)
 
     this.applyMenuBarMode(this.mainWindow)
     windowState.manage(this.mainWindow)

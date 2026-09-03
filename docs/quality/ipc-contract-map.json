@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-03T00:45:21.226Z",
+  "generatedAt": "2026-09-03T13:20:06.002Z",
   "summary": {
-    "definedChannels": 224,
+    "definedChannels": 225,
     "errors": 0,
     "warnings": 0
   },
@@ -180,7 +180,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 167
+            "line": 181
           }
         ],
         "main_emit": [],
@@ -213,7 +213,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 27
+            "line": 37
           }
         ],
         "renderer_send": [],
@@ -273,7 +273,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 149
+            "line": 163
           }
         ],
         "main_emit": [],
@@ -304,7 +304,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 161
+            "line": 175
           }
         ],
         "main_emit": [],
@@ -366,7 +366,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 179
+            "line": 193
           }
         ],
         "main_emit": [],
@@ -397,7 +397,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 155
+            "line": 169
           }
         ],
         "main_emit": [],
@@ -428,7 +428,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 141
+            "line": 155
           }
         ],
         "main_emit": [],
@@ -459,7 +459,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 120
+            "line": 134
           }
         ],
         "main_emit": [],
@@ -492,7 +492,7 @@
         "renderer_listen": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 40
+            "line": 50
           }
         ],
         "renderer_send": [],
@@ -521,7 +521,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 130
+            "line": 144
           }
         ],
         "main_emit": [],
@@ -552,7 +552,7 @@
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 173
+            "line": 187
           }
         ],
         "main_emit": [],
@@ -6262,13 +6262,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 48
+            "line": 60
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 108
+            "line": 122
           }
         ],
         "main_emit": [],
@@ -6293,13 +6293,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 47
+            "line": 58
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 188
+            "line": 213
           }
         ],
         "main_emit": [],
@@ -6317,20 +6317,56 @@
       }
     },
     {
-      "key": "WINDOW_MINIMIZE",
-      "channel": "window:minimize",
-      "allowlisted": true,
+      "key": "WINDOW_MAXIMIZED_CHANGED",
+      "channel": "window:maximized-changed",
+      "allowlisted": false,
       "usage": {
         "renderer_invoke": [],
         "main_handle": [],
         "main_emit": [],
-        "renderer_listen": [],
+        "renderer_listen": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 65
+          }
+        ],
         "renderer_send": [],
         "main_listen": []
       },
       "usageCounts": {
         "renderer_invoke": 0,
         "main_handle": 0,
+        "main_emit": 0,
+        "renderer_listen": 1,
+        "renderer_send": 0,
+        "main_listen": 0
+      }
+    },
+    {
+      "key": "WINDOW_MINIMIZE",
+      "channel": "window:minimize",
+      "allowlisted": false,
+      "usage": {
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 57
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 202
+          }
+        ],
+        "main_emit": [],
+        "renderer_listen": [],
+        "renderer_send": [],
+        "main_listen": []
+      },
+      "usageCounts": {
+        "renderer_invoke": 1,
+        "main_handle": 1,
         "main_emit": 0,
         "renderer_listen": 0,
         "renderer_send": 0,
@@ -6345,13 +6381,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 55
+            "line": 69
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 254
+            "line": 293
           }
         ],
         "main_emit": [],
@@ -6376,13 +6412,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 60
+            "line": 74
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 276
+            "line": 315
           }
         ],
         "main_emit": [],
@@ -6407,13 +6443,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 51
+            "line": 63
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 218
+            "line": 257
           }
         ],
         "main_emit": [],
@@ -6438,13 +6474,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 62
+            "line": 76
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 285
+            "line": 324
           }
         ],
         "main_emit": [],
@@ -6469,13 +6505,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 53
+            "line": 67
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 236
+            "line": 275
           }
         ],
         "main_emit": [],
@@ -6521,13 +6557,13 @@
         "renderer_invoke": [
           {
             "file": "src/preload/api/windowApi.ts",
-            "line": 49
+            "line": 61
           }
         ],
         "main_handle": [
           {
             "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
-            "line": 202
+            "line": 241
           }
         ],
         "main_emit": [],
@@ -6547,18 +6583,28 @@
     {
       "key": "WINDOW_UNMAXIMIZE",
       "channel": "window:unmaximize",
-      "allowlisted": true,
+      "allowlisted": false,
       "usage": {
-        "renderer_invoke": [],
-        "main_handle": [],
+        "renderer_invoke": [
+          {
+            "file": "src/preload/api/windowApi.ts",
+            "line": 59
+          }
+        ],
+        "main_handle": [
+          {
+            "file": "src/main/handler/system/window/ipcWindowHandlers.ts",
+            "line": 227
+          }
+        ],
         "main_emit": [],
         "renderer_listen": [],
         "renderer_send": [],
         "main_listen": []
       },
       "usageCounts": {
-        "renderer_invoke": 0,
-        "main_handle": 0,
+        "renderer_invoke": 1,
+        "main_handle": 1,
         "main_emit": 0,
         "renderer_listen": 0,
         "renderer_send": 0,

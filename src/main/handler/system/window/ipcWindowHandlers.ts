@@ -199,6 +199,17 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
+      channel: IPC_CHANNELS.WINDOW_MINIMIZE,
+      logTag: "WINDOW_MINIMIZE",
+      failMessage: "Failed to minimize window",
+      handler: () => {
+        const win = windowManager.getMainWindow();
+        if (!win) return false;
+        win.minimize();
+        return true;
+      },
+    },
+    {
       channel: IPC_CHANNELS.WINDOW_MAXIMIZE,
       logTag: "WINDOW_MAXIMIZE",
       failMessage: "Failed to maximize window",
@@ -207,6 +218,20 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
         if (!win) return false;
         if (!win.isMaximized()) {
           win.maximize();
+        }
+        win.focus();
+        return true;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.WINDOW_UNMAXIMIZE,
+      logTag: "WINDOW_UNMAXIMIZE",
+      failMessage: "Failed to unmaximize window",
+      handler: () => {
+        const win = windowManager.getMainWindow();
+        if (!win) return false;
+        if (win.isMaximized()) {
+          win.unmaximize();
         }
         win.focus();
         return true;
