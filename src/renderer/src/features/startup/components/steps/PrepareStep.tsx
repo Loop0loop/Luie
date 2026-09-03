@@ -25,7 +25,7 @@ export function PrepareStep({
       <img
         src={luieIcon}
         alt=""
-        className="h-14 w-14 rounded-2xl shadow-panel"
+        className="h-14 w-14 rounded-panel shadow-panel"
       />
       <div className="space-y-1 text-center">
         <h1 className="text-xl font-bold tracking-tight">
@@ -57,7 +57,7 @@ export function PrepareStep({
           type="button"
           onClick={onCreateAndStart}
           disabled={!projectTitle.trim() || isCreatingProject}
-          className="w-full rounded-control bg-accent px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-bg-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-control bg-accent px-6 py-2.5 text-sm font-medium text-on-accent transition-colors hover:bg-accent-bg-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isCreatingProject
             ? t("startupWizard.onboarding.prepareCreating")

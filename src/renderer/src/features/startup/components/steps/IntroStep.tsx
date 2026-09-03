@@ -15,7 +15,7 @@ export function IntroStep({ onStart, onSkip }: IntroStepProps) {
         <img
           src={luieIcon}
           alt=""
-          className="h-[72px] w-[72px] rounded-2xl shadow-panel"
+          className="h-[72px] w-[72px] rounded-panel shadow-panel"
         />
         <h1 className="pt-2 text-[22px] font-bold tracking-tight">
           {t("startupWizard.onboarding.welcomeTitle")}
@@ -29,7 +29,7 @@ export function IntroStep({ onStart, onSkip }: IntroStepProps) {
         <button
           type="button"
           onClick={onStart}
-          className="w-full rounded-control bg-accent px-6 py-2.5 text-sm text-white hover:bg-accent-bg-hover"
+          className="w-full rounded-control bg-accent px-6 py-2.5 text-sm text-on-accent hover:bg-accent-bg-hover"
         >
           {t("startupWizard.onboarding.startCta")}
         </button>

@@ -50,46 +50,49 @@ export function LayoutStep({
         </PreviewBoundary>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center px-6">
-        {/* 얇은 바이브런스 글래스(HIG materials): 패널 톤을 60%만 남기고 강한
-            블러로 가독성을 보완해 아래 실제 레이아웃이 비쳐 보이게 한다. */}
-        <div className="pointer-events-auto flex items-end gap-2 rounded-panel border border-border/60 bg-panel/60 p-2 shadow-panel backdrop-blur-2xl">
-          <span className="mb-1.5 self-center pr-1 text-sm font-semibold text-fg">
+      <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center px-6">
+        {/* Apple HIG Liquid Glass: 반투명 패널과 깊이 있는 블러, 넉넉한 여백의 플로팅 독 */}
+        <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-3.5 rounded-editor-shell border border-border/70 bg-panel/75 px-5 py-3 shadow-panel backdrop-blur-2xl">
+          <span className="shrink-0 pr-1 text-sm font-semibold text-fg">
             {t("startupWizard.onboarding.layoutTitle")}
           </span>
-          {LAYOUT_OPTIONS.map(([id, labelKey]) => (
+          <div className="flex gap-2" role="radiogroup">
+            {LAYOUT_OPTIONS.map(([id, labelKey]) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={uiMode === id}
+                onClick={() => onUiModeChange(id)}
+                className={`flex w-[112px] flex-col gap-1.5 rounded-control border p-2 text-left transition-all duration-150 ${
+                  uiMode === id
+                    ? "border-accent ring-2 ring-accent/30 bg-surface/60 shadow-xs scale-[1.02]"
+                    : "border-border/70 bg-element/20 hover:border-border-active hover:bg-surface/40"
+                }`}
+              >
+                <LayoutThumb id={id} className="h-8.5 w-full" />
+                <span className="truncate text-xs font-medium">
+                  {t(`startupWizard.onboarding.${labelKey}`)}
+                </span>
+              </button>
+            ))}
+          </div>
+          <span aria-hidden className="mx-0.5 h-8 w-px self-center bg-border/80" />
+          <div className="flex items-center gap-2 self-center">
             <button
-              key={id}
               type="button"
-              aria-pressed={uiMode === id}
-              onClick={() => onUiModeChange(id)}
-              className={`flex w-[108px] flex-col gap-1 rounded-control border p-1.5 text-left transition-colors ${
-                uiMode === id
-                  ? "border-accent ring-1 ring-accent"
-                  : "border-border hover:border-border-active"
-              }`}
+              onClick={onPrevious}
+              className="rounded-control border border-border/70 bg-surface/70 px-4 py-1.5 text-sm font-medium text-fg shadow-xs transition-all hover:bg-surface hover:border-border active:scale-[0.98]"
             >
-              <LayoutThumb id={id} className="h-8" />
-              <span className="truncate text-[10px] font-medium">
-                {t(`startupWizard.onboarding.${labelKey}`)}
-              </span>
+              {t("startupWizard.onboarding.previous")}
             </button>
-          ))}
-          <span aria-hidden className="mx-1 mb-1 h-9 w-px bg-border/70" />
-          <button
-            type="button"
-            onClick={onPrevious}
-            className="mb-0.5 rounded-control px-4 py-1.5 text-sm text-muted transition-colors hover:bg-surface-hover hover:text-fg"
-          >
-            {t("startupWizard.onboarding.previous")}
-          </button>
-          <button
-            type="button"
-            onClick={onFinish}
-            className="mb-0.5 rounded-control bg-accent px-5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-bg-hover"
-          >
-            {t("startupWizard.onboarding.finish")}
-          </button>
+            <button
+              type="button"
+              onClick={onFinish}
+              className="rounded-control bg-accent px-5 py-1.5 text-sm font-medium text-on-accent shadow-control transition-all hover:bg-accent-bg-hover active:scale-[0.98]"
+            >
+              {t("startupWizard.onboarding.finish")}
+            </button>
+          </div>
         </div>
       </div>
     </div>

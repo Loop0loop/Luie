@@ -58,7 +58,7 @@ export function StatusStep({
           <button
             type="button"
             onClick={onRetry}
-            className="w-full rounded-control bg-accent px-4 py-2 text-sm text-white hover:bg-accent-bg-hover"
+            className="w-full rounded-control bg-accent px-4 py-2 text-sm text-on-accent hover:bg-accent-bg-hover"
           >
             {t("startupWizard.actions.retry")}
           </button>
