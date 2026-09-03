@@ -50,13 +50,13 @@ jobs:
         id: release_meta
         run: node scripts/ci/sync-release-version-from-tag.mjs
 
-      - name: Build Windows nsis-web package
+      - name: Build Windows portable package
         shell: bash
         run: |
           set -euo pipefail
           pnpm run generate
           pnpm run build
-          pnpm exec electron-builder --win nsis-web --${{ matrix.arch }} --config electron-builder.json --publish never
+          pnpm exec electron-builder --win portable --${{ matrix.arch }} --config electron-builder.json --publish never
 
       - name: List Windows dist outputs
         shell: bash
@@ -75,23 +75,12 @@ jobs:
 
           gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
             || gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes \
-            || gh release view "$RELEASE_TAG" >/dev/null
+            || gh release view "$RELEASE_TAG" >/dev/null 2>&1
 
           shopt -s nullglob
-          installers=(dist/*.exe)
-          assets=(dist/*.exe dist/*.7z dist/*.blockmap)
-          if [ -f dist/latest.yml ]; then
-            assets+=(dist/latest.yml)
-          fi
-          if [ -f dist/latest-${{ matrix.arch }}.yml ]; then
-            assets+=(dist/latest-${{ matrix.arch }}.yml)
-          fi
-          if [ "${{ matrix.arch }}" = "x64" ] && [ "${#installers[@]}" -eq 0 ]; then
-            echo "No Windows nsis-web installer .exe found in dist for x64 build"
-            exit 1
-          fi
+          assets=(dist/*.exe)
           if [ "${#assets[@]}" -eq 0 ]; then
-            echo "No Windows release assets found in dist"
+            echo "No Windows portable exe found in dist"
             exit 1
           fi
 
@@ -103,8 +92,4 @@ jobs:
           name: windows-${{ matrix.arch }}-dist
           path: |
             dist/*.exe
-            dist/*.7z
-            dist/latest.yml
-            dist/latest-${{ matrix.arch }}.yml
-            dist/*.blockmap
           if-no-files-found: warn

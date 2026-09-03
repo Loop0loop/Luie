@@ -79,7 +79,7 @@
   "win": {
     "icon": "build/icons/icon.ico",
     "executableName": "Luie",
-    "target": ["nsis-web"]
+    "target": ["portable"]
   },
   "nsis": {
     "oneClick": true,
