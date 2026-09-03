@@ -16,9 +16,9 @@ concurrency:
 jobs:
   build-and-publish:
     runs-on: windows-latest
+    timeout-minutes: 90
     strategy:
       fail-fast: false
-      max-parallel: 1
       matrix:
         arch: [x64, arm64]
 
@@ -41,9 +41,12 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
+        env:
+          ELECTRON_REBUILD_ARCH: ${{ matrix.arch }}
         run: pnpm install --frozen-lockfile
 
       - name: Sync package version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
         id: release_meta
         run: node scripts/ci/sync-release-version-from-tag.mjs
 
@@ -62,6 +65,7 @@ jobs:
           find dist -maxdepth 2 -type f -print | sort
 
       - name: Upload Windows assets to release
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
