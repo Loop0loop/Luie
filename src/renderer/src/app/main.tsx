@@ -1,3 +1,6 @@
+// 반드시 첫 import여야 한다: 위저드 부팅 시 persist 스토어들이 동기 rehydrate하기
+// 전에 이전 세션 UI 상태를 지운다(평가 순서 = import 선언 순서).
+import "@renderer/app/wizardFreshBoot";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { initI18n } from "@renderer/i18n";
