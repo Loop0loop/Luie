@@ -1,0 +1,7 @@
+{
+  "channels": [
+    { "channelKey": "WINDOW_MINIMIZE", "reason": "네이티브 창 최소화 버튼용으로 정의만 유지" },
+    { "channelKey": "WINDOW_UNMAXIMIZE", "reason": "네이티브 창 최대화 해제용으로 정의만 유지" },
+    { "channelKey": "WINDOW_TOGGLE_DEV_TOOLS", "reason": "개발용 채널 — 로컬 디버깅에서만 수동 사용" }
+  ]
+}

@@ -48,17 +48,16 @@ function hasCommand(command, checkArgs) {
   return result.status === 0;
 }
 
-function resolveAppBuilderPath() {
+// electron-builder 26부터 app-builder 바이너리(app-builder-bin)가 제거되어
+// 빌더 자체가 사용하는 JS iconConverter를 그대로 호출한다. 이 도구는 최초 1회
+// electron-userland/electron-builder-binaries에서 내려받아 캐시된다.
+function loadIconConverter() {
   const require = createRequire(import.meta.url);
-  const electronBuilderEntry = require.resolve("electron-builder");
-  const appBuilderEntry = require.resolve("app-builder-bin", {
-    paths: [path.dirname(electronBuilderEntry)],
-  });
-  const appBuilderBin = require(appBuilderEntry);
-  if (!appBuilderBin?.appBuilderPath) {
-    throw new Error("Failed to resolve app-builder binary from electron-builder dependency tree");
-  }
-  return appBuilderBin.appBuilderPath;
+  const electronBuilderDir = path.dirname(require.resolve("electron-builder"));
+  const appBuilderLibDir = path.dirname(
+    require.resolve("app-builder-lib/package.json", { paths: [electronBuilderDir] }),
+  );
+  return require(path.join(appBuilderLibDir, "out", "util", "iconConverter.js"));
 }
 
 function generateSquarePng() {
@@ -80,30 +79,20 @@ function generateSquarePng() {
   copyFileSync(sourceIconPath, iconPngPath);
 }
 
-function generatePlatformIcons(appBuilderPath) {
-  runCommand(appBuilderPath, [
-    "icon",
-    "--format",
-    "ico",
-    "--root",
-    repoRoot,
-    "--input",
-    iconPngPath,
-    "--out",
-    outputDir,
-  ]);
-
-  runCommand(appBuilderPath, [
-    "icon",
-    "--format",
-    "icns",
-    "--root",
-    repoRoot,
-    "--input",
-    iconPngPath,
-    "--out",
-    outputDir,
-  ]);
+async function generatePlatformIcons() {
+  const { convertIcon } = loadIconConverter();
+  for (const format of ["ico", "icns"]) {
+    const result = await convertIcon({
+      sources: [iconPngPath],
+      fallbackSources: [],
+      roots: [repoRoot],
+      format,
+      outDir: outputDir,
+    });
+    if (!result.icons?.length) {
+      throw new Error(`Icon conversion to ${format} produced no output`);
+    }
+  }
 }
 
 function outputsAreFresh() {
@@ -126,7 +115,7 @@ function verifyOutputs() {
   }
 }
 
-function main() {
+async function main() {
   if (!force && outputsAreFresh()) {
     console.log("[generate:icons] build/icons outputs are already up-to-date");
     return;
@@ -136,8 +125,7 @@ function main() {
 
   try {
     generateSquarePng();
-    const appBuilderPath = resolveAppBuilderPath();
-    generatePlatformIcons(appBuilderPath);
+    await generatePlatformIcons();
     verifyOutputs();
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
