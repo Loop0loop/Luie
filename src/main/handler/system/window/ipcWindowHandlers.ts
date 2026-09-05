@@ -33,14 +33,27 @@ const WIZARD_RESIZE_ANIMATION_MS = 800;
 const WIZARD_RESIZE_TICK_MS = 16;
 
 let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
+// 진행 중 애니메이션의 완료 통지. 새 애니메이션이 이전 것을 중단시킬 때 이전
+// awaiter가 영원히 대기하지 않도록 즉시 resolve한다.
+let wizardResizeCompletion: (() => void) | null = null;
+
+const settleWizardResize = (): void => {
+  if (wizardResizeTimer) {
+    clearTimeout(wizardResizeTimer);
+    wizardResizeTimer = null;
+  }
+  const completion = wizardResizeCompletion;
+  wizardResizeCompletion = null;
+  completion?.();
+};
 
 // NOTE: 창 제어 채널(minimize/maximize/unmaximize/close)은 "호출한 렌더러가 속한
 // 창"을 대상으로 해야 한다(메인·내보내기 창 동시 실행 대응). 핸들러 규약상 event를
 // 받지 못하므로 포커스된 창으로 호출 주체를 판정한다 — 버튼/단축키는 클릭·포커스된
 // 창의 렌더러에서 발화하므로 성립한다. 포커스를 잃은 비정상 경로의 폴백으로, 시작
-// 위저드는 메인 창 이전에 단독으로 뜨고 완료되면 닫힌 뒤 메인 창이 생성되므로(동시
-// 공존 없음 — appReady의 wizard-complete 플로우) 위저드가 살아 있으면 그것이 곧
-// 호출 주체다.
+// 위저드는 메인 창 이전에 단독으로 뜨고(appReady의 wizard-first 플로우) 완료 후에는
+// 메인 창 준비 직전까지 공존하는 짧은 교체 전환 구간이 있다 — 이때는 포커스 판정이
+// 우선이고 위저드 폴백은 그 다음이다.
 const resolveWindowControlTarget = (): BrowserWindow | null => {
   if (typeof BrowserWindow.getFocusedWindow === "function") {
     const focused = BrowserWindow.getFocusedWindow();
@@ -104,41 +117,44 @@ const getTargetWizardBounds = (
 const animateWizardResize = (
   win: BrowserWindow,
   target: { x: number; y: number; width: number; height: number },
-): void => {
-  if (wizardResizeTimer) clearTimeout(wizardResizeTimer);
+): Promise<void> =>
+  new Promise((resolve) => {
+    // 이전 애니메이션이 살아 있으면 중단하고 그 awaiter부터 풀어준다.
+    settleWizardResize();
+    wizardResizeCompletion = resolve;
 
-  const [startWidth, startHeight] = win.getSize();
-  const [startX, startY] = win.getPosition();
-  const startedAt = Date.now();
+    const [startWidth, startHeight] = win.getSize();
+    const [startX, startY] = win.getPosition();
+    const startedAt = Date.now();
 
-  const tick = () => {
-    const progress = Math.min(
-      1,
-      (Date.now() - startedAt) / WIZARD_RESIZE_ANIMATION_MS,
-    );
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const width = Math.round(startWidth + (target.width - startWidth) * eased);
-    const height = Math.round(
-      startHeight + (target.height - startHeight) * eased,
-    );
-    const x = Math.round(startX + (target.x - startX) * eased);
-    const y = Math.round(startY + (target.y - startY) * eased);
+    const tick = () => {
+      const progress = Math.min(
+        1,
+        (Date.now() - startedAt) / WIZARD_RESIZE_ANIMATION_MS,
+      );
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const width = Math.round(startWidth + (target.width - startWidth) * eased);
+      const height = Math.round(
+        startHeight + (target.height - startHeight) * eased,
+      );
+      const x = Math.round(startX + (target.x - startX) * eased);
+      const y = Math.round(startY + (target.y - startY) * eased);
 
-    win.setBounds({
-      x,
-      y,
-      width,
-      height,
-    });
+      win.setBounds({
+        x,
+        y,
+        width,
+        height,
+      });
 
-    if (progress < 1) {
-      wizardResizeTimer = setTimeout(tick, WIZARD_RESIZE_TICK_MS);
-    } else {
-      wizardResizeTimer = null;
-    }
-  };
-  tick();
-};
+      if (progress < 1) {
+        wizardResizeTimer = setTimeout(tick, WIZARD_RESIZE_TICK_MS);
+      } else {
+        settleWizardResize();
+      }
+    };
+    tick();
+  });
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -349,22 +365,21 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_SET_STARTUP_WIZARD_SIZE",
       failMessage: "Failed to resize startup wizard window",
       argsSchema: windowSetStartupWizardSizeArgsSchema,
-      handler: (width: number, height: number, animate: boolean) => {
+      handler: async (width: number, height: number, animate: boolean) => {
         // NOTE: 위저드 단계 전환(A 인트로 → B 테마)에 맞춘 리사이즈다. 메인 창이
         // 아니라 위저드 창을 움직여야 하므로 전용 접근자를 쓴다. 애니메이션은
         // renderer의 enableAnimations(및 OS reduced-motion) 판정을 그대로 받는다.
+        // 애니메이션 완료까지 await해 반환하므로 renderer가 블라인드 타이머 대신
+        // 실제 완료 시점을 기다릴 수 있다(useStartupWizardState의 650ms 대기 대체).
         const win = windowManager.getStartupWizardWindow();
         if (!win) return false;
         const targetBounds = getTargetWizardBounds(win, width, height);
         if (!animate) {
-          if (wizardResizeTimer) {
-            clearTimeout(wizardResizeTimer);
-            wizardResizeTimer = null;
-          }
+          settleWizardResize();
           win.setBounds(targetBounds);
           return true;
         }
-        animateWizardResize(win, targetBounds);
+        await animateWizardResize(win, targetBounds);
         return true;
       },
     },

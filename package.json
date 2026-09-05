@@ -61,6 +61,7 @@
     "check:preload-contract-regression": "node scripts/check-preload-contract-regression.mjs",
     "check:core-complexity": "node scripts/check-core-complexity.mjs",
     "check:source-loc": "node scripts/check-source-loc.mjs",
+    "check:render-boot-budget": "node scripts/check-render-boot-budget.mjs",
     "verify:packaged-drizzle": "node scripts/verify-packaged-drizzle.mjs",
     "bench:derived-db": "node scripts/benchmark-derived-db.mjs",
     "bench:writing-loop:profiles": "node scripts/run-writing-loop-profiles.mjs",

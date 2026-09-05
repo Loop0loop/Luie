@@ -143,9 +143,9 @@ export function useStartupWizardState() {
         if (!isMountedRef.current) return;
 
         // workArea 기반 화면 최대 크기로 창 확장 (main 핸들러가 workArea-40으로 clamp)
-        void api.window.setStartupWizardSize(4096, 4096, animationsEnabled);
-        // 확장 애니메이션(600ms) 대기
-        await new Promise((resolve) => setTimeout(resolve, 650));
+        // NOTE: 핸들러가 애니메이션 완료까지 await해 반환한다 — animationsEnabled가
+        // 꺼져 있으면 즉시 반환되므로 블라인드 타이머 대기는 없다.
+        await api.window.setStartupWizardSize(4096, 4096, animationsEnabled);
         if (!isMountedRef.current) return;
         setStep("prepare");
       } catch (error) {

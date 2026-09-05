@@ -98,7 +98,6 @@ if (!registerSingleInstance(bootstrapLogger)) {
     { extractAuthCallbackUrl, handleDeepLinkUrl },
     { registerShutdownHandlers },
     { syncService },
-    { utilityProcessBridge },
   ] = await Promise.all([
     import("./prismaEnv.js"),
     import("./lifecycle/index.js"),
@@ -106,7 +105,6 @@ if (!registerSingleInstance(bootstrapLogger)) {
     import("./lifecycle/index.js"),
     import("./lifecycle/index.js"),
     import("./domains/sync/index.js"),
-    import("./infra/utility-process/index.js"),
   ]);
 
   registerCrashReporting(logger);
@@ -145,10 +143,8 @@ if (!registerSingleInstance(bootstrapLogger)) {
     },
   });
 
-  void app.whenReady().then(async () => {
-    const utilityStarted = await utilityProcessBridge.start();
-    logger.info("Startup checkpoint: utility process", { utilityStarted });
-  });
-
+  // NOTE: 유틸리티 프로세스는 whenReady에서 즉시 fork하지 않는다. embed/RAG/텍스트
+  // 생성 요청 시점에 lazy로 시작한다(bridge의 각 메서드가 start()를 보장) — 임베딩
+  // 모델이나 LLM을 쓰지 않는 부팅에서 fork+헬스체크 비용과 프로세스 상주를 없앤다.
   registerShutdownHandlers(logger);
 }
