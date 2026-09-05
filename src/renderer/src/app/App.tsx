@@ -36,6 +36,7 @@ import {
   useThemeAttributes,
   useUiModeIntegrityDevCheck,
   useWindowMode,
+  WindowsWindowControls,
 } from "./shell";
 
 const ExportWindow = lazy(
@@ -410,6 +411,8 @@ export default function App() {
   if (windowMode === "export") {
     return (
       <>
+        {/* Windows frameless 내보내기 창도 메인 창과 같은 인앱 창 버튼을 쓴다. */}
+        <WindowsWindowControls />
         <Suspense
           fallback={
             <div className="flex items-center justify-center h-screen bg-[#333] text-white">
@@ -462,6 +465,8 @@ export default function App() {
   if (windowMode === "startup-wizard") {
     return (
       <>
+        {/* Windows frameless 위저드도 메인 창과 같은 인앱 창 버튼을 쓴다. */}
+        <WindowsWindowControls />
         <Suspense fallback={appScreenFallback}>
           <StartupWizard />
         </Suspense>
@@ -473,6 +478,8 @@ export default function App() {
   if (!bootstrapStatus.isReady) {
     return (
       <>
+        {/* NOTE: 메인 창(Windows frameless)은 어느 게이트 화면에서도 창 버튼이 필요하다. */}
+        <WindowsWindowControls />
         <BootstrapGate
           bootstrapStatus={bootstrapStatus}
           isBootstrapLoading={isBootstrapLoading}
@@ -491,6 +498,7 @@ export default function App() {
   if (view === "template" || !currentProject) {
     return (
       <>
+        <WindowsWindowControls />
         <Suspense fallback={appScreenFallback}>
           <ProjectTemplateSelector
             onSelectProject={handleSelectProject}
@@ -511,6 +519,7 @@ export default function App() {
 
   return (
     <>
+      <WindowsWindowControls />
       <Suspense fallback={appScreenFallback}>
         <EditorRoot />
       </Suspense>

@@ -223,6 +223,9 @@
   --z-index-toolbar: 120;
   --z-index-toast: 150;
   --z-index-modal: 1000;
+  /* NOTE: Windows 인앱 창 버튼(WindowsWindowControls)은 창 크로미다. 모달이 떠도
+     네이티브 타이틀바처럼 클릭 가능해야 하므로 modal(1000) 위, 종료 오버레이 아래. */
+  --z-index-window-controls: 1100;
   /* NOTE: 종료 오버레이(QuitOverlay)는 앱을 닫는 절차 동안 모든 모달 위에 떠야 한다.
      modal(1000)보다 위여야 하므로 별도 계층으로 둔다. */
   --z-index-quit: 9999;
@@ -242,6 +245,9 @@
 }
 @utility z-modal {
   z-index: var(--z-index-modal);
+}
+@utility z-window-controls {
+  z-index: var(--z-index-window-controls);
 }
 @utility z-quit {
   z-index: var(--z-index-quit);

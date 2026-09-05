@@ -16,6 +16,10 @@ import {
 import { peekChapterContent } from "@renderer/features/manuscript/stores/chapterContentStore";
 import { AIPanel } from "@renderer/features/ai";
 import { useTranslation } from "react-i18next";
+
+// NOTE: docs 우측 패널은 탭마다 헤더가 달라지므로, Windows 창 버튼 클리어런스는
+// 이 래퍼 하나에서 준다(플랫폼 판정은 레이아웃 파일들의 기존 규약을 따른다).
+const isWindows = navigator.userAgent.toLowerCase().includes("win");
 import {
   Panel,
   Separator as PanelResizeHandle,
@@ -444,7 +448,16 @@ export function GoogleDocsRightPanel({
         {shouldRenderPanel && renderedTab && (
           <div
             className={`flex h-full flex-col ${
-              isResearchTab || renderedTab === "world" ? "pt-[40px]" : ""
+              // NOTE: Windows는 창 우상단(높이 32px)을 인앱 창 버튼이 덮는다. 패널
+              // 헤더의 닫기/새로고침 버튼과 겹치지 않게 콘텐츠를 그만큼 아래로 내린다.
+              // research/world 탭의 기존 pt-[40px]는 32px를 더해 같은 의미를 유지한다.
+              isResearchTab || renderedTab === "world"
+                ? isWindows
+                  ? "pt-18"
+                  : "pt-[40px]"
+                : isWindows
+                  ? "pt-9"
+                  : ""
             }`}
           >
             {renderedTab === "character" && (

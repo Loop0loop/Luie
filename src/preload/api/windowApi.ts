@@ -14,6 +14,16 @@ export function createWindowApi({
   safeInvoke,
   safeInvokeCore,
 }: PreloadApiModuleContext): Pick<RendererApi, "lifecycle" | "window"> {
+  const onChannel = <T>(channel: string, callback: (payload: T) => void) => {
+    const listener = (_event: IpcRendererEvent, payload: T) => {
+      callback(payload);
+    };
+    ipcRenderer.on(channel, listener);
+    return () => {
+      ipcRenderer.removeListener(channel, listener);
+    };
+  };
+
   return {
     lifecycle: {
       setDirty: (dirty) => {
@@ -44,11 +54,15 @@ export function createWindowApi({
       },
     },
     window: {
+      minimize: () => safeInvoke(IPC_CHANNELS.WINDOW_MINIMIZE),
       maximize: () => safeInvoke(IPC_CHANNELS.WINDOW_MAXIMIZE),
+      unmaximize: () => safeInvoke(IPC_CHANNELS.WINDOW_UNMAXIMIZE),
       close: () => safeInvoke(IPC_CHANNELS.WINDOW_CLOSE),
       toggleFullscreen: () => safeInvoke(IPC_CHANNELS.WINDOW_TOGGLE_FULLSCREEN),
       setFullscreen: (flag) =>
         safeInvoke(IPC_CHANNELS.WINDOW_SET_FULLSCREEN, flag),
+      onMaximizeChanged: (callback) =>
+        onChannel<boolean>(IPC_CHANNELS.WINDOW_MAXIMIZED_CHANGED, callback),
       setTrafficLightVisibility: (visible) =>
         safeInvoke(IPC_CHANNELS.WINDOW_SET_TRAFFIC_LIGHT_VISIBILITY, visible),
       openExport: (chapterId) =>

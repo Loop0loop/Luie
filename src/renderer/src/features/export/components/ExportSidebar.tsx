@@ -4,6 +4,7 @@ import { Download, FileText, Layout, Type, AlignJustify, Info, ChevronDown, Chev
 import { cn } from "@shared/types/utils";
 
 const IS_MACOS = navigator.userAgent.toLowerCase().includes("mac");
+const IS_WINDOWS = navigator.userAgent.toLowerCase().includes("win");
 
 const SectionHeader = ({
   id,
@@ -95,10 +96,13 @@ export function ExportSidebar({
           NOTE: 창 프레임(p-2=8px) 안에서 패널 로컬 좌표로 트래픽 라이트와 정렬한다.
           라이트 그룹은 창 좌표 (16,16)~(68,28) — h-7(28px) 행의 세로 중앙(14px)+8px가
           라이트 중심 y=22와 맞고, pl-[72px]+8px는 위저드 pl-20과 같은 창 기준 80px
-          클리어런스다. macOS 전용 — 그 외 플랫폼은 네이티브 타이틀바가 있다. */}
-      {IS_MACOS && (
+          클리어런스다. Windows도 frameless라 이 줄이 드래그 핸들이 된다(버튼은 우측
+          미리보기 위 인앱 버튼). Linux 등 나머지 플랫폼은 네이티브 타이틀바가 있다. */}
+      {(IS_MACOS || IS_WINDOWS) && (
         <div
-          className="h-7 flex items-center pl-[72px] pr-2 shrink-0"
+          className={`h-7 flex items-center pr-2 shrink-0 ${
+            IS_MACOS ? "pl-[72px]" : "pl-2"
+          }`}
           style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
         >
           <span className="text-[12px] font-semibold text-fg tracking-tight">

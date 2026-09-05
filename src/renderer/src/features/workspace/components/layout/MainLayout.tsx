@@ -48,6 +48,7 @@ import { createLogger } from "@shared/logger";
 
 const logger = createLogger("MainLayout");
 const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
+const isWindows = navigator.userAgent.toLowerCase().includes("win");
 // NOTE: 기본값을 inline `[]`로 두면 매 render마다 새 배열이 되어 이 값을 dependency로 쓰는
 // `onContentLayoutChanged`가 계속 재생성되고 PanelGroup의 handler prop이 매번 교체된다.
 const EMPTY_PANEL_IDS: readonly string[] = [];
@@ -524,7 +525,11 @@ export default function MainLayout({
             {!isCanvasMode && (
               <button
                 onClick={toggleContextPanel}
-                className={`absolute right-2 top-2 z-dropdown flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-colors cursor-pointer ${
+                // NOTE: Windows는 우상단 코너를 인앱 창 버튼(높이 32px)이 쓴다.
+                // AI 뷰 토글을 그 아래 줄로 내려 겹침을 피한다.
+                className={`absolute right-2 z-dropdown flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-colors cursor-pointer ${
+                  isWindows ? "top-10" : "top-2"
+                } ${
                   isContextOpen
                     ? "bg-accent text-accent-fg shadow-control font-semibold"
                     : "border border-border bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-control"
