@@ -1,0 +1,19 @@
+{
+  "baseline": {
+    "revision": 5,
+    "exportedRevision": 5
+  },
+  "pending": {
+    "revision": 7,
+    "exportedRevision": 5
+  },
+  "localProjectUpdatedAt": "2026-09-08T08:16:00.228Z",
+  "packageUpdatedAt": "2026-09-08T08:16:00.231Z",
+  "beforeOpen": "new committed B",
+  "conflict": "luie-newer",
+  "afterOpen": "checkpoint A",
+  "afterRevision": {
+    "revision": 9,
+    "exportedRevision": 9
+  }
+}

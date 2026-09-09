@@ -1,0 +1,40 @@
+{
+  "runtime": {
+    "node": "v22.23.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "scope": "actual current full and entry writer, actual readLuieContainerEntry; 5MiB+1 synthetic ASCII chapter; native files only in temp",
+  "cases": [
+    {
+      "mode": "full",
+      "writerResolved": true,
+      "entryBytes": 5242881,
+      "packageBytes": 5267456,
+      "readerRejected": {
+        "message": "SQLite-backed .luie entry is too large",
+        "code": "FS_2001",
+        "details": {
+          "packagePath": "/private/tmp/luie-package-size-limit-WVOaYU/full.luie",
+          "entryPath": "manuscript/c0.md",
+          "maxSizeBytes": 5242880
+        }
+      }
+    },
+    {
+      "mode": "entry",
+      "writerResolved": true,
+      "entryBytes": 5242881,
+      "packageBytes": 5267456,
+      "readerRejected": {
+        "message": "SQLite-backed .luie entry is too large",
+        "code": "FS_2001",
+        "details": {
+          "packagePath": "/private/tmp/luie-package-size-limit-WVOaYU/entry.luie",
+          "entryPath": "manuscript/c0.md",
+          "maxSizeBytes": 5242880
+        }
+      }
+    }
+  ]
+}
