@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
+import { createPortal } from "react-dom";
 import { Copy, Minus, Square, X } from "lucide-react";
 import { api } from "@shared/api";
 import { useWindowsWindowControlsStore } from "./windowsWindowControlsStore";
@@ -104,7 +105,14 @@ export function WindowsWindowControls({ embedded = false }: { embedded?: boolean
     );
   }
 
-  return (
+  // NOTE: fixed 변형은 document.body로 portal한다. Chromium은 draggable region을 DOM
+  // pre-order로 누적하고, 나중에 만난 drag 영역이 앞서 누적된 no-drag 영역을 다시
+  // 덮는다(z-index는 지역 계산에 무관). 화면 콘텐츠는 풀폭 drag 헤더를 이 컴포넌트보다
+  // 늦게 렌더하는 경우가 많다(위저드 h-12 헤더, export 툴바, scrivener 리본). #root
+  // 안에 두면 버튼의 no-drag가 그 drag 헤더에 덮여 클릭이 창 드래그로 흡수된다.
+  // body 끝에 붙이면 문서에서 가장 늦게 계산되므로 어떤 화면 헤더 위에서도 no-drag가
+  // 확정된다.
+  return createPortal(
     <div
       className="z-window-controls fixed top-0 right-0 flex h-8 select-none items-stretch"
       style={{
@@ -116,6 +124,7 @@ export function WindowsWindowControls({ embedded = false }: { embedded?: boolean
     >
       <div aria-hidden="true" className="w-24" style={DRAG} />
       {buttons}
-    </div>
+    </div>,
+    document.body,
   );
 }

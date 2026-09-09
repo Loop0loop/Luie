@@ -6,7 +6,7 @@ import {
   useRef,
 } from "react";
 import { AIPanel } from "@renderer/features/ai";
-import { Bot, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import {
   Panel,
   Group as PanelGroup,
@@ -39,6 +39,7 @@ import {
 import { useElementWidth } from "@renderer/features/workspace/hooks/useElementWidth";
 import { useRestoredPanelSize } from "@renderer/features/workspace/hooks/useRestoredPanelSize";
 import { useResizablePanelPresence } from "@renderer/features/workspace/hooks/useResizablePanelPresence";
+import { useWindowsWindowControlsStore } from "@renderer/app/shell/windowsWindowControlsStore";
 import {
   shouldCloseMainLayoutPanelOnResize,
   shouldPersistMainLayoutContext,
@@ -49,6 +50,10 @@ import { createLogger } from "@shared/logger";
 const logger = createLogger("MainLayout");
 const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
 const isWindows = navigator.userAgent.toLowerCase().includes("win");
+// NOTE: Windows 인앱 창 버튼(최소화/최대화/닫기)은 원래 우상단 코너에 고정된다. AI 뷰
+// 토글을 에디터와 같은 줄(top-2) 우상단에 올리면서, 창 버튼은 그 아래 줄로 내려 서로
+// 위치를 맞바꾼다(창 버튼이 있던 자리 → AI 토글, AI 토글이 있던 자리 → 창 버튼).
+const WINDOW_CONTROLS_TOP_INSET_PX = 40;
 // NOTE: 기본값을 inline `[]`로 두면 매 render마다 새 배열이 되어 이 값을 dependency로 쓰는
 // `onContentLayoutChanged`가 계속 재생성되고 PanelGroup의 handler prop이 매번 교체된다.
 const EMPTY_PANEL_IDS: readonly string[] = [];
@@ -103,6 +108,12 @@ export default function MainLayout({
   const mainLayoutGroupRef = useRef<HTMLDivElement | null>(null);
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   const contextPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const setWindowsControlsPlacement = useWindowsWindowControlsStore(
+    (state) => state.setPlacement,
+  );
+  const resetWindowsControlsPlacement = useWindowsWindowControlsStore(
+    (state) => state.resetPlacement,
+  );
   const activeResizeSurfaceRef = useRef<MainLayoutResizeSurface | null>(null);
   const activeResizeClearTimerRef = useRef<number | null>(null);
   const openingRegionRef = useRef<"leftSidebar" | "rightPanel" | null>(null);
@@ -246,6 +257,15 @@ export default function MainLayout({
     },
     [],
   );
+
+  // NOTE: AI 뷰 토글을 에디터와 같은 줄(top-2)로 올리면 Windows 창 버튼(우상단 고정)과
+  // 겹친다. 창 버튼을 아래 줄로 내려 서로 위치를 바꾸고, AI 뷰가 없는 캔버스 모드에서는
+  // 건드리지 않는다. 레이아웃을 벗어나거나 캔버스로 전환되면 배치를 되돌린다.
+  useEffect(() => {
+    if (!isWindows || isCanvasMode) return undefined;
+    setWindowsControlsPlacement({ topInset: WINDOW_CONTROLS_TOP_INSET_PX });
+    return () => resetWindowsControlsPlacement();
+  }, [isWindows, isCanvasMode, setWindowsControlsPlacement, resetWindowsControlsPlacement]);
   const {
     isClosing: isContextClosing,
     isOpening: isContextOpening,
@@ -525,11 +545,7 @@ export default function MainLayout({
             {!isCanvasMode && (
               <button
                 onClick={toggleContextPanel}
-                // NOTE: Windows는 우상단 코너를 인앱 창 버튼(높이 32px)이 쓴다.
-                // AI 뷰 토글을 그 아래 줄로 내려 겹침을 피한다.
-                className={`absolute right-2 z-dropdown flex h-8 items-center gap-1.5 rounded-control px-2.5 text-xs font-medium transition-colors cursor-pointer ${
-                  isWindows ? "top-10" : "top-2"
-                } ${
+                className={`absolute right-2 z-dropdown flex h-8 items-center rounded-control px-2.5 text-xs font-medium transition-colors cursor-pointer top-2 ${
                   isContextOpen
                     ? "bg-accent text-accent-fg shadow-control font-semibold"
                     : "border border-border bg-element text-fg hover:bg-surface-hover hover:text-accent shadow-control"
@@ -546,7 +562,6 @@ export default function MainLayout({
                     : t("ai.sidePanel.open")
                 }
               >
-                <Bot className="h-4 w-4" />
                 <span>{t("ai.sidePanel.view")}</span>
               </button>
             )}
