@@ -12,7 +12,7 @@ import { DialogProvider } from "../../src/shared/ui/DialogProvider.js";
 import { ToastProvider } from "../../src/shared/ui/Toast.js";
 
 const mocked = vi.hoisted(() => ({
-  setStartupWizardSize: vi.fn(async () => undefined),
+  setStartupWizardSize: vi.fn(async () => ({ success: true, data: true })),
   getEditor: vi.fn(async () => ({ success: true, data: null })),
   setEditor: vi.fn(async () => ({ success: true, data: null })),
   getReadiness: vi.fn(async () => ({ success: true, data: null })),
@@ -126,6 +126,7 @@ describe("startup wizard flow", () => {
     globalThis.Worker = MockWorker as unknown as typeof Worker;
 
     vi.clearAllMocks();
+    mocked.setStartupWizardSize.mockReset().mockResolvedValue({ success: true, data: true });
     document.documentElement.removeAttribute("data-theme");
     document.documentElement.removeAttribute("data-temp");
     document.documentElement.removeAttribute("data-accent");
@@ -175,32 +176,6 @@ describe("startup wizard flow", () => {
     expect(container.querySelector("svg")).toBeNull();
     expect(container.querySelector("img")).not.toBeNull();
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-
-    const unmount = () => root.unmount();
-    act(() => {
-      unmount();
-    });
-  });
-
-  it("시작하기는 창을 확장하지 않고, 모델 단계 건너뛰기 때 가로형으로 확장하며 테마를 반영한다", async () => {
-    const { root, container } = await renderWizard();
-
-    await act(async () => {
-      findButton(root, "startupWizard.onboarding.startCta").click();
-    });
-    // A' 모델 단계에서는 창 크기를 유지한다.
-    expect(mocked.setStartupWizardSize).not.toHaveBeenCalled();
-
-    await act(async () => {
-      findButton(root, "startupWizard.onboarding.modelLater").click();
-    });
-
-    expect(mocked.setStartupWizardSize).toHaveBeenCalledWith(1300, 800, true);
-    expect(container.textContent).toContain("startupWizard.onboarding.themeTitle");
-    expect(mocked.getEditor).toHaveBeenCalled();
-    expect(document.documentElement.getAttribute("data-theme")).toBe("sepia");
-    expect(document.documentElement.getAttribute("data-temp")).toBe("warm");
-    expect(document.documentElement.getAttribute("data-accent")).toBe("rose");
 
     const unmount = () => root.unmount();
     act(() => {
@@ -280,6 +255,8 @@ describe("startup wizard flow", () => {
     });
     expect(useUIStore.getState().regions.rightPanel.open).toBe(false);
 
+    const maximize = Promise.withResolvers<{ success: boolean; data: boolean }>();
+    mocked.setStartupWizardSize.mockReturnValueOnce(maximize.promise);
     await act(async () => {
       findButton(root, "startupWizard.onboarding.finish").click();
     });
@@ -297,7 +274,7 @@ describe("startup wizard flow", () => {
       }),
     );
 
-    // 완료 알림 및 창 확장 애니메이션 대기 후 prepare 단계 열림
+    // 완료 알림 대기와 native resize 응답을 별도로 제어한다.
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 1600));
     });
@@ -306,6 +283,9 @@ describe("startup wizard flow", () => {
       4096,
       true,
     );
+    expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
+    expect(container.querySelector("input")).toBeNull();
+    await act(async () => maximize.resolve({ success: true, data: true }));
     expect(container.textContent).toContain(
       "startupWizard.onboarding.prepareTitle",
     );

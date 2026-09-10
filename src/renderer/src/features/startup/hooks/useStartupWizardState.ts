@@ -12,6 +12,13 @@ import type {
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+type WizardResizeRequest = {
+  width: number;
+  height: number;
+  nextStep: WizardStep;
+  animate: boolean;
+};
+
 export function useStartupWizardState() {
   const isMountedRef = useRef(true);
   useEffect(() => {
@@ -26,6 +33,42 @@ export function useStartupWizardState() {
     useState<FinalizingPhase>("initializing");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [resizeRequest, setResizeRequest] =
+    useState<WizardResizeRequest | null>(null);
+  const resizeRetryRef = useRef<WizardResizeRequest | null>(null);
+
+  useEffect(() => {
+    if (!resizeRequest) return;
+    let cancelled = false;
+    // 빈 배경이 DOM에 반영된 뒤 native resize를 요청해 preview 재배치와 겹치지 않는다.
+    void (async () => {
+      try {
+        const response = await api.window.setStartupWizardSize(
+          resizeRequest.width,
+          resizeRequest.height,
+          resizeRequest.animate,
+        );
+        if (cancelled) return;
+        if (!response.success || response.data !== true) {
+          throw new Error(
+            response.error?.message ?? "Failed to resize startup wizard",
+          );
+        }
+        resizeRetryRef.current = null;
+        setStep(resizeRequest.nextStep);
+      } catch (error) {
+        if (cancelled) return;
+        resizeRetryRef.current = resizeRequest;
+        setErrorMessage(getErrorMessage(error));
+        setStep("error");
+      } finally {
+        if (!cancelled) setResizeRequest(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [resizeRequest]);
 
   const [editorSettings, setEditorSettings] = useState<EditorSettings | null>(
     null,
@@ -63,16 +106,29 @@ export function useStartupWizardState() {
 
   const handleModelContinue = useCallback(() => {
     // B 단계부터는 1300×800 가로형으로 확장한다. 작은 디스플레이는 main handler가
-    // workArea에 맞춰 clamp한다. 확장 애니메이션은 main handler에서 600ms
-    // easeOutCubic으로 보간하며, 애니메이션 여부는 enableAnimations 판정을 그대로 넘긴다.
-    void api.window.setStartupWizardSize(1300, 800, animationsEnabled);
-    setStep("theme");
+    // workArea에 맞춰 clamp한다. OS별 애니메이션 여부는 main에서 결정한다.
+    setResizeRequest(
+      (current) =>
+        current ?? {
+          width: 1300,
+          height: 800,
+          nextStep: "theme",
+          animate: animationsEnabled,
+        },
+    );
   }, [animationsEnabled]);
 
   const handleThemePrevious = useCallback(() => {
     // 모델 준비(A') 단계로 돌아갈 때는 초기 콤팩트 크기로 창을 복원한다.
-    void api.window.setStartupWizardSize(-1, -1, animationsEnabled);
-    setStep("model");
+    setResizeRequest(
+      (current) =>
+        current ?? {
+          width: -1,
+          height: -1,
+          nextStep: "model",
+          animate: animationsEnabled,
+        },
+    );
   }, [animationsEnabled]);
 
   const persistEditorSettings = useCallback(async () => {
@@ -142,12 +198,15 @@ export function useStartupWizardState() {
         await new Promise((resolve) => setTimeout(resolve, 800));
         if (!isMountedRef.current) return;
 
-        // workArea 기반 화면 최대 크기로 창 확장 (main 핸들러가 workArea-40으로 clamp)
-        // NOTE: 핸들러가 애니메이션 완료까지 await해 반환한다 — animationsEnabled가
-        // 꺼져 있으면 즉시 반환되므로 블라인드 타이머 대기는 없다.
-        await api.window.setStartupWizardSize(4096, 4096, animationsEnabled);
-        if (!isMountedRef.current) return;
-        setStep("prepare");
+        setResizeRequest(
+          (current) =>
+            current ?? {
+              width: 4096,
+              height: 4096,
+              nextStep: "prepare",
+              animate: animationsEnabled,
+            },
+        );
       } catch (error) {
         if (!isMountedRef.current) return;
         setStep("error");
@@ -205,6 +264,10 @@ export function useStartupWizardState() {
   }, [completeStartup, isCreatingProject, projectTitle]);
 
   const handleRetry = useCallback(() => {
+    if (resizeRetryRef.current) {
+      setResizeRequest(resizeRetryRef.current);
+      return;
+    }
     setAttempt((prev) => prev + 1);
   }, []);
 
@@ -222,6 +285,7 @@ export function useStartupWizardState() {
 
   return {
     step,
+    isResizing: resizeRequest !== null,
     setStep,
     finalizingPhase,
     errorMessage,

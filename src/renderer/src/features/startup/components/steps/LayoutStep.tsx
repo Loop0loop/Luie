@@ -1,12 +1,18 @@
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { GlobalDragContext } from "@shared/ui/GlobalDragContext";
 import { layoutFallback } from "@renderer/features/workspace/components/layout/rootShell";
 import type { LayoutChoice } from "../../types/wizard";
 import { PreviewBoundary } from "../PreviewBoundary";
 import { WizardFloatingDock } from "../WizardFloatingDock";
-import { LayoutLivePreview } from "../preview/LayoutLivePreview";
 import { LayoutThumb } from "../preview/LayoutThumb";
+
+// preview 로딩/실패와 독의 설정·이전/완료 버튼 수명을 분리한다.
+const LayoutLivePreview = lazy(() =>
+  import("../preview/LayoutLivePreview").then((module) => ({
+    default: module.LayoutLivePreview,
+  })),
+);
 
 interface LayoutStepProps {
   uiMode: LayoutChoice;
@@ -32,10 +38,7 @@ export function LayoutStep({
 
   return (
     <div className="fixed inset-0 z-50">
-      <div
-        key={uiMode}
-        className="absolute inset-0 animate-in fade-in duration-300"
-      >
+      <div key={uiMode} className="absolute inset-0">
         <PreviewBoundary
           fallback={
             <div className="flex h-full w-full items-center justify-center bg-app p-6">

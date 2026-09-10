@@ -17,7 +17,7 @@ const mocked = vi.hoisted(() => {
   const listeners: Array<(payload: ProgressPayload) => void> = [];
   return {
     listeners,
-    setStartupWizardSize: vi.fn(async () => undefined),
+    setStartupWizardSize: vi.fn(async () => ({ success: true, data: true })),
     getEditor: vi.fn(async () => ({ success: true, data: null })),
     getEmbeddingModelStatus: vi.fn(async () => ({
       success: true,

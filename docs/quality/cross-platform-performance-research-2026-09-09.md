@@ -1,12 +1,22 @@
 # 크로스플랫폼 성능 사전조사 — 2026-09-09
 
-상태: 그래프·소스·production 빌드 교차 검증 완료 / 구현 전 계획. 소스 기준 `bbc2842d`. 현재 세션 기기는 사용자 제공 정보 기준 MacBook Air M4, 16GB다. Windows에서 위저드 표시까지 5초 이상, Mac에서 약 1초라는 관찰은 아직 같은 조건의 계측 결과가 아니다. Windows 기종·실기/VM·OS/앱 아키텍처·실행 방식·실제 바이너리 버전은 미확인이다.
+상태: 사전조사 완료 / **P0 계측 구현 진행 중**. 조사 소스 기준 `bbc2842d`. 현재 세션 기기는 사용자 제공 정보 기준 MacBook Air M4, 16GB다. 후속 보고: Windows 11 x64 실기(i5-9400F, RX 570, 16GB, SSD)는 Wizard·main window 약 3초이며 portable·개발 실행 모두 비슷하다. Apple CPU로 표시된 Windows 11 VM(8GB, SSD)은 5초 이상이며 guest OS/app arch와 가상 GPU는 아직 미확정이다. Mac 약 1초를 포함해 모두 같은 조건의 계측값은 아니다. 실행 방법·ISTQB 관점 테스트·실패·미검증 항목은 [P0 테스트 기록](startup-performance-p0.md)에 계속 기록한다.
 
 **후속 사용자 결정 — 아래의 기존 sidecar 운용·모델 예산 제안보다 우선한다:** 모든 지원 OS/아키텍처에서 생성용 LLM sidecar와 **BGE-M3 임베딩용 sidecar를 모두 비활성화할 예정**이다. RAG·Memory Engine 및 이를 담당하는 기존 utility process는 유지한다. 이번 변경은 문서 기록이며 제품 코드에서 비활성화를 실행한 상태가 아니다. 임베딩 없는 검색 범위·RAG 응답 생성 경로는 별도 검증하고, 외부 API로 자동 전환하거나 기존 모델·벡터·원고 데이터를 삭제하지 않는다. 상세 범위와 완료 조건은 §11을 따른다.
 
 **실행 범위:** P0~P3만 활성 계획이다. P4는 **Deferred**이며 완료를 위한 필수 단계가 아니다. 제품에는 CPU/RAM 기반 자동 튜닝·기기 등급·상시 자원 sampler를 추가하지 않는다. §11.3~11.5는 플랫폼 사실, OS 이벤트, 명시적 진단, 기존 job 규칙만 정의한다. 이전 빌드/테스트 결과는 조사 기준선이며 이 설계의 구현 검증 결과가 아니다.
 
-메인 조사와 서브에이전트 3개가 시작 경로, 최신 스택, OS 자원, IPC/utility를 분담했다. 기존 [성능 기준 v1](performance-standard-v1.md), [IPC 감사](performance-audit-2026-09-08/ipc.md), [main/플랫폼 감사](performance-audit-2026-09-08/main-platform.md), [시작 파이프라인 문서](../architecture/startup-pipeline-dissection.md)를 현재 소스와 대조했다. 최초 조사 이후 code-review-graph MCP를 CLI로 연결하고 HEAD까지 갱신하여, 같은 3개 조사 영역을 그래프 우선으로 재검증했다. 그래프의 누락·모호한 연결은 소스·새 production 빌드·기존 테스트로 보완했다(§10). 제품 코드·의존성·OS 설정은 변경하지 않았고 앱 실행·실기 벤치마크는 하지 않았다. MCP 연결 설정은 별도 선행 작업이다.
+**2026-09-10 후속 구현:** Windows 실기 접근 전에도 공통 경로를 개선하라는 사용자 승인으로 preview 2개의 lazy 로딩을 적용했다. 첫 Wizard 정적 JS 범위 1,540,157→708,060 bytes; Windows 성능 개선은 미검증이다. 세부 전후 표본·테스트·기존 실패·트레이드오프는 [P1-1 기록](startup-performance-p1.md)을 따른다. P0 전체 완료로 표시하지 않는다.
+
+**P1-2 모션 후속:** Wizard의 800ms/16ms native resize 보간을 제거하고 목표 bounds를 0~1회 적용하도록 변경했다. Intro·전체 preview fade 제거, 일반 단계는 200ms opacity-only. 회귀 테스트·실행 결과와 수동 resize/Windows 미검증 경계는 [P1 §6](startup-performance-p1.md#6-p1-2--위저드-애니메이션프로그램-리사이즈-비용-축소)에 기록한다.
+
+**현재 resize 정책:** 후속 사용자 요청에 따라 macOS만 Electron 기본 창 애니메이션을 사용한다(앱 애니메이션 off 또는 OS 동작 줄이기 on이면 즉시 적용). Windows는 실측 전까지 즉시 적용을 유지하며 JS 보간은 복원하지 않는다. [P1 §7의 정책·추가 검증](startup-performance-p1.md#7-p1-2-조정--macos-창-전환만-애니메이션-허용)을 우선한다.
+
+**배경 전환 추가:** 위저드 resize 중에는 배경만 렌더하고, macOS `resized` 완료(누락 시 2초 안전 복구) 후 다음 preview를 마운트한다. Windows는 별도 이벤트 대기 없이 진행한다. 새 채널 없이 기존 IPC를 사용하며 오류·닫힘·중복 요청을 정리한다. [P1 §8의 테스트·Mac 실측](startup-performance-p1.md#8-p1-2-조정--resize-중-배경만-표시하고-완료-후-preview-마운트)이 최신 완료 대기 계약이다.
+
+**최신 Windows 정책:** 사용자 요청으로 Windows에도 200ms/최대 13단계의 제한된 창 보간을 활성화했다. 배경만 표시한 뒤 최종 bounds 적용 후 preview를 마운트한다. Mac은 native 유지, OS 동작 줄이기/rich-animation 비권장/앱 off는 즉시 적용한다. [P1 §9](startup-performance-p1.md#9-windows-애니메이션-활성화--작업-예산과-lifecycle-제한)가 앞선 Windows 즉시 적용 정책을 대체하며, Windows 실기 성능은 여전히 미검증이다.
+
+메인 조사와 서브에이전트 3개가 시작 경로, 최신 스택, OS 자원, IPC/utility를 분담했다. 기존 [성능 기준 v1](performance-standard-v1.md), [IPC 감사](performance-audit-2026-09-08/ipc.md), [main/플랫폼 감사](performance-audit-2026-09-08/main-platform.md), [시작 파이프라인 문서](../architecture/startup-pipeline-dissection.md)를 현재 소스와 대조했다. 최초 조사 이후 code-review-graph MCP를 CLI로 연결하고 HEAD까지 갱신하여, 같은 3개 조사 영역을 그래프 우선으로 재검증했다. 그래프의 누락·모호한 연결은 소스·새 production 빌드·기존 테스트로 보완했다(§10). §1~10 사전조사 당시에는 제품 코드·의존성·OS 설정 변경이나 앱 실행·실기 벤치마크를 하지 않았다. 후속 P0에서는 테스트 전용 실행기를 추가해 Mac 계측을 시작했으며 그 결과/실패는 별도 P0 문서에 기록한다. MCP 연결 설정은 별도 선행 작업이다.
 
 ## 1. 결론과 버전 기준
 

@@ -1,8 +1,4 @@
-import {
-  app,
-  screen,
-  BrowserWindow,
-} from "electron";
+import { app, BrowserWindow } from "electron";
 import { windowManager } from "../../../app/windows/index.js";
 import { applyTrafficLightPosition } from "../../../manager/window/windowChrome.js";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
@@ -21,31 +17,7 @@ import {
   windowSetStartupWizardSizeArgsSchema,
   windowSetTrafficLightVisibilityArgsSchema,
 } from "../../../../shared/schemas/index.js";
-import {
-  calculateStartupWizardExpandedBounds,
-  calculateStartupWizardInitialBounds,
-} from "../../../manager/window/windowStartupWizard.js";
-
-// 위저드 단계 전환(A 인트로 → B 테마)의 창 확장 애니메이션. 창이 커지는 동안 내용물이
-// 재배치되는 걸 따라갈 수 있도록 여유 있는 길이로 보간하고(easeOutCubic), 프레임마다
-// 시작 중심점 기준으로 bounds를 잡아 폭이 커질 때 창이 한쪽으로 늘어나 보이지 않게 한다.
-const WIZARD_RESIZE_ANIMATION_MS = 800;
-const WIZARD_RESIZE_TICK_MS = 16;
-
-let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
-// 진행 중 애니메이션의 완료 통지. 새 애니메이션이 이전 것을 중단시킬 때 이전
-// awaiter가 영원히 대기하지 않도록 즉시 resolve한다.
-let wizardResizeCompletion: (() => void) | null = null;
-
-const settleWizardResize = (): void => {
-  if (wizardResizeTimer) {
-    clearTimeout(wizardResizeTimer);
-    wizardResizeTimer = null;
-  }
-  const completion = wizardResizeCompletion;
-  wizardResizeCompletion = null;
-  completion?.();
-};
+import { resizeStartupWizardWindow } from "../../../manager/window/windowStartupWizardResize.js";
 
 // NOTE: 창 제어 채널(minimize/maximize/unmaximize/close)은 "호출한 렌더러가 속한
 // 창"을 대상으로 해야 한다(메인·내보내기 창 동시 실행 대응). 핸들러 규약상 event를
@@ -67,94 +39,6 @@ const resolveWindowControlTarget = (): BrowserWindow | null => {
   }
   return windowManager.getMainWindow();
 };
-
-// 디스플레이 작업 영역(workArea) 내에서 대상 영역을 계산한다.
-// 1. 음수 크기(-1, -1 등): A 인트로/모델 단계의 초기 콤팩트 bounds로 복원
-// 2. 최대 크기(4000 이상 또는 workArea 이상): 여백 없이 workArea 100% 채움
-// 3. 가로형 확장 프리뷰(1200 이상): 화면 82% 비율 + clamp 기반 동적 bounds 적용
-// 4. 기타 크기: workArea 내 중앙 정렬
-const getTargetWizardBounds = (
-  win: BrowserWindow,
-  width: number,
-  height: number,
-): { x: number; y: number; width: number; height: number } => {
-  if (width < 0 || height < 0) {
-    const initial = calculateStartupWizardInitialBounds(win);
-    return {
-      x: initial.x,
-      y: initial.y,
-      width: initial.width,
-      height: initial.height,
-    };
-  }
-
-  const workArea = screen.getDisplayMatching(win.getBounds()).workArea;
-
-  if (width >= 4000 || (width >= workArea.width && height >= workArea.height)) {
-    return {
-      x: workArea.x,
-      y: workArea.y,
-      width: workArea.width,
-      height: workArea.height,
-    };
-  }
-
-  if (width >= 1200 || (width === 0 && height === 0)) {
-    return calculateStartupWizardExpandedBounds(win);
-  }
-
-  const clampedWidth = Math.min(width, workArea.width);
-  const clampedHeight = Math.min(height, workArea.height);
-
-  return {
-    x: Math.round(workArea.x + (workArea.width - clampedWidth) / 2),
-    y: Math.round(workArea.y + (workArea.height - clampedHeight) / 2),
-    width: clampedWidth,
-    height: clampedHeight,
-  };
-};
-
-const animateWizardResize = (
-  win: BrowserWindow,
-  target: { x: number; y: number; width: number; height: number },
-): Promise<void> =>
-  new Promise((resolve) => {
-    // 이전 애니메이션이 살아 있으면 중단하고 그 awaiter부터 풀어준다.
-    settleWizardResize();
-    wizardResizeCompletion = resolve;
-
-    const [startWidth, startHeight] = win.getSize();
-    const [startX, startY] = win.getPosition();
-    const startedAt = Date.now();
-
-    const tick = () => {
-      const progress = Math.min(
-        1,
-        (Date.now() - startedAt) / WIZARD_RESIZE_ANIMATION_MS,
-      );
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const width = Math.round(startWidth + (target.width - startWidth) * eased);
-      const height = Math.round(
-        startHeight + (target.height - startHeight) * eased,
-      );
-      const x = Math.round(startX + (target.x - startX) * eased);
-      const y = Math.round(startY + (target.y - startY) * eased);
-
-      win.setBounds({
-        x,
-        y,
-        width,
-        height,
-      });
-
-      if (progress < 1) {
-        wizardResizeTimer = setTimeout(tick, WIZARD_RESIZE_TICK_MS);
-      } else {
-        settleWizardResize();
-      }
-    };
-    tick();
-  });
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
   registerIpcHandlers(logger, [
@@ -365,23 +249,14 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_SET_STARTUP_WIZARD_SIZE",
       failMessage: "Failed to resize startup wizard window",
       argsSchema: windowSetStartupWizardSizeArgsSchema,
-      handler: async (width: number, height: number, animate: boolean) => {
-        // NOTE: 위저드 단계 전환(A 인트로 → B 테마)에 맞춘 리사이즈다. 메인 창이
-        // 아니라 위저드 창을 움직여야 하므로 전용 접근자를 쓴다. 애니메이션은
-        // renderer의 enableAnimations(및 OS reduced-motion) 판정을 그대로 받는다.
-        // 애니메이션 완료까지 await해 반환하므로 renderer가 블라인드 타이머 대신
-        // 실제 완료 시점을 기다릴 수 있다(useStartupWizardState의 650ms 대기 대체).
-        const win = windowManager.getStartupWizardWindow();
-        if (!win) return false;
-        const targetBounds = getTargetWizardBounds(win, width, height);
-        if (!animate) {
-          settleWizardResize();
-          win.setBounds(targetBounds);
-          return true;
-        }
-        await animateWizardResize(win, targetBounds);
-        return true;
-      },
+      handler: (width: number, height: number, animate: boolean) =>
+        resizeStartupWizardWindow(
+          windowManager.getStartupWizardWindow(),
+          width,
+          height,
+          animate,
+          logger,
+        ),
     },
   ]);
 }

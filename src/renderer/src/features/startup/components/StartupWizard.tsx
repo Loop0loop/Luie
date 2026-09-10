@@ -12,6 +12,7 @@ import { ThemeStep } from "./steps/ThemeStep";
 export default function StartupWizard() {
   const {
     step,
+    isResizing,
     setStep,
     finalizingPhase,
     errorMessage,
@@ -42,6 +43,16 @@ export default function StartupWizard() {
   // min-h-screen이면 콘텐츠가 세로로 밀릴 때 루트 자체가 창 밖으로 자라 하단 버튼이
   // 클립되어 누를 수 없게 된다.
   const isBootstrapStage = step === "intro" || step === "model";
+  if (isResizing) {
+    return (
+      <div
+        aria-busy="true"
+        className={`h-screen w-screen overflow-hidden ${
+          isBootstrapStage ? "bg-wizard-bootstrap" : "bg-app"
+        }`}
+      />
+    );
+  }
   return (
     <div
       className={`flex h-screen w-screen flex-col overflow-hidden text-fg ${
@@ -57,19 +68,18 @@ export default function StartupWizard() {
         />
       ) : null}
 
-      {/* 단계 전환은 저장소 모션 규범(animate-in)을 따른다. 비활성화 스위치는
+      {/* 첫 화면은 즉시 표시하고 후속 단계만 짧게 페이드한다. 비활성화 스위치는
           data-animations → global.behaviors.css가 닫아 준다. workArea clamp 등으로
           내용이 세로로 밀리면 본문이 스스로 스크롤한다. */}
       {step !== "theme" && step !== "layout" ? (
         <main
           key={step}
-          className="animate-in fade-in slide-in-from-bottom-2 flex min-h-0 flex-1 flex-col overflow-y-auto px-10 pb-8 duration-300"
+          className={`flex min-h-0 flex-1 flex-col overflow-y-auto px-10 pb-8 ${
+            step === "intro" ? "" : "animate-in fade-in duration-200"
+          }`}
         >
           {step === "intro" ? (
-            <IntroStep
-              onStart={handleStart}
-              onSkip={() => void finalize()}
-            />
+            <IntroStep onStart={handleStart} onSkip={() => void finalize()} />
           ) : null}
 
           {step === "model" ? (
