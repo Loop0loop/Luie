@@ -64,7 +64,7 @@ export function TemplateGrid({
               border border-white/5 
               rounded-control 
               overflow-hidden 
-              transition-all duration-300 
+              transition-[transform,background-color,border-color] duration-200 ease-out motion-reduce:transition-none motion-reduce:group-hover:translate-y-0
               shadow-control
               group-hover:-translate-y-1.5 
               group-hover:shadow-xl 
@@ -153,12 +153,12 @@ export function TemplateGrid({
 
                 <div
                   className={cn(
-                    "pointer-events-none absolute inset-0 bg-linear-to-t from-bg-app/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100",
+                    "pointer-events-none absolute inset-0 bg-linear-to-t from-bg-app/40 to-transparent opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none group-hover:opacity-100",
                   )}
                 />
               </div>
 
-              <div className="text-center group-hover:transform group-hover:-translate-y-0.5 transition-transform duration-300">
+              <div className="text-center transition-transform duration-200 ease-out motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 group-hover:-translate-y-0.5">
                 <span className="font-medium text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors tracking-wide">
                   {template.title}
                 </span>

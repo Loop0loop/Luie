@@ -331,7 +331,8 @@ export default function EditorRoot() {
     };
   }, []);
 
-  const sharedEditor =
+  const sharedEditor = useMemo(
+    () =>
     activeChapterId !== null && chapterLoadError ? (
       <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-app p-8 text-center">
         <p className="text-sm text-muted">
@@ -380,8 +381,24 @@ export default function EditorRoot() {
         onEditorReady={setDocEditor}
       />
     </FeatureErrorBoundary>
-    );
-  const additionalPanelsComponent = (
+    ),
+    [
+      activeChapter,
+      activeChapterId,
+      chapterLoadError,
+      content,
+      contentRevision,
+      handleOpenWorldGraph,
+      handleSave,
+      isChapterContentLoaded,
+      isDocsMobileView,
+      isDocsMode,
+      t,
+      uiMode,
+    ],
+  );
+  const additionalPanelsComponent = useMemo(
+    () => (
     <Suspense fallback={null}>
       <WorkspacePanels
         panels={panels}
@@ -393,12 +410,26 @@ export default function EditorRoot() {
         onSave={handleSave}
       />
     </Suspense>
+    ),
+    [
+      activeChapterId,
+      activeChapterTitle,
+      chapters,
+      currentProject?.id,
+      handleSave,
+      panels,
+      removePanel,
+    ],
   );
   // Snapshot/Research가 AI View와 맞닿을 때만 rounded 경계를 사용한다.
   const isResearchPanelAdjacent = ["research", "snapshot"].includes(
     panels[0]?.content.type ?? "",
   );
   const isEditorPanelAdjacent = panels[0]?.content.type === "editor";
+  const toggleDocsMobileView = useCallback(
+    () => setIsDocsMobileView((current) => !current),
+    [],
+  );
 
   return (
     <GlobalDragContext
@@ -424,9 +455,7 @@ export default function EditorRoot() {
           isResearchPanelAdjacent={isResearchPanelAdjacent}
           isEditorPanelAdjacent={isEditorPanelAdjacent}
           isDocsMobileView={isDocsMobileView}
-          onToggleDocsMobileView={() =>
-            setIsDocsMobileView((current) => !current)
-          }
+          onToggleDocsMobileView={toggleDocsMobileView}
           onOpenSettings={handleOpenSettings}
           onPrefetchSettings={prefetchSettings}
           onSelectResearchItem={handleSelectResearchItem}

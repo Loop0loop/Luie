@@ -377,7 +377,7 @@ export default function EditorLayout({
                   data-editor-scroll-container="true"
                 >
                   <div
-                    className="min-h-full bg-transparent text-fg py-12 px-8 transition-all duration-150 ease-out shrink-0"
+                    className="min-h-full bg-transparent text-fg py-12 px-8 shrink-0"
                     style={{ width: maxWidth ?? DEFAULT_EDITOR_MAX_WIDTH, maxWidth: "100%" }}
                   >
                     {activeChapterTitle && (

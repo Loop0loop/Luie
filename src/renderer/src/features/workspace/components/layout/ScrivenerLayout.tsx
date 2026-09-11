@@ -437,14 +437,14 @@ export default function ScrivenerLayout({
                           원고 외 상세 뷰(등장인물·사건 등)는 자연 성장 + 외부 스크롤을 유지한다. */}
                       {mainView.type === "editor" ? (
                         <div
-                          className="mx-auto h-full bg-transparent text-fg transition-all duration-150 ease-out"
+                          className="mx-auto h-full bg-transparent text-fg"
                           style={paperWidthStyle}
                         >
                           {renderMainContent()}
                         </div>
                       ) : (
                         <div
-                          className="min-h-full bg-transparent text-fg transition-all duration-150 ease-out"
+                          className="min-h-full bg-transparent text-fg"
                           style={paperWidthStyle}
                         >
                           {renderMainContent()}
