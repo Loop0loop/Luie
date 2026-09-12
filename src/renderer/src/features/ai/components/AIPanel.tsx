@@ -71,7 +71,12 @@ export function AIPanel({ onMenuToggle, onClose }: AIPanelProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey &&
+      !e.nativeEvent.isComposing &&
+      e.nativeEvent.keyCode !== 229
+    ) {
       e.preventDefault();
       handleSend();
     }

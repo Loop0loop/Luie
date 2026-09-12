@@ -71,21 +71,22 @@ const renderApp = () => {
   });
 };
 
-void Promise.allSettled([i18nPromise, setupRendererPromise]).then((results) => {
-  results.forEach((result, index) => {
-    if (result.status === "fulfilled") return;
-    const label = index === 0 ? "initI18n" : "setupRenderer";
-    emitOperationalLog(startupLogger, "warn", `Renderer ${label} failed`, {
+// setupRenderer는 첫 await 전에 캐시 테마와 전역 핸들러를 동기 적용한다. 설정 IPC까지
+// root mount를 막으면 첫 shell paint만 늦어지므로 i18n 완료만 기다린다.
+void i18nPromise.then(
+  () => renderApp(),
+  (error) => {
+    emitOperationalLog(startupLogger, "warn", "Renderer initI18n failed", {
       schemaVersion: OBSERVABILITY_EVENT_SCHEMA_VERSION,
       domain: "performance",
-      event: `renderer.startup.${label}.failed`,
+      event: "renderer.startup.initI18n.failed",
       scope: "renderer-startup",
       elapsedMs: elapsedMs(),
-      error: String(result.reason),
+      error: String(error),
     });
-  });
-  renderApp();
-});
+    renderApp();
+  },
+);
 
 logAsyncTask("setupRenderer", setupRendererPromise);
 logAsyncTask("initI18n", i18nPromise);

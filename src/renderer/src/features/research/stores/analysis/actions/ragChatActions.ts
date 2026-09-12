@@ -9,8 +9,11 @@ import type {
 
 let offStream: (() => void) | null = null;
 let offError: (() => void) | null = null;
+let flushPendingDelta: (() => void) | null = null;
 
 export const cleanUpRagStreamListeners = () => {
+  flushPendingDelta?.();
+  flushPendingDelta = null;
   if (offStream) {
     offStream();
     offStream = null;
@@ -76,16 +79,36 @@ export function createRagChatActions(
       }));
       cleanUpRagStreamListeners();
 
+      let bufferedDelta = "";
+      let frameId: number | null = null;
+      const flushDelta = () => {
+        if (frameId !== null) {
+          cancelAnimationFrame(frameId);
+          frameId = null;
+        }
+        if (!bufferedDelta) return;
+        const delta = bufferedDelta;
+        bufferedDelta = "";
+        set((state) => ({
+          messages: state.messages.map((message) =>
+            message.id === runId
+              ? { ...message, content: message.content + delta }
+              : message,
+          ),
+        }));
+      };
+      flushPendingDelta = flushDelta;
+
       offStream = api.rag.onStream((payload) => {
         if (payload.runId !== runId) return;
         if (payload.delta) {
-          set((state) => ({
-            messages: state.messages.map((message) =>
-              message.id === runId
-                ? { ...message, content: message.content + payload.delta }
-                : message,
-            ),
-          }));
+          bufferedDelta += payload.delta;
+          if (frameId === null) {
+            frameId = requestAnimationFrame(() => {
+              frameId = null;
+              flushDelta();
+            });
+          }
         }
 
         if (!payload.done) return;

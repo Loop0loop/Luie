@@ -94,7 +94,7 @@ describe("project init operational scenarios", () => {
     Reflect.deleteProperty(globalThis, "window");
   });
 
-  it("loads startup dependencies only when enabled", async () => {
+  it("loads projects only when enabled; renderer setup owns editor settings", async () => {
     const loadProjects = vi.fn().mockResolvedValue(undefined);
     const loadSettings = vi.fn().mockResolvedValue(undefined);
 
@@ -119,7 +119,7 @@ describe("project init operational scenarios", () => {
     await flushAsync();
 
     expect(loadProjects).toHaveBeenCalledTimes(1);
-    expect(loadSettings).toHaveBeenCalledTimes(1);
+    expect(loadSettings).not.toHaveBeenCalled();
     expect(window.api.logger.info).toHaveBeenCalledWith(
       "project-init.startup-loads",
       expect.objectContaining({
@@ -182,5 +182,43 @@ describe("project init operational scenarios", () => {
         rejectedCount: 0,
       }),
     );
+  });
+
+  it("같은 프로젝트의 메타데이터 갱신은 scoped load를 다시 실행하지 않는다", async () => {
+    const loadChapters = vi.fn().mockResolvedValue(undefined);
+    const loadCharacters = vi.fn().mockResolvedValue(undefined);
+    const loadEvents = vi.fn().mockResolvedValue(undefined);
+    const loadFactions = vi.fn().mockResolvedValue(undefined);
+    const loadTerms = vi.fn().mockResolvedValue(undefined);
+
+    useProjectStore.setState({ currentItem: projectRecord, currentProject: projectRecord });
+    useChapterStore.setState({ loadAll: loadChapters });
+    useCharacterStore.setState({ loadCharacters });
+    useEventStore.setState({ loadEvents });
+    useFactionStore.setState({ loadFactions });
+    useTermStore.setState({ loadTerms });
+
+    const Probe = () => {
+      const { currentProject } = useProjectInit(true);
+      return <div>{currentProject?.id}</div>;
+    };
+    const view = mountView(<Probe />);
+    mountedViews.push(view);
+    await flushAsync();
+    vi.clearAllMocks();
+
+    act(() => {
+      useProjectStore.setState({
+        currentItem: { ...projectRecord, title: "Renamed" },
+        currentProject: { ...projectRecord, title: "Renamed" },
+      });
+    });
+    await flushAsync();
+
+    expect(loadChapters).not.toHaveBeenCalled();
+    expect(loadCharacters).not.toHaveBeenCalled();
+    expect(loadEvents).not.toHaveBeenCalled();
+    expect(loadFactions).not.toHaveBeenCalled();
+    expect(loadTerms).not.toHaveBeenCalled();
   });
 });
