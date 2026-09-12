@@ -90,7 +90,7 @@ async function waitForOpaqueHeading(page, heading) {
   }
 }
 
-async function main() {
+export async function main() {
   const options = parseOptions(process.argv.slice(2));
   const repo = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
   const artifacts = {};
@@ -336,11 +336,12 @@ async function main() {
           await page.screenshot({
             path: path.join(output, `run-${index + 1}.png`),
           });
-          run.status = "passed";
-          run.phase = "complete";
         })(),
         options.timeoutMs,
       );
+      // race는 내부 I/O를 취소하지 않는다. 늦은 완료가 timeout 실패를 덮지 않게 한다.
+      run.status = "passed";
+      run.phase = "complete";
     } catch (error) {
       run.error = String(error);
     } finally {
