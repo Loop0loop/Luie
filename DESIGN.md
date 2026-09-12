@@ -9,6 +9,10 @@
 > tokens. If a value isn't a token yet, add it to
 > [`global.tokens.css`](src/renderer/src/styles/global.tokens.css) first.
 
+## 적용 범위
+
+시각·상호작용 변경에 관련된 절만 읽는다. 아래 값·줄 번호는 설명용 스냅샷이며 현재 CSS·컴포넌트 구현과 대조한다. 기존 token·사용자 테마·레이아웃 저장 계약을 재사용하고, 좌표·사용자 색상 등 런타임 데이터는 해당 API의 동적 값을 유지한다. 문서 예시만으로 새 token·의존성·승인 단계를 추가하지 않는다.
+
 ---
 
 ## 1. What Luie is, visually
@@ -333,13 +337,15 @@ change:
 - [ ] Icon-only controls have `aria-label`; inputs have associated `<label>`.
 - [ ] Visible `hover:` **and** `focus-visible:` states; states increase contrast.
 - [ ] No `outline-none` without a focus-visible ring.
-- [ ] Motion: `transform`/`opacity` only, explicit properties, honors **both**
+- [ ] Motion: prefer `transform`/`opacity`; panel presence/resize follows §7–8,
+      uses explicit properties, and honors **both**
       `data-animations="off"` and `prefers-reduced-motion`.
 - [ ] Animations are interruptible (the presence hook already supports this).
 - [ ] Contrast holds in all themes; verify `data-contrast="high"`.
 - [ ] Touch/drag: disable text selection during drag; `touch-action: manipulation`
       on tappable controls.
-- [ ] Large lists (>50) virtualized; no `getBoundingClientRect`/`offsetHeight`
+- [ ] Large-list rendering is measured at realistic input sizes; use virtualization
+      when the observed cost warrants it. No `getBoundingClientRect`/`offsetHeight`
       reads during render.
 - [ ] Dates/numbers via `Intl.*`, not hardcoded formats.
 
