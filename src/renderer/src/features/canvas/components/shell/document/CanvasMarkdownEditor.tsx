@@ -137,7 +137,7 @@ export function CanvasMarkdownEditor({
     content: initialMarkdown,
     editorProps: { attributes: { class: "ProseMirror" } },
     onUpdate: ({ editor }) => {
-      const markdown = getMarkdown(editor.storage, editor.getText());
+      const markdown = getMarkdown(editor.storage, editor.getText);
       latestMarkdown.current = markdown;
       cancelScheduledSave();
       saveTimer.current = window.setTimeout(() => {
@@ -261,6 +261,6 @@ export function CanvasMarkdownEditor({
   );
 }
 
-function getMarkdown(storage: unknown, fallback: string): string {
-  return (storage as MarkdownStorage).markdown?.getMarkdown?.() ?? fallback;
+function getMarkdown(storage: unknown, fallback: () => string): string {
+  return (storage as MarkdownStorage).markdown?.getMarkdown?.() ?? fallback();
 }
