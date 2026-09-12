@@ -120,6 +120,7 @@ function DocsSideEditor({
       initialContent={content}
       contentReady={activeChapterId ? isLoaded : true}
       onSave={onSaveChapter}
+      reportStats={false}
       hideFooter
       hideToolbar
       hideTitle

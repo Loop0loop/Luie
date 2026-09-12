@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   useEditor,
   EditorContent,
@@ -53,6 +53,8 @@ interface EditorProps {
   scrollable?: boolean;
   autoHeight?: boolean;
   focusMode?: boolean;
+  /** 이 인스턴스가 전역 상태바 통계를 갱신할지 여부. */
+  reportStats?: boolean;
   mobileView?: boolean;
   onEditorReady?: (editor: TiptapEditor | null) => void;
   onOpenWorldGraph?: () => void;
@@ -73,6 +75,7 @@ function Editor({
   scrollable = true,
   autoHeight = false,
   focusMode = false,
+  reportStats = true,
   mobileView,
   onEditorReady,
   onOpenWorldGraph,
@@ -86,7 +89,10 @@ function Editor({
   const typewriterMode = useEditorStore(
     (state) => state.typewriterMode ?? false,
   );
-  const { updateStats } = useEditorStats();
+  const { updateStats } = useEditorStats({
+    enabled: reportStats && !readOnly,
+    statsKey: chapterId,
+  });
   const [localMobileView, setLocalMobileView] = useState(false);
   const isMobileView = mobileView ?? localMobileView;
 
@@ -106,10 +112,33 @@ function Editor({
 
   const [content, setContent] = useState(initialContent);
   const updateStatsRef = useRef(updateStats);
+  const updateContentRef = useRef<number | null>(null);
+  const editorRef = useRef<TiptapEditor | null>(null);
+  const hasPendingContentRef = useRef(false);
 
   useEffect(() => {
     updateStatsRef.current = updateStats;
   }, [updateStats]);
+
+  const flushPendingContent = useCallback((syncState = true) => {
+    const currentEditor = editorRef.current;
+    if (!hasPendingContentRef.current || !isUsableEditor(currentEditor)) {
+      return undefined;
+    }
+    if (updateContentRef.current) {
+      window.clearTimeout(updateContentRef.current);
+      updateContentRef.current = null;
+    }
+
+    const html = currentEditor.getHTML();
+    const text = currentEditor.getText();
+    hasPendingContentRef.current = false;
+    if (syncState) {
+      setContent((previous) => (previous === html ? previous : html));
+      updateStatsRef.current(text);
+    }
+    return html;
+  }, []);
 
   useEditorAutosave({
     onSave: readOnly ? undefined : onSave,
@@ -119,6 +148,7 @@ function Editor({
     // 챕터 전환 창(새 본문 미도착)에는 저장을 억제한다 — 옛 본문이 새 챕터를
     // 덮어쓰는 데이터 손실 경로다.
     suppressed: !contentReady,
+    flushPendingContent,
   });
 
   // NOTE: useEditorAutosave의 전환 flush(직전 챕터 저장)보다 나중에 실행돼야 한다.
@@ -130,8 +160,6 @@ function Editor({
   }, [chapterId]);
 
   useEditorScrollRestoration(chapterId);
-
-  const updateContentRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -153,22 +181,20 @@ function Editor({
       // 공유라서, readonly 뷰가 마운트만으로 본문 푸터의 카운트를 자기 내용으로
       // 덮어써 버린다. readOnly는 원래 통계를 쓰지 않던(타이핑 불가) 라이터다.
       onCreate: ({ editor: createdEditor }) => {
+        editorRef.current = createdEditor;
         if (!readOnly) {
           updateStatsRef.current(createdEditor.getText());
         }
       },
       onUpdate: ({ editor }) => {
+        editorRef.current = editor;
+        hasPendingContentRef.current = true;
         if (updateContentRef.current) {
           window.clearTimeout(updateContentRef.current);
         }
 
         updateContentRef.current = window.setTimeout(() => {
-          const html = editor.getHTML();
-          const text = editor.getText();
-
-          setContent((previous) => (previous === html ? previous : html));
-          updateStatsRef.current(text);
-          updateContentRef.current = null;
+          flushPendingContent();
         }, 900);
       },
       editorProps: {

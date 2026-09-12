@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEditorAutosave } from "../../src/renderer/src/features/editor/hooks/useEditorAutosave.js";
 
@@ -138,6 +138,33 @@ describe("useEditorAutosave chapter targeting across a chapter switch", () => {
       (call) => call[2] !== "ch-a",
     );
     expect(misdirected).toEqual([]);
+
+    view.cleanup();
+  });
+
+  it("flushes a pending TipTap draft to the PREVIOUS chapter during the switch window", async () => {
+    const onSave = vi.fn(async () => {});
+    const flushPendingContent = vi.fn(() => "<p>A raw latest</p>");
+    const view = mountAutosave();
+
+    await view.render({
+      onSave,
+      title: "T1",
+      content: "<p>A saved</p>",
+      chapterId: "ch-a",
+      flushPendingContent,
+    });
+    await view.rerender({
+      onSave,
+      title: "T1",
+      content: "<p>A saved</p>",
+      chapterId: "ch-b",
+      suppressed: true,
+      flushPendingContent,
+    });
+
+    expect(flushPendingContent).toHaveBeenCalledWith(true);
+    expect(onSave).toHaveBeenCalledWith("T1", "<p>A raw latest</p>", "ch-a");
 
     view.cleanup();
   });

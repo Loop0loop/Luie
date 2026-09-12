@@ -106,14 +106,18 @@ describe("SplitViewEditor 스왑 전환 계약", () => {
     );
   });
 
-  const render = (chapterId: string | undefined) =>
+  const render = (
+    chapterId: string | undefined,
+    onSave: (title: string, content: string, chapterId?: string) => Promise<void> =
+      async () => {},
+  ) =>
     mount(
       <module.SplitViewEditor
         chapterId={chapterId}
         chapterTitle="제목"
         panelId="panel-1"
         contentRevision={0}
-        onSave={async () => {}}
+        onSave={onSave}
       />,
     );
 
@@ -208,6 +212,18 @@ describe("SplitViewEditor 스왑 전환 계약", () => {
 
     // 근거: 같은 DOM 노드 = 리마운트 없이 prop 전환만 일어났다.
     expect(editorNode(container)).toBe(nodeBefore);
+  });
+
+  it("전환 중 이전 챕터를 지정한 저장 타깃을 보존한다", () => {
+    const onSave = vi.fn(async () => {});
+    render("c2", onSave);
+
+    const editorOnSave = lastProps().onSave as
+      | ((title: string, content: string, chapterId?: string) => Promise<void>)
+      | undefined;
+    void editorOnSave?.("A 제목", "<p>A 최신 본문</p>", "c1");
+
+    expect(onSave).toHaveBeenCalledWith("A 제목", "<p>A 최신 본문</p>", "c1");
   });
 
   it("목록 본문이 아니라 캐시를 본문 출처로 쓴다", async () => {

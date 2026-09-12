@@ -52,6 +52,15 @@ export const DiffHighlight = Extension.create<DiffOptions>({
   },
 
   addProseMirrorPlugins() {
+    let cached:
+      | {
+          comparisonContent: string;
+          decorations: DecorationSet;
+          doc: Node;
+          mode: DiffOptions["mode"];
+        }
+      | undefined;
+
     return [
       new Plugin({
         key: diffPluginKey,
@@ -70,12 +79,22 @@ export const DiffHighlight = Extension.create<DiffOptions>({
 
             const { comparisonContent, mode } = pluginState;
             const doc = state.doc;
+            // selection transaction은 doc 객체를 바꾸지 않는다. 같은 비교본의 decoration을
+            // 다시 word diff하지 않고 그대로 돌려야 커서 이동이 긴 원고 비용을 만들지 않는다.
+            if (
+              cached?.doc === doc &&
+              cached.comparisonContent === comparisonContent &&
+              cached.mode === mode
+            ) {
+              return cached.decorations;
+            }
             const { text: currentText, mapping } = getDocTextMap(doc);
             const comparisonText = htmlToPlainText(comparisonContent);
 
             const totalLength = currentText.length + comparisonText.length;
             if (totalLength > 50000) {
-              return DecorationSet.empty;
+              cached = { comparisonContent, decorations: DecorationSet.empty, doc, mode };
+              return cached.decorations;
             }
 
             const diffs = Diff.diffWordsWithSpace(comparisonText, currentText);
@@ -121,7 +140,13 @@ export const DiffHighlight = Extension.create<DiffOptions>({
                currentTextPos += partLen;
             });
 
-            return DecorationSet.create(doc, decorations);
+            cached = {
+              comparisonContent,
+              decorations: DecorationSet.create(doc, decorations),
+              doc,
+              mode,
+            };
+            return cached.decorations;
           }
         }
       })

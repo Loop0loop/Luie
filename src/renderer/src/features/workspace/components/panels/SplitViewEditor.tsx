@@ -44,12 +44,13 @@ export function SplitViewEditor({
       contentReady={chapterId ? isLoaded : true}
       chapterId={chapterId}
       readOnly={false}
+      reportStats={false}
       hideToolbar={true}
       hideFooter={true}
       onSave={
         chapterId
-          ? (nextTitle, nextContent) =>
-              onSave(nextTitle, nextContent, chapterId)
+          ? (nextTitle, nextContent, targetChapterId) =>
+              onSave(nextTitle, nextContent, targetChapterId ?? chapterId)
           : undefined
       }
     />
