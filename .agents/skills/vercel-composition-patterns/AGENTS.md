@@ -1,5 +1,9 @@
 # React Composition Patterns
 
+## Luie 적용 범위
+
+이하 내용은 외부 패턴의 참고 모음이다. `SKILL.md`에서 현재 문제가 있는 항목만 선택한다. 단순 props·기존 상태 소유권이 적합하면 유지한다. boolean, useContext, forwardRef의 존재만으로 재설계를 요구하지 않는다. 이 자료의 유지보수와 앱 코드 변경을 구분한다.
+
 **Version 1.0.0**  
 Engineering  
 January 2026

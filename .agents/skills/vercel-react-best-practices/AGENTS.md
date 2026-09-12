@@ -1,5 +1,9 @@
 # React Best Practices
 
+## Luie 적용 범위
+
+이하 내용은 외부 규칙의 참고 모음이다. 작업 시 `SKILL.md`에서 필요한 개별 규칙만 선택한다. Luie의 Electron 클라이언트에 Next.js/RSC/server 규칙이나 새 의존성을 적용하지 않는다. 예시의 수치·심각도는 Luie의 측정값이나 합격선이 아니다. 이 자료를 유지보수할 때 앱 빌드를 규칙 생성 명령으로 실행하지 않는다.
+
 **Version 1.0.0**  
 Vercel Engineering  
 January 2026
@@ -113,7 +117,7 @@ Waterfalls are the #1 performance killer. Each sequential await adds full networ
 
 When a branch uses `await` for a flag or remote value and also requires a **cheap synchronous** condition (local props, request metadata, already-loaded state), evaluate the cheap condition **first**. Otherwise you pay for the async call even when the compound condition can never be true.
 
-This is a specialization of [Defer Await Until Needed](./async-defer-await.md) for `flag && cheapCondition` style checks.
+This is a specialization of [Defer Await Until Needed](rules/async-defer-await.md) for `flag && cheapCondition` style checks.
 
 **Incorrect:**
 
@@ -216,7 +220,7 @@ async function updateResource(resourceId: string, userId: string) {
 
 This optimization is especially valuable when the skipped branch is frequently taken, or when the deferred operation is expensive.
 
-For `await getFlag()` combined with a cheap synchronous guard (`flag && someCondition`), see [Check Cheap Conditions Before Async Flags](./async-cheap-condition-before-await.md).
+For `await getFlag()` combined with a cheap synchronous guard (`flag && someCondition`), see [Check Cheap Conditions Before Async Flags](rules/async-cheap-condition-before-await.md).
 
 ### 1.3 Dependency-Based Parallelization
 
@@ -889,7 +893,7 @@ Safe exceptions:
 
 - Process-wide singletons that do not store request- or user-specific mutable data
 
-For static assets and config, see [Hoist Static I/O to Module Level](./server-hoist-static-io.md).
+For static assets and config, see [Hoist Static I/O to Module Level](rules/server-hoist-static-io.md).
 
 ### 3.4 Cross-Request LRU Caching
 

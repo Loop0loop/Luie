@@ -1,28 +1,12 @@
 ---
-name: Refactor Safely
-description: Plan and execute safe refactoring using dependency analysis
+name: refactor-safely
+description: "요청된 이름 변경·구조 변경의 소비자 영향과 동작 보존을 확인할 때 사용한다."
 ---
 
-## Refactor Safely
+# 리팩터링
 
-Use the knowledge graph to plan and execute refactoring with confidence.
+대상 코드·호출자·공개 계약과 관련 테스트를 먼저 확인한다. 그래프의 impact/rename preview는 지원되고 도움이 될 때 사용하며 실제 참조와 대조한다.
 
-### Steps
+사용자가 요청한 구조 변경에 필요한 범위만 적용한다. graph상 호출자가 없다는 이유만으로 IPC·동적 로딩·외부 진입점을 삭제하지 않는다. 자동 수정 preview에 요청 밖 파일이 포함되면 범위를 좁힌다.
 
-1. Use `refactor_tool` with mode="suggest" for community-driven refactoring suggestions.
-2. Use `refactor_tool` with mode="dead_code" to find unreferenced code.
-3. For renames, use `refactor_tool` with mode="rename" to preview all affected locations.
-4. Use `apply_refactor_tool` with the refactor_id to apply renames.
-5. After changes, run `detect_changes` to verify the refactoring impact.
-
-### Safety Checks
-
-- Always preview before applying (rename mode gives you an edit list).
-- Check `get_impact_radius` before major refactors.
-- Use `get_affected_flows` to ensure no critical paths are broken.
-- Run `find_large_functions` to identify decomposition targets.
-
-## Token Efficiency Rules
-- ALWAYS start with `get_minimal_context(task="<your task>")` before any other graph tool.
-- Use `detail_level="minimal"` on all calls. Only escalate to "standard" when minimal is insufficient.
-- Target: complete any review/debug/refactor task in ≤5 tool calls and ≤800 total output tokens.
+관련 검증과 diff로 동작·호환성 보존을 확인한다. 전체 dead-code 탐색·분해 후보 탐색·고정 도구 수는 요구하지 않는다.

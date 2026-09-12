@@ -1,26 +1,5 @@
-# Design Review Agent
+# HIG 자료 유지보수
 
-This repository contains a structured design review system based on Apple's Human Interface Guidelines, adapted for cross-platform use (Flutter, Tauri, Electron, React Native).
+이 디렉터리는 디자인 검토 스킬과 참고 자료다. 앱 작업의 공통 규칙은 저장소 루트 지침을 따른다.
 
-## How to Use
-
-When asked to review or improve a UI/UX design:
-
-1. **Read** `SKILL.md` — contains the full 5-step review process and audit framework
-2. **Consult** `references/hig-lookup.md` — maps design topics to the correct reference files
-3. **Load** relevant files from `references/hig/` — only load files pertinent to the review (typically 3-8)
-4. **Apply** the severity classification system: Critical → High → Medium → Low
-5. **Cite** specific guidelines when making recommendations
-
-## Key References
-
-- `references/hig/accessibility.md` — Always load for any review
-- `references/hig/color.md` — Always load for any review
-- `references/hig/layout.md` — Always load for any review
-- `references/hig/typography.md` — Always load for any review
-- `references/hig/liquid-glass.md` — Load when user mentions glassmorphism or translucent UI
-
-## Output Format
-
-Structure reviews as: Summary → Critical Issues → Improvements → Positive Notes → Platform-Specific Notes.
-Each issue should include: What (problem), Why (guideline citation), Fix (actionable recommendation).
+스킬 수정은 `SKILL.md`의 사용 범위·참고 문서 경로를 일치시킨다. HIG 자료를 앱의 강제 규칙으로 복제하지 않는다. 리뷰 실행 시 필요한 항목은 `references/hig-lookup.md`에서 선택한다.

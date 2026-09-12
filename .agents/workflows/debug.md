@@ -1,81 +1,11 @@
 ---
-description: Structured bug diagnosis and fixing workflow — reproduce, diagnose root cause, apply minimal fix, write regression test, and scan for similar patterns
+description: "Luie 오류의 호출·저장·상태 흐름을 추적해 진단하거나 요청된 수정을 검증한다."
 ---
 
-# MANDATORY RULES — VIOLATION IS FORBIDDEN
+# 오류 조사·수정
 
-- **Response language follows `language` setting in `.agent/config/user-preferences.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
-- **You MUST use MCP tools throughout the workflow.**
-  - Use code analysis tools (`find_symbol`, `find_referencing_symbols`, `search_for_pattern`) for bug investigation — NOT raw file reads or grep.
-  - Use memory write tool to record debugging results.
-  - Memory path: configurable via `memoryConfig.basePath` (default: `.serena/memories`)
-  - Tool names: configurable via `memoryConfig.tools` in `mcp.json`
-  - MCP tools are the primary interface for all code exploration.
+[debug-agent](../skills/debug-agent/SKILL.md)와 작업 영역의 `AGENTS.md`를 적용한다.
 
----
+증상·재현 조건·기대 동작은 사용자 설명과 현재 코드에서 확보한다. 진입점에서 실패 지점까지 추적하고 공유 함수의 다른 호출자를 확인한다. 수정 요청이면 원인 수정과 관련 회귀 검증까지 진행하며 중간에 같은 승인을 다시 받지 않는다. 진단만 요청받으면 근거와 원인을 보고한다.
 
-## Step 1: Collect Error Information
-
-Ask the user for:
-- Error message, steps to reproduce
-- Expected vs actual behavior
-- Environment (browser, OS, device)
-
-If an error message is provided, proceed immediately.
-
----
-
-## Step 2: Reproduce the Bug
-
-// turbo
-Use MCP `search_for_pattern` with the error message or stack trace to locate the error in the codebase.
-Use `find_symbol` to identify the exact function and file. Do NOT grep or read files manually.
-
----
-
-## Step 3: Diagnose Root Cause
-
-Use MCP `find_referencing_symbols` to trace the execution path backward from the error point.
-Identify the root cause — not just the symptom. Check:
-- null/undefined access
-- Race conditions
-- Missing error handling
-- Wrong data types
-- Stale state
-
----
-
-## Step 4: Propose Minimal Fix
-
-Present the root cause and proposed fix to the user.
-- The fix should change only what is necessary.
-- Explain why this fixes the root cause, not just the symptom.
-- **You MUST get user confirmation before proceeding to Step 5.**
-
----
-
-## Step 5: Apply Fix and Write Regression Test
-
-// turbo
-1. Implement the minimal fix.
-2. Write a regression test that reproduces the original bug and verifies the fix.
-3. The test must fail without the fix and pass with it.
-
----
-
-## Step 6: Scan for Similar Patterns
-
-// turbo
-Use MCP `search_for_pattern` to search the codebase for the same pattern that caused the bug.
-Report any other locations that may have the same vulnerability. Fix them if confirmed.
-
----
-
-## Step 7: Document the Bug
-
-Use memory write tool to record a bug report:
-- Symptom, root cause
-- Fix applied, files changed
-- Regression test location
-- Similar patterns found
+재현이 어려우면 환경·데이터·이벤트 순서 차이를 좁혀 확인하고 남은 불확실성을 명시한다. 무관한 도메인 수정이나 별도 버그 문서 생성은 자동으로 확장하지 않는다.

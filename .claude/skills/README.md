@@ -1,54 +1,11 @@
-# Innovative UX Designer Skill
+# 프로젝트 Claude 스킬
 
-Create distinctive, production-grade frontend interfaces that avoid generic AI aesthetics.
+공통 작업 지침은 루트 `CLAUDE.md`가 `AGENTS.md`를 가져와 공유한다. 필요한 스킬만 선택하고 각 SKILL의 조건부 참고 자료를 사용한다.
 
-## Philosophy
+- 디자인 대안: `bencium-controlled-ux-designer`
+- 공개 웹 콘텐츠: `bencium-aeo`
+- UI 기준 검토: `web-design-guidelines`
+- 그래프 활용: `debug-issue`, `explore-codebase`, `refactor-safely`, `review-changes`
+- `ui-ux-pro-max`, Vercel 스킬은 `.agents/skills/` 원본으로 연결된다.
 
-**Bold creativity meets production rigor.** This skill generates unique, memorable interfaces while maintaining accessibility and responsive patterns. No "AI slop" - every design should feel intentionally crafted.
-
-## Structure
-
-```
-bencium-innovative-ux-designer/
-├── SKILL.md              # Main skill (Design Thinking, anti-patterns, implementation)
-├── ACCESSIBILITY.md      # WCAG 2.1 AA essentials (progressive disclosure)
-├── MOTION-SPEC.md        # Animation timing and easing (progressive disclosure)
-├── RESPONSIVE-DESIGN.md  # Breakpoints and mobile-first (progressive disclosure)
-└── README.md             # This file
-```
-
-## Key Principles
-
-### 1. Design Thinking Protocol
-Ask questions first to understand context, then **commit boldly** to an aesthetic direction.
-
-### 2. Anti-Generic Aesthetics
-**Avoid:** Inter, Roboto, Space Grotesk, SaaS blue (#3B82F6), glass morphism, Apple mimicry
-
-**Embrace:** Characterful typography, unexpected color combinations, intentional visual hierarchy
-
-### 3. Bold Visual Expression
-Shadows and gradients are creative tools when used intentionally. The constraint is against effects that serve no purpose or mimic platforms.
-
-### 4. Accessibility Baseline
-WCAG 2.1 AA compliance enables creativity - it's a foundation, not a limitation.
-
-## Tone Options
-
-Pick an extreme to commit to:
-- **Brutally minimal** - stripped to essence, bold typography
-- **Maximalist chaos** - layered, dense, controlled disorder
-- **Retro-futuristic** - vintage meets sci-fi
-- **Organic/natural** - earth tones, flowing shapes
-- **Editorial/magazine** - grid-based, typographic
-- **Brutalist/raw** - exposed structure, monospace
-
-## Version History
-
-- **v2.0.0** (2025-11-22): Creative liberation update
-  - Added Design Thinking Protocol with tone options
-  - Lifted shadow/gradient restrictions (glass still banned)
-  - Added anti-pattern fonts and colors
-  - Compressed supporting files
-  - Removed DESIGN-SYSTEM-TEMPLATE.md
-- **v1.0.0** (2025-10-18): Initial release
+`skills.disabled/`는 비활성 자료다. 설치된 외부 plugin과 사용자 전역 스킬은 이 디렉터리의 프로젝트 스킬과 구분한다. 깨진 symlink는 사용 가능한 기능으로 가정하지 않는다.

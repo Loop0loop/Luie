@@ -1,36 +1,10 @@
-# Backend Agent - Self-Verification Checklist
+# Main 변경 검증
 
-Run through every item before submitting your work.
+변경한 영역의 항목만 적용한다.
 
-## API Design
-- [ ] RESTful conventions followed (proper HTTP methods, status codes)
-- [ ] OpenAPI documentation complete (all endpoints documented)
-- [ ] Request/response schemas defined with Pydantic
-- [ ] Pagination for list endpoints returning > 20 items
-- [ ] Consistent error response format
-
-## Database
-- [ ] Migrations created (Alembic) and tested
-- [ ] Indexes on foreign keys and frequently queried columns
-- [ ] No N+1 queries (use joinedload/selectinload)
-- [ ] Transactions used for multi-step operations
-
-## Security
-- [ ] JWT authentication on protected endpoints
-- [ ] Password hashing with bcrypt (cost 10-12)
-- [ ] Rate limiting on auth endpoints
-- [ ] Input validation with Pydantic (no raw user input in queries)
-- [ ] SQL injection protected (ORM or parameterized queries)
-- [ ] No secrets in code or logs
-
-## Testing
-- [ ] Unit tests for service layer logic
-- [ ] Integration tests for all endpoints (happy + error paths)
-- [ ] Auth scenarios tested (missing token, expired, wrong role)
-- [ ] Test coverage > 80%
-
-## Code Quality
-- [ ] Clean architecture layers: router -> service -> repository
-- [ ] No business logic in route handlers
-- [ ] Async/await used consistently
-- [ ] Type hints on all function signatures
+- IPC: 입력 schema, handler 등록, preload/shared 응답 일치, 실패 전파.
+- 저장: project/chapter 소유권, 트랜잭션 rollback, revision·파생 작업, 패키지 저장 실패와 복구.
+- lifecycle: readiness·deferred 순서, flush 성공 전 종료 방지, 취소 후 서비스 재개.
+- 보안: 외부 경로·payload 검증, 비밀·본문 로그 노출 방지, renderer capability 제한.
+- utility: main bridge·sidecar manager·main-only Electron API 역의존 방지.
+- 검증: 관련 `tests/main/`·계약 검사, TypeScript 변경의 typecheck. 실제 DB·mock 검증 범위를 구분한다.

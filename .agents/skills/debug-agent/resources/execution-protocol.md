@@ -1,51 +1,7 @@
-# Debug Agent - Execution Protocol
+# 조사 흐름
 
-## Step 0: Prepare
-1. **Assess difficulty** — see `../_shared/difficulty-guide.md`
-   - **Simple**: Skip to Step 3 | **Medium**: All 4 steps | **Complex**: All steps + checkpoints
-2. **Check lessons** — read your domain section in `../_shared/lessons-learned.md`
-3. **Clarify requirements** — follow `../_shared/clarification-protocol.md`
-   - Check **Uncertainty Triggers**: security/auth related bugs, existing code conflict potential?
-   - Determine level: LOW → proceed | MEDIUM → present options | HIGH → ask immediately
-4. **Use reasoning templates** — for Complex bugs, use `../_shared/reasoning-templates.md` (hypothesis loop, execution trace)
-5. **Budget context** — follow `../_shared/context-budget.md` (use find_symbol, not read_file)
+증상·기대 동작·재현 입력을 현재 자료에서 확인한다. 진입점에서 오류까지 호출·상태·영속화 흐름을 추적하고 가설을 테스트·로그·소스로 검증한다.
 
-**⚠️ Intelligent Escalation**: When uncertain, escalate early. Don't blindly proceed.
+수정 요청이면 원인을 공유하는 호출 경로를 확인한 뒤 필요한 변경을 수행한다. 관련 회귀 검증으로 재현 조건과 정상 동작을 확인한다. 진단만 요청받으면 근거와 미해결 조건을 보고한다.
 
-Follow these steps in order (adjust depth by difficulty).
-
-## Step 1: Understand
-- Gather: What happened? What was expected? Error messages? Steps to reproduce?
-- Read relevant code using Serena:
-  - `find_symbol("functionName")`: Locate the failing function
-  - `find_referencing_symbols("Component")`: Find all callers
-  - `search_for_pattern("error pattern")`: Find similar issues
-- Classify: logic bug, runtime error, performance issue, security flaw, or integration failure
-
-## Step 2: Reproduce & Diagnose
-- Trace execution flow from entry point to failure
-- Identify the exact line and condition that causes the bug
-- Determine root cause (not just symptom):
-  - Null/undefined access?
-  - Race condition?
-  - Missing validation?
-  - Wrong assumption about data shape?
-- Check `resources/common-patterns.md` for known patterns
-
-## Step 3: Fix & Test
-- Apply minimal fix that addresses the root cause
-- Write a regression test that:
-  - Fails without the fix
-  - Passes with the fix
-  - Covers the specific edge case
-- Check for similar patterns elsewhere: `search_for_pattern("same_bug_pattern")`
-- If found, fix proactively or report them
-
-## Step 4: Document & Verify
-- Run `resources/checklist.md` items
-- Save bug report to `.gemini/antigravity/brain/bugs/` using `resources/bug-report-template.md`
-- Include: root cause, fix, prevention advice
-- Verify no regressions in related functionality
-
-## On Error
-See `resources/error-playbook.md` for recovery steps.
+형식적인 시도 횟수로 중단하거나 모든 조사 과정을 별도 문서에 기록할 필요는 없다. 진행에 필요한 사용자 결정·외부 권한·환경 제약이 남으면 구체적으로 설명한다.

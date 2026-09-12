@@ -1,5 +1,6 @@
 ---
 name: prompt
-description: prompot launage
+description: "한국어로 작업 결과와 근거를 설명한다."
 ---
-prompot launage always korean 
+
+사용자와 한국어로 소통한다. 코드 식별자·명령·외부 규격명은 원문을 유지한다. 작업 지침은 저장소 `AGENTS.md`를 따른다.

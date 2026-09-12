@@ -1,121 +1,14 @@
 ---
 name: commit
-description: Create git commits following Conventional Commits specification with project-specific branch naming rules
+description: "사용자가 Git 커밋을 요청했을 때 지정한 변경을 Conventional Commits 형식으로 커밋한다."
 ---
 
-# Commit Skill - Conventional Commits
+# 커밋
 
-## When to use
-- When user requests "commit this", "commit", "save changes"
-- When `/commit` command is invoked
+사용자의 커밋 요청은 그 범위의 staging·commit 권한이다. 같은 권한을 다시 묻지 않는다. 구현·파일 저장만 요청받은 경우에는 커밋 권한으로 해석하지 않는다.
 
-## Configuration
-Project-specific settings: `.agent/skills/commit/config/commit-config.yaml`
+`git status`, 대상 diff와 staged diff, 최근 메시지를 확인한다. 기존 staged 변경과 이번 작업을 구분하고, 요청된 파일만 명시적으로 stage한다. 섞인 hunk 때문에 요청 밖 변경을 함께 커밋해야 한다면 범위를 먼저 해결한다.
 
-## Commit Types
-| Type | Description | Branch Prefix |
-|------|-------------|---------------|
-| feat | New feature | feature/ |
-| fix | Bug fix | fix/ |
-| refactor | Code improvement | refactor/ |
-| docs | Documentation changes | docs/ |
-| test | Test additions/modifications | test/ |
-| chore | Build, configuration, etc. | chore/ |
-| style | Code style changes | style/ |
-| perf | Performance improvements | perf/ |
+형식은 `<type>(<scope>): <description>`이며 scope는 필요할 때 쓴다. type은 동작 기준으로 feat/fix/refactor/docs/test/chore/perf/style에서 선택한다. 단순히 새 파일이라는 이유로 feat를 쓰지 않는다. 메시지는 한국어 프로젝트 관례를 따르고 고정된 외부인의 co-author를 추가하지 않는다.
 
-## Commit Format
-```
-<type>(<scope>): <description>
-
-[optional body]
-
-Co-Authored-By: First Fluke <our.first.fluke@gmail.com>
-```
-
-## Workflow
-
-### Step 1: Analyze Changes
-```bash
-git status
-git diff --staged
-git log --oneline -5
-```
-
-### Step 1.5: Split by Feature (if needed)
-If changed files span multiple features/domains, **split commits by feature**.
-
-**Split criteria:**
-- Different scopes (e.g., workflows vs skills vs docs)
-- Different types (e.g., feat vs fix vs docs)
-- Logically independent changes
-
-**Example:**
-```
-# Changed files:
-.agent/workflows/*.md (7 files)     → fix(workflows): ...
-.agent/skills/**/*.md (4 files)     → fix(skills): ...
-USAGE.md, USAGE-ko.md               → docs: ...
-
-# Split into 3 commits
-```
-
-**Do NOT split when:**
-- All changes belong to a single feature
-- Few files changed (5 or fewer)
-- User requested a single commit
-
-### Step 2: Determine Commit Type
-Analyze changes → Select appropriate type:
-- New files added → `feat`
-- Bug fixed → `fix`
-- Refactoring → `refactor`
-- Documentation only → `docs`
-- Tests added → `test`
-- Build/config changes → `chore`
-
-### Step 3: Determine Scope
-Use changed module/component as scope:
-- `feat(auth)`: Authentication related
-- `fix(api)`: API related
-- `refactor(ui)`: UI related
-- No scope is also valid: `chore: update dependencies`
-
-### Step 4: Write Description
-- Under 72 characters
-- Use imperative mood (add, fix, update, remove...)
-- Lowercase first letter
-- No trailing period
-
-### Step 5: Confirm with User
-```
-📝 Commit message preview:
-
-feat(orchestrator): add multi-CLI agent mapping support
-
-- Add user-preferences.yaml for CLI configuration
-- Update spawn-agent.sh to read agent-CLI mapping
-- Update memory schema with CLI field
-
-Co-Authored-By: First Fluke <our.first.fluke@gmail.com>
-
-Proceed with this commit? (Y/N/Edit)
-```
-
-### Step 6: Execute Commit
-After user confirmation:
-```bash
-git add <specific-files>
-git commit -m "<message>"
-```
-
-## References
-- Configuration: `config/commit-config.yaml`
-- Guide: `resources/conventional-commits.md`
-
-## Important Notes
-- **NEVER** commit without user confirmation
-- **NEVER** use `git add -A` or `git add .` without explicit permission
-- **NEVER** commit files that may contain secrets (.env, credentials, etc.)
-- **ALWAYS** use specific file names when staging
-- **ALWAYS** use HEREDOC for multi-line commit messages
+커밋 전 관련 검증 상태와 비밀 포함 여부를 확인한다. 무관한 변경을 분리하되 같은 작업을 파일 개수만으로 쪼개지 않는다. 완료 후 commit hash와 요약을 보고한다. push·amend·이력 재작성은 별도 요청 범위를 따른다.

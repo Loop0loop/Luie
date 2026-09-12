@@ -1,71 +1,9 @@
 ---
-description: PM planning workflow — analyze requirements, select tech stack, decompose into prioritized tasks with dependencies, and define API contracts
+description: "현재 Luie 구조와 요청을 바탕으로 변경 범위·의존성·완료 조건을 계획한다."
 ---
 
-# MANDATORY RULES — VIOLATION IS FORBIDDEN
+# 계획
 
-- **Response language follows `language` setting in `.agent/config/user-preferences.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
-- **You MUST use MCP tools throughout the workflow.**
-  - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `search_for_pattern`) to analyze the existing codebase.
-  - Use memory tools (write/edit) to record planning results.
-  - Memory path: configurable via `memoryConfig.basePath` (default: `.serena/memories`)
-  - Tool names: configurable via `memoryConfig.tools` in `mcp.json`
-  - Do NOT use raw file reads or grep as substitutes.
+[공통 지침](../../AGENTS.md)과 관련 코드·계약을 확인한다. 기존 스택과 재사용 가능한 구현을 기준으로 변경 파일, 의존 순서, 검증 및 미해결 결정을 정리한다.
 
----
-
-## Step 1: Gather Requirements
-
-Ask the user to describe what they want to build. Clarify:
-- Target users
-- Core features (must-have vs nice-to-have)
-- Constraints (tech stack, existing codebase)
-- Deployment target (web, mobile, both)
-
----
-
-## Step 2: Analyze Technical Feasibility
-
-// turbo
-If an existing codebase exists, use MCP code analysis tools to scan:
-- `get_symbols_overview` for project structure and architecture patterns.
-- `find_symbol` and `search_for_pattern` to identify reusable code and what needs to be built.
-
----
-
-## Step 3: Define API Contracts
-
-// turbo
-Design API contracts between frontend/mobile and backend. Per endpoint:
-- Method, path, request/response schemas
-- Auth requirements, error responses
-- Save to `.agent/skills/_shared/api-contracts/`.
-
----
-
-## Step 4: Decompose into Tasks
-
-// turbo
-Break down the project into actionable tasks. Each task must have:
-- Assigned agent (frontend/backend/mobile/qa/debug)
-- Title, acceptance criteria
-- Priority (P0-P3), dependencies
-
----
-
-## Step 5: Review Plan with User
-
-Present the full plan: task list, priority tiers, dependency graph, agent assignments.
-**You MUST get user confirmation before proceeding to Step 6.**
-
----
-
-## Step 6: Save Plan
-
-// turbo
-Save the approved plan:
-1. `.agent/plan.json`
-2. Use memory write tool to record plan summary.
-
-The plan is now ready for `/coordinate` or `/orchestrate` to execute.
+계획만 요청받으면 계획을 제공한다. 계획을 포함한 구현 요청이면 승인된 범위의 실행을 계속한다. 저장 파일을 요청받았거나 지속 추적에 필요한 경우 기존 작업 문서 위치를 사용한다. 계획을 쓰기 위해 PM agent, 외부 메모리, 별도 JSON 형식을 요구하지 않는다.

@@ -1,107 +1,19 @@
 ---
 name: backend-agent
-description: Backend specialist for APIs, databases, authentication using FastAPI with clean architecture (Repository/Service/Router pattern)
+description: "Luie의 Electron main IPC, 저장·복구, Drizzle/SQLite 또는 utility process 동작을 구현·수정할 때 사용한다."
 ---
 
-# Backend Agent - API & Server Specialist
+# Luie main 구현
 
-## When to use
-- Building REST APIs or GraphQL endpoints
-- Database design and migrations
-- Authentication and authorization
-- Server-side business logic
-- Background jobs and queues
+저장소 `AGENTS.md`와 `src/main/AGENTS.md`를 따른다. renderer 증상이어도 실제 원인이 main에 있으면 호출 경계를 따라 해결한다.
 
-## When NOT to use
-- Frontend UI -> use Frontend Agent
-- Mobile-specific code -> use Mobile Agent
+`handler/` → `domains/` → 기존 `services/`·`manager/`·`database/` 구현을 확인한다. 새 계층을 기본으로 만들지 않는다. IPC를 바꾸면 shared 계약·스키마·등록·preload를 함께 맞춘다.
 
-## Core Rules
+원고 저장의 접수/완료 의미, 트랜잭션·revision, 패키지 export, 종료 flush·복구 경로를 보존한다. utility process의 main 역의존을 막고, 파일·IPC 입력을 검증한다. 실사용 DB 변경·Supabase 배포는 구현 요청에서 자동 추론하지 않는다.
 
-1. **DRY (Don't Repeat Yourself)**: Business logic in `Service`, data access logic in `Repository`
-2. **SOLID**:
-   - **Single Responsibility**: Classes and functions should have one responsibility
-   - **Dependency Inversion**: Use FastAPI's `Depends` for dependency injection
-3. **KISS**: Keep it simple and clear
+필요할 때만 참고한다:
 
-## Architecture Pattern
-
-```
-Router (HTTP) → Service (Business Logic) → Repository (Data Access) → Models
-```
-
-### Repository Layer
-- **File**: `src/[domain]/repository.py`
-- **Role**: Encapsulate DB CRUD and query logic
-- **Principle**: No business logic, return SQLAlchemy models
-
-### Service Layer
-- **File**: `src/[domain]/service.py`
-- **Role**: Business logic, Repository composition, external API calls
-- **Principle**: Business decisions only here
-
-### Router Layer
-- **File**: `src/[domain]/router.py`
-- **Role**: Receive HTTP requests, input validation, call Service, return response
-- **Principle**: No business logic, inject Service via DI
-
-## Core Rules
-
-1. **Clean architecture**: router → service → repository → models
-2. **No business logic in route handlers**
-3. **All inputs validated with Pydantic**
-4. **Parameterized queries only** (never string interpolation)
-5. **JWT + bcrypt for auth**; rate limit auth endpoints
-6. **Async/await consistently**; type hints on all signatures
-7. **Custom exceptions** via `src/lib/exceptions.py` (not raw HTTPException)
-
-## Dependency Injection
-
-```python
-# src/recipes/routers/dependencies.py
-async def get_recipe_service(db: AsyncSession = Depends(get_db)) -> RecipeService:
-    repository = RecipeRepository(db)
-    return RecipeService(repository)
-
-# src/recipes/routers/base_router.py
-@router.get("/{recipe_id}")
-async def get_recipe(
-    recipe_id: str,
-    service: RecipeService = Depends(get_recipe_service)
-):
-    return await service.get_recipe(recipe_id)
-```
-
-## Code Quality
-
-- **Python 3.12+**: Strict type hints (mypy)
-- **Async/Await**: Required for I/O-bound operations
-- **Ruff**: Linting/formatting (Double Quotes, Line Length 100)
-
-## How to Execute
-
-Follow `resources/execution-protocol.md` step by step.
-See `resources/examples.md` for input/output examples.
-Before submitting, run `resources/checklist.md`.
-
-## Serena Memory (CLI Mode)
-
-See `../_shared/memory-protocol.md`.
-
-## References
-
-- Execution steps: `resources/execution-protocol.md`
-- Code examples: `resources/examples.md`
-- Code snippets: `resources/snippets.md`
-- Checklist: `resources/checklist.md`
-- Error recovery: `resources/error-playbook.md`
-- Tech stack: `resources/tech-stack.md`
-- API template: `resources/api-template.py`
-- Context loading: `../_shared/context-loading.md`
-- Reasoning templates: `../_shared/reasoning-templates.md`
-- Clarification: `../_shared/clarification-protocol.md`
-- Context budget: `../_shared/context-budget.md`
-- Lessons learned: `../_shared/lessons-learned.md`
-
-> [!IMPORTANT]
-> When adding new modules, always include `__init__.py` to maintain package structure
+- 여러 계층을 함께 바꾸는 작업: [execution-protocol](resources/execution-protocol.md)
+- 저장·보안·경계 검증: [checklist](resources/checklist.md)
+- native ABI·DB·테스트 실패: [error-playbook](resources/error-playbook.md)
+- 구조·명령 위치: [tech-stack](resources/tech-stack.md)

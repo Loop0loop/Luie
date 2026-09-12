@@ -1,38 +1,11 @@
-# Frontend Agent - Self-Verification Checklist
+# Renderer 변경 검증
 
-Run through every item before submitting your work.
+변경한 영역의 항목만 적용한다.
 
-## TypeScript
-- [ ] Strict mode, no `any` types
-- [ ] Explicit interfaces for all component props
-- [ ] No TypeScript errors (`npx tsc --noEmit`)
-
-## Styling
-- [ ] Tailwind CSS only (no inline styles, no CSS modules)
-- [ ] Responsive at 320px, 768px, 1024px, 1440px
-- [ ] Dark mode supported (if project uses it)
-- [ ] No hardcoded colors (use Tailwind theme tokens)
-
-## Accessibility (WCAG 2.1 AA)
-- [ ] Semantic HTML elements (`<nav>`, `<main>`, `<button>`)
-- [ ] All images have alt text
-- [ ] Color contrast >= 4.5:1 (normal text), >= 3:1 (large text)
-- [ ] Keyboard navigation works for all interactive elements
-- [ ] ARIA labels on non-obvious interactive elements
-- [ ] Focus indicators visible
-
-## UX States
-- [ ] Loading state (skeleton or spinner)
-- [ ] Error state (user-friendly message + retry action)
-- [ ] Empty state (helpful message + CTA)
-- [ ] Optimistic updates where appropriate
-
-## Performance
-- [ ] No unnecessary re-renders (check with React DevTools Profiler)
-- [ ] Code splitting for route-level components
-- [ ] Images optimized and lazy-loaded
-
-## Testing
-- [ ] Unit tests for components with logic
-- [ ] User interactions tested (click, type, submit)
-- [ ] Async behavior tested (loading -> data -> display)
+- 상태: 좁은 Zustand 구독, derived state 중복 방지, 비동기 결과 대상 확인.
+- 편집기: IME 조합·selection·undo, 챕터 전환 전 flush, 실패 시 사용자 입력 보존.
+- IPC: shared 응답·실패 처리 일치, renderer에 Node/Electron 접근 없음.
+- 스타일: semantic token, light/dark/sepia, 높은 대비·reduced-motion, feature CSS 범위.
+- 접근성: semantic 요소·label·accessible name, 키보드·focus, 색상 외 상태 표시.
+- 레이아웃: 사용자 resize commit과 프로그램 복원 구분, 긴 한국어·좁은 패널에서 조작 가능.
+- 검증: 관련 DOM/Vitest·typecheck·해당 `check:*`; 실화면 확인 여부를 구분해 보고.
