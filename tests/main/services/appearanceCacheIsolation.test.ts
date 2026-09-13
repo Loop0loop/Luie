@@ -5,6 +5,11 @@ import {
   projectService,
 } from "../../../src/main/services/features/project/projectService.js";
 import { cacheDb } from "../../../src/main/database/cache/index.js";
+import {
+  characterAppearance,
+  termAppearance,
+} from "../../../src/main/database/cache/cacheSchema.js";
+import { eq, sql } from "drizzle-orm";
 import { CharacterService } from "../../../src/main/services/features/world/entities/characterService.js";
 import { TermService } from "../../../src/main/services/features/world/entities/termService.js";
 import { worldMentionService } from "../../../src/main/services/features/world/graph/worldMentionService.js";
@@ -21,6 +26,9 @@ beforeAll(() => {
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,
   });
+  vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(
+    undefined,
+  );
   vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
     () => {},
   );
@@ -52,6 +60,14 @@ describe("appearance cache isolation", () => {
     await chapterService.updateChapter({ id: String(chapter.id), content });
     await chapterService.updateChapter({ id: String(chapter.id), content });
 
+    await vi.waitFor(async () => {
+      expect(
+        await characterService.getAppearancesByChapter(String(chapter.id)),
+      ).toHaveLength(1);
+      expect(
+        await termService.getAppearancesByChapter(String(chapter.id)),
+      ).toHaveLength(1);
+    });
     const characterAppearances = await characterService.getAppearancesByChapter(
       String(chapter.id),
     );
@@ -96,9 +112,15 @@ describe("appearance cache isolation", () => {
     });
 
     expect(
-      await cacheDb.getClient().characterAppearance.count({
-        where: { projectId },
-      }),
+      Number(
+        (
+          await cacheDb
+            .getClient()
+            .select({ count: sql<number>`count(*)` })
+            .from(characterAppearance)
+            .where(eq(characterAppearance.projectId, projectId))
+        )[0]?.count ?? 0,
+      ),
     ).toBe(0);
 
     const character = await characterService.createCharacter({
@@ -106,6 +128,11 @@ describe("appearance cache isolation", () => {
       name: "하린",
     });
 
+    await vi.waitFor(async () => {
+      expect(
+        await characterService.getAppearancesByChapter(String(chapter.id)),
+      ).toHaveLength(1);
+    });
     const appearances = await characterService.getAppearancesByChapter(
       String(chapter.id),
     );
@@ -138,23 +165,43 @@ describe("appearance cache isolation", () => {
       content: "하린 은 삭제 전까지 캐시에 남아 있다.",
     });
 
-    expect(
-      await cacheDb.getClient().characterAppearance.count({
-        where: { projectId },
-      }),
-    ).toBeGreaterThan(0);
+    await vi.waitFor(async () => {
+      expect(
+        Number(
+          (
+            await cacheDb
+              .getClient()
+              .select({ count: sql<number>`count(*)` })
+              .from(characterAppearance)
+              .where(eq(characterAppearance.projectId, projectId))
+          )[0]?.count ?? 0,
+        ),
+      ).toBeGreaterThan(0);
+    });
 
     await localProjectService.deleteProject(projectId);
 
     expect(
-      await cacheDb.getClient().characterAppearance.count({
-        where: { projectId },
-      }),
+      Number(
+        (
+          await cacheDb
+            .getClient()
+            .select({ count: sql<number>`count(*)` })
+            .from(characterAppearance)
+            .where(eq(characterAppearance.projectId, projectId))
+        )[0]?.count ?? 0,
+      ),
     ).toBe(0);
     expect(
-      await cacheDb.getClient().termAppearance.count({
-        where: { projectId },
-      }),
+      Number(
+        (
+          await cacheDb
+            .getClient()
+            .select({ count: sql<number>`count(*)` })
+            .from(termAppearance)
+            .where(eq(termAppearance.projectId, projectId))
+        )[0]?.count ?? 0,
+      ),
     ).toBe(0);
   });
 });

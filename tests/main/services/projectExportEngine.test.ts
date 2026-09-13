@@ -116,14 +116,22 @@ vi.mock("../../../src/main/database/index.js", () => ({
           orderBy: vi.fn(() => makeTerminal(result)),
           limit: vi.fn(() => makeTerminal(result)),
         });
-      const makeAsyncTerminal = (dataPromise: Promise<unknown>) =>
-        Object.assign(dataPromise, {
+      const makeAsyncTerminal = (dataPromise: Promise<unknown>) => {
+        const terminal = Object.assign(dataPromise, {
           select: vi.fn(() => makeTerminal([])),
           from: vi.fn(() => makeTerminal([])),
           where: vi.fn(() => makeTerminal([])),
-          orderBy: vi.fn(() => dataPromise),
-          limit: vi.fn(() => dataPromise),
+          orderBy: vi.fn(() => terminal),
+          limit: vi.fn((limit: number) =>
+            makeAsyncTerminal(
+              dataPromise.then((data) =>
+                Array.isArray(data) ? data.slice(0, limit) : data,
+              ),
+            ),
+          ),
         });
+        return terminal;
+      };
       return {
         delete: vi.fn(() => ({
           where: vi.fn(async () => undefined),
@@ -157,14 +165,16 @@ vi.mock("../../../src/main/database/index.js", () => ({
                       const bodies = getRowsForTable("ChapterBody", resolved);
                       return rows.map((row) => ({
                         ...(row as Record<string, unknown>),
-                        bodyContent:
+                        content:
                           (
                             bodies.find(
                               (body) =>
                                 (body as { chapterId?: string }).chapterId ===
                                 (row as { id?: string }).id,
                             ) as { content?: string } | undefined
-                          )?.content ?? null,
+                          )?.content ??
+                          (row as { content?: string }).content ??
+                          "",
                       }));
                     },
                   );
@@ -194,7 +204,7 @@ vi.mock("../../../src/main/services/io/luieContainer.js", () => ({
     mocked.writeLuieContainer(...args),
 }));
 
-vi.mock("../../../src/main/manager/settings/index.js", () => ({
+vi.mock("../../../src/main/domains/settings/index.js", () => ({
   settingsManager: {
     getAll: () => ({
       snapshotExportLimit: 5,
@@ -344,6 +354,47 @@ describe("projectExportEngine", () => {
         }),
       }),
     );
+  });
+
+  it("passes the configured snapshot limit to the export query", async () => {
+    mocked.projectFindUnique.mockResolvedValueOnce({
+      id: "project-1",
+      title: "Project 1",
+      description: null,
+      createdAt: new Date("2026-03-12T00:00:00.000Z"),
+      updatedAt: new Date("2026-03-12T00:00:00.000Z"),
+      chapters: [],
+      characters: [],
+      terms: [],
+      factions: [],
+      events: [],
+      worldEntities: [],
+      entityRelations: [],
+      snapshots: Array.from({ length: 7 }, (_, index) => ({
+        id: `snapshot-${index + 1}`,
+        projectId: "project-1",
+        chapterId: null,
+        content: `snapshot body ${index + 1}`,
+        description: null,
+        createdAt: new Date(`2026-03-12T0${index}:00:00.000Z`).toISOString(),
+      })),
+    });
+
+    await exportProjectPackageWithOptions({
+      projectId: "project-1",
+      logger: { info: vi.fn(), warn: vi.fn() },
+    });
+
+    const payload = mocked.writeLuieContainer.mock.calls[0]?.[0]?.payload as {
+      snapshots?: Array<{ id: string }>;
+    };
+    expect(payload.snapshots?.map((snapshot) => snapshot.id)).toEqual([
+      "snapshot-7",
+      "snapshot-6",
+      "snapshot-5",
+      "snapshot-4",
+      "snapshot-3",
+    ]);
   });
 
   it("exports ChapterBody content and falls back to Chapter content when absent", async () => {

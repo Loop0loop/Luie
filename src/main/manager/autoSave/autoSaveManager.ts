@@ -41,8 +41,7 @@ const loadChapterService = async () =>
   (await import("../../domains/manuscript/index.js")).chapterService;
 
 const loadSnapshotService = async () =>
-  (await import("../../domains/recovery/index.js"))
-    .snapshotService;
+  (await import("../../domains/recovery/index.js")).snapshotService;
 
 const loadDb = async () => (await import("../../infra/database/index.js")).db;
 
@@ -189,7 +188,12 @@ export class AutoSaveManager extends EventEmitter {
     if (!this.firstQueuedAt.has(chapterId)) {
       this.firstQueuedAt.set(chapterId, Date.now());
     }
-    this.pendingSaves.set(chapterId, { chapterId, content, projectId, timestamp: Date.now() });
+    this.pendingSaves.set(chapterId, {
+      chapterId,
+      content,
+      projectId,
+      timestamp: Date.now(),
+    });
     this.lastSaveAt.set(chapterId, Date.now());
 
     this.queueMirrorWrite({
@@ -225,8 +229,10 @@ export class AutoSaveManager extends EventEmitter {
       this.stats.rescheduled += 1;
     }
 
-    const timer = setTimeout(async () => {
-      await this.performSave(chapterId);
+    const timer = setTimeout(() => {
+      void this.enqueueProjectTask(projectId, async () => {
+        await this.performSave(chapterId);
+      }).catch(() => undefined);
     }, config.debounceMs);
     if (typeof timer.unref === "function") {
       timer.unref();
@@ -236,9 +242,13 @@ export class AutoSaveManager extends EventEmitter {
     this.stats.scheduled += 1;
   }
 
-  private async performSave(chapterId: string) {
+  private async performSave(
+    chapterId: string,
+    revisionReason: "autosave" | "manual_save" = "autosave",
+  ) {
     await performAutoSave({
       chapterId,
+      revisionReason,
       pendingSaves: this.pendingSaves,
       saveTimers: this.saveTimers,
       lastSaveAt: this.lastSaveAt,
@@ -380,7 +390,7 @@ export class AutoSaveManager extends EventEmitter {
     await flushAllPendingSaves(
       this.pendingSaves,
       (projectId, task) => this.enqueueProjectTask(projectId, task),
-      (chapterId) => this.performSave(chapterId),
+      (chapterId) => this.performSave(chapterId, "manual_save"),
     );
   }
 

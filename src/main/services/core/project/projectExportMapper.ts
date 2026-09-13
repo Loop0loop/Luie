@@ -33,7 +33,7 @@ function normalizeNullableString(value: string | null | undefined): string | nul
 }
 
 export function toChapterExportDto(
-  row: typeof schema.chapter.$inferSelect,
+  row: Pick<typeof schema.chapter.$inferSelect, "id" | "title" | "order" | "updatedAt" | "content">,
 ): ChapterExportRecord {
   return {
     id: row.id,

@@ -12,29 +12,11 @@ const mocked = vi.hoisted(() => ({
   snapshotFindUnique: vi.fn(),
   snapshotFindMany: vi.fn(),
   snapshotDelete: vi.fn(),
-  snapshotDeleteMany: vi.fn(),
-  snapshotFindFirst: vi.fn(),
   chapterUpdate: vi.fn(),
   projectUpdate: vi.fn(),
   projectFindMany: vi.fn(),
-  transaction: vi.fn(async (callback: (client: unknown) => unknown) => {
-    return await callback({
-      snapshot: {
-        create: mocked.snapshotCreate,
-        findUnique: mocked.snapshotFindUnique,
-        findMany: mocked.snapshotFindMany,
-        delete: mocked.snapshotDelete,
-        deleteMany: mocked.snapshotDeleteMany,
-        findFirst: mocked.snapshotFindFirst,
-      },
-      chapter: {
-        update: mocked.chapterUpdate,
-      },
-      project: {
-        update: mocked.projectUpdate,
-      },
-    });
-  }),
+  chapterBodyWrite: vi.fn(),
+  transaction: vi.fn((callback: (client: unknown) => unknown) => callback({})),
   writeFullSnapshotArtifact: vi.fn(async (..._args: unknown[]) => undefined),
   cleanupOrphanSnapshotArtifacts: vi.fn(async (..._args: unknown[]) => ({
     scanned: 0,
@@ -50,51 +32,59 @@ const mocked = vi.hoisted(() => ({
   persistPackageAfterMutation: vi.fn(async (..._args: unknown[]) => undefined),
 }));
 
-const mockedDeleteMany = vi.fn(async () => ({ count: 0 }));
+const makeWriteChain = (handler: ReturnType<typeof vi.fn>) => ({
+  set: vi.fn((value) => {
+    handler(value);
+    return { where: vi.fn(() => ({ run: vi.fn() })) };
+  }),
+  where: vi.fn(() => ({ run: vi.fn(() => handler()) })),
+});
+
+const makeTransactionClient = () => ({
+  insert: vi.fn(() => ({
+    values: vi.fn((value) => {
+      mocked.chapterBodyWrite(value);
+      return { onConflictDoUpdate: vi.fn(() => ({ run: vi.fn() })) };
+    }),
+  })),
+  update: vi.fn(() => ({
+    set: vi.fn((value) => {
+      mocked.projectUpdate(value);
+      mocked.chapterUpdate(value);
+      return { where: vi.fn(() => ({ run: vi.fn() })) };
+    }),
+  })),
+  delete: vi.fn(() => makeWriteChain(mocked.snapshotDelete)),
+});
 
 const makeMockClient = () => ({
-  snapshot: {
-    create: mocked.snapshotCreate,
-    findUnique: mocked.snapshotFindUnique,
-    findMany: mocked.snapshotFindMany,
-    delete: mocked.snapshotDelete,
-    deleteMany: mocked.snapshotDeleteMany,
-    findFirst: mocked.snapshotFindFirst,
-  },
-  chapter: {
-    update: mocked.chapterUpdate,
-    deleteMany: mockedDeleteMany,
-  },
-  project: {
-    update: mocked.projectUpdate,
-    findMany: mocked.projectFindMany,
-    deleteMany: mockedDeleteMany,
-  },
-  term: {
-    deleteMany: mockedDeleteMany,
-  },
-  character: {
-    deleteMany: mockedDeleteMany,
-  },
-  projectAttachment: {
-    deleteMany: mockedDeleteMany,
-  },
-  projectLocalState: {
-    deleteMany: mockedDeleteMany,
-  },
-  projectSettings: {
-    deleteMany: mockedDeleteMany,
-  },
-  scrapMemo: {
-    deleteMany: mockedDeleteMany,
-  },
-  worldDocument: {
-    deleteMany: mockedDeleteMany,
-  },
-  $transaction: mocked.transaction,
+  insert: vi.fn(() => ({
+    values: vi.fn((value) => ({
+      returning: vi.fn(async () => [await mocked.snapshotCreate(value)]),
+    })),
+  })),
+  select: vi.fn((selection?: unknown) => ({
+    from: vi.fn((_table: string) => ({
+      where: vi.fn(() => ({
+        limit: vi.fn(async () => {
+          const row = await mocked.snapshotFindUnique();
+          return row ? [row] : [];
+        }),
+        orderBy: vi.fn(async () => await mocked.snapshotFindMany(selection)),
+      })),
+      orderBy: vi.fn(async () => await mocked.projectFindMany()),
+    })),
+  })),
+  update: vi.fn(() => makeWriteChain(mocked.projectUpdate)),
+  delete: vi.fn(() => makeWriteChain(mocked.snapshotDelete)),
+  transaction: mocked.transaction,
 });
 
 vi.mock("../../../src/main/database/index.js", () => ({
+  chapter: "Chapter",
+  chapterBody: "ChapterBody",
+  project: "Project",
+  snapshot: "Snapshot",
   db: {
     initialize: mocked.initialize,
     disconnect: mocked.disconnect,
@@ -102,12 +92,15 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/project/projectService.js", () => ({
-  projectService: {
-    persistPackageAfterMutation: (projectId: string, reason: string) =>
-      mocked.persistPackageAfterMutation(projectId, reason),
-  },
-}));
+vi.mock(
+  "../../../src/main/services/features/project/projectService.js",
+  () => ({
+    projectService: {
+      persistPackageAfterMutation: (projectId: string, reason: string) =>
+        mocked.persistPackageAfterMutation(projectId, reason),
+    },
+  }),
+);
 
 vi.mock(
   "../../../src/main/services/features/snapshot/snapshotArtifacts.js",
@@ -142,6 +135,10 @@ import { SnapshotService } from "../../../src/main/services/features/snapshot/sn
 describe("SnapshotService package behavior", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocked.transaction.mockImplementation(
+      (callback: (client: unknown) => unknown) =>
+        callback(makeTransactionClient()),
+    );
     mocked.snapshotCreate.mockResolvedValue({
       id: "snapshot-1",
       projectId: "project-1",
@@ -150,7 +147,6 @@ describe("SnapshotService package behavior", () => {
       createdAt: new Date("2026-03-12T00:00:00.000Z"),
     });
     mocked.snapshotDelete.mockResolvedValue({ id: "snapshot-1" });
-    mocked.snapshotDeleteMany.mockResolvedValue({ count: 1 });
     mocked.chapterUpdate.mockResolvedValue({ id: "chapter-1" });
     mocked.projectFindMany.mockResolvedValue([]);
     mocked.snapshotFindMany.mockResolvedValue([]);
@@ -162,7 +158,7 @@ describe("SnapshotService package behavior", () => {
     });
   });
 
-  it("attempts immediate .luie export after snapshot creation", async () => {
+  it("requests .luie persistence after snapshot creation", async () => {
     const service = new SnapshotService();
 
     const created = await service.createSnapshot({
@@ -174,10 +170,7 @@ describe("SnapshotService package behavior", () => {
 
     expect(created).toMatchObject({ id: "snapshot-1" });
     expect(mocked.projectUpdate).toHaveBeenCalledWith({
-      where: { id: "project-1" },
-      data: {
-        updatedAt: expect.any(Date),
-      },
+      updatedAt: expect.any(String),
     });
     expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
       "project-1",
@@ -212,7 +205,7 @@ describe("SnapshotService package behavior", () => {
     );
   });
 
-  it("refreshes the attached .luie immediately after snapshot restore and pruning", async () => {
+  it("requests .luie persistence after snapshot restore and pruning", async () => {
     mocked.snapshotFindMany.mockResolvedValue([
       {
         id: "snapshot-old-1",
@@ -230,10 +223,7 @@ describe("SnapshotService package behavior", () => {
     await service.pruneSnapshots("project-1");
 
     expect(mocked.projectUpdate).toHaveBeenCalledWith({
-      where: { id: "project-1" },
-      data: {
-        updatedAt: expect.any(Date),
-      },
+      updatedAt: expect.any(String),
     });
     expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
       "project-1",
@@ -271,7 +261,7 @@ describe("SnapshotService package behavior", () => {
   });
 
   it.each([5_000, 100_000, 1_000_000, 2_000_000, 5_000_000])(
-    "routes %i-character snapshot bodies through immediate persistence",
+    "routes %i-character snapshot bodies through package persistence",
     async (length) => {
       const service = new SnapshotService();
       const content = makeMixedNarrativeText(length, 0);
@@ -285,11 +275,7 @@ describe("SnapshotService package behavior", () => {
 
       expect(created).toMatchObject({ id: "snapshot-1" });
       expect(mocked.snapshotCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            content,
-          }),
-        }),
+        expect.objectContaining({ content }),
       );
       expect(mocked.persistPackageAfterMutation).toHaveBeenCalledWith(
         "project-1",

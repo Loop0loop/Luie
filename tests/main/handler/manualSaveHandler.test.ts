@@ -1,5 +1,5 @@
 // TEST_LEVEL: UNIT_MOCKED
-// PROVES: manual save가 project checkpoint 전에 main autosave를 모두 비운다.
+// PROVES: manual save가 autosave를 먼저 비우고 flush 실패 시 checkpoint를 차단한다.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IPC_CHANNELS } from "../../../src/shared/ipc/channels.js";
@@ -19,6 +19,7 @@ vi.mock("../../../src/main/handler/core/ipcRegistrar.js", () => ({
 }));
 
 import { registerAutoSaveIPCHandlers } from "../../../src/main/handler/writing/ipcAutoSaveHandlers.js";
+import { flushAllPendingSaves } from "../../../src/main/manager/autoSave/autoSaveFlushOps.js";
 
 describe("MANUAL_SAVE handler", () => {
   beforeEach(() => {
@@ -104,5 +105,45 @@ describe("MANUAL_SAVE handler", () => {
     );
 
     await expect(handler?.handler("project-1")).rejects.toBe(failure);
+  });
+
+  it("TC-DB-02-B blocks package export when autosave flush fails", async () => {
+    const failure = new Error("chapter database write failed");
+    const pendingSaves = new Map([
+      [
+        "chapter-1",
+        {
+          chapterId: "chapter-1",
+          projectId: "project-1",
+          content: "latest body",
+        },
+      ],
+    ]);
+    const autoSaveManager = {
+      triggerSave: vi.fn(async () => undefined),
+      flushAll: vi.fn(() =>
+        flushAllPendingSaves(
+          pendingSaves,
+          async (_projectId, task) => task(),
+          async () => {
+            throw failure;
+          },
+        ),
+      ),
+    };
+    const projectService = {
+      exportProjectPackageNow: vi.fn(async () => true),
+    };
+    registerAutoSaveIPCHandlers(
+      { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+      autoSaveManager,
+      projectService,
+    );
+    const handler = mocked.handlers.find(
+      (candidate) => candidate.channel === IPC_CHANNELS.MANUAL_SAVE,
+    );
+
+    await expect(handler?.handler("project-1")).rejects.toBe(failure);
+    expect(projectService.exportProjectPackageNow).not.toHaveBeenCalled();
   });
 });

@@ -1,10 +1,10 @@
-import type {
-  AutoSaveRuntimeCounters,
-  PendingSave,
-} from "./autoSaveTypes.js";
+import type { AutoSaveRuntimeCounters, PendingSave } from "./autoSaveTypes.js";
 
 type ChapterServiceLike = {
-  updateChapter: (input: { id: string; content: string }) => Promise<unknown>;
+  updateChapter: (
+    input: { id: string; content: string },
+    options?: { revisionReason?: "autosave" | "manual_save" },
+  ) => Promise<unknown>;
 };
 
 type LoggerLike = {
@@ -25,6 +25,7 @@ const recordSaveDuration = (
 
 export async function performAutoSave(input: {
   chapterId: string;
+  revisionReason: "autosave" | "manual_save";
   pendingSaves: Map<string, PendingSave>;
   saveTimers: Map<string, NodeJS.Timeout>;
   lastSaveAt: Map<string, number>;
@@ -57,24 +58,34 @@ export async function performAutoSave(input: {
 
   try {
     const chapterService = await input.loadChapterService();
-    await chapterService.updateChapter({
-      id: pending.chapterId,
-      content: pending.content,
-    });
-
-    input.pendingSaves.delete(input.chapterId);
-    input.saveTimers.delete(input.chapterId);
-    input.lastSaveAt.delete(input.chapterId);
-    input.firstQueuedAt.delete(input.chapterId);
-    input.emitSaved(input.chapterId);
-    input.queueMirrorWrite(pending);
-    input.maybeEnqueueSnapshot(
-      pending.projectId,
-      pending.chapterId,
-      pending.content,
+    await chapterService.updateChapter(
+      {
+        id: pending.chapterId,
+        content: pending.content,
+      },
+      { revisionReason: input.revisionReason },
     );
 
-    input.logger.info("Auto-save completed", { chapterId: input.chapterId });
+    const completedLatestPending =
+      input.pendingSaves.get(input.chapterId) === pending;
+    if (completedLatestPending) {
+      input.pendingSaves.delete(input.chapterId);
+      input.saveTimers.delete(input.chapterId);
+      input.lastSaveAt.delete(input.chapterId);
+      input.firstQueuedAt.delete(input.chapterId);
+      input.emitSaved(input.chapterId);
+      input.queueMirrorWrite(pending);
+      input.maybeEnqueueSnapshot(
+        pending.projectId,
+        pending.chapterId,
+        pending.content,
+      );
+    }
+
+    input.logger.info("Auto-save completed", {
+      chapterId: input.chapterId,
+      completedLatestPending,
+    });
     input.stats.saveSucceeded += 1;
     recordSaveDuration(input.stats, saveStartedAt);
   } catch (error) {
@@ -84,5 +95,6 @@ export async function performAutoSave(input: {
     if (input.canEmitError()) {
       input.emitError(input.chapterId, error);
     }
+    throw error;
   }
 }

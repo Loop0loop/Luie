@@ -15,6 +15,7 @@ const mocked = vi.hoisted(() => ({
   })),
   markProjectExported: vi.fn(async () => undefined),
   listProjectsNeedingExport: vi.fn(async (): Promise<string[]> => []),
+  writeLuieSqliteEntry: vi.fn(async () => undefined),
 }));
 
 vi.mock(
@@ -40,6 +41,10 @@ vi.mock(
   }),
 );
 
+vi.mock("../../../src/main/services/io/luieSqliteContainer.js", () => ({
+  writeLuieSqliteEntry: mocked.writeLuieSqliteEntry,
+}));
+
 import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 
 describe("ProjectService immediate package durability", () => {
@@ -55,6 +60,7 @@ describe("ProjectService immediate package durability", () => {
     });
     mocked.markProjectExported.mockReset().mockResolvedValue(undefined);
     mocked.listProjectsNeedingExport.mockReset().mockResolvedValue([]);
+    mocked.writeLuieSqliteEntry.mockReset().mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -168,6 +174,43 @@ describe("ProjectService immediate package durability", () => {
       "project-1",
       "chapter:update:debounced",
     );
+  });
+
+  it("writes content-only chapter updates as one package entry", async () => {
+    const service = new ProjectService();
+
+    await service.persistPackageAfterMutation("project-1", "chapter:update", {
+      chapterContent: {
+        chapterId: "chapter-1",
+        content: "latest body",
+      },
+    });
+
+    expect(mocked.writeLuieSqliteEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetPath: "/tmp/project-1.luie",
+        entryPath: "manuscript/chapter-1.md",
+        content: "latest body",
+      }),
+    );
+    expect(mocked.exportProjectPackage).not.toHaveBeenCalled();
+  });
+
+  it("falls back to a full export when incremental entry write fails", async () => {
+    const service = new ProjectService();
+    mocked.writeLuieSqliteEntry.mockRejectedValueOnce(
+      new Error("missing package"),
+    );
+
+    await service.persistPackageAfterMutation("project-1", "chapter:update", {
+      chapterContent: {
+        chapterId: "chapter-1",
+        content: "latest body",
+      },
+    });
+
+    expect(mocked.exportProjectPackage).toHaveBeenCalledOnce();
+    expect(mocked.markProjectExported).toHaveBeenCalledWith("project-1", 1);
   });
 
   it("skips immediate export when the project is not attached to a .luie package", async () => {

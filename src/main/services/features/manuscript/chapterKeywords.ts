@@ -3,7 +3,7 @@ import { createLogger } from "../../../../shared/logger/index.js";
 import { SEARCH_CONTEXT_RADIUS } from "../../../../shared/constants/index.js";
 import { db } from "../../../infra/database/index.js";
 import * as schema from "../../../infra/database/index.js";
-import { keywordExtractor } from "../../../core/keywordExtractor.js";
+import { KeywordExtractor } from "../../../core/keywordExtractor.js";
 import { projectService } from "../project/projectService.js";
 
 const { character, term, chapter } = schema;
@@ -19,62 +19,6 @@ type TrackKeywordAppearanceOptions = {
   includeTerms?: boolean;
 };
 
-async function updateCharacterFirstAppearance(
-  characterId: string,
-  chapterId: string,
-): Promise<void> {
-  const rows = await db.getClient()
-    .select({
-      projectId: character.projectId,
-      firstAppearance: character.firstAppearance,
-      deletedAt: character.deletedAt,
-    })
-    .from(character)
-    .where(eq(character.id, characterId))
-    .limit(1);
-
-  if (rows.length === 0) return;
-  const char = rows[0];
-  if (!char.projectId || char.firstAppearance || char.deletedAt) return;
-
-  await db.getClient()
-    .update(character)
-    .set({ firstAppearance: chapterId })
-    .where(eq(character.id, characterId));
-  await projectService.attemptImmediatePackageExport(
-    String(char.projectId),
-    "character:update-first-appearance",
-  );
-}
-
-async function updateTermFirstAppearance(
-  termId: string,
-  chapterId: string,
-): Promise<void> {
-  const rows = await db.getClient()
-    .select({
-      projectId: term.projectId,
-      firstAppearance: term.firstAppearance,
-      deletedAt: term.deletedAt,
-    })
-    .from(term)
-    .where(eq(term.id, termId))
-    .limit(1);
-
-  if (rows.length === 0) return;
-  const t = rows[0];
-  if (!t.projectId || t.firstAppearance || t.deletedAt) return;
-
-  await db.getClient()
-    .update(term)
-    .set({ firstAppearance: chapterId })
-    .where(eq(term.id, termId));
-  await projectService.attemptImmediatePackageExport(
-    String(t.projectId),
-    "term:update-first-appearance",
-  );
-}
-
 async function trackKeywordAppearancesInternal(
   chapterId: string,
   content: string,
@@ -83,17 +27,6 @@ async function trackKeywordAppearancesInternal(
 ) {
   const includeCharacters = options?.includeCharacters ?? true;
   const includeTerms = options?.includeTerms ?? true;
-
-  if (options?.clearExisting !== false) {
-    const appearanceCacheService = await loadAppearanceCacheService();
-    if (includeCharacters && includeTerms) {
-      await appearanceCacheService.clearChapter(chapterId);
-    } else if (includeCharacters) {
-      await appearanceCacheService.clearCharacterChapter(chapterId);
-    } else if (includeTerms) {
-      await appearanceCacheService.clearTermChapter(chapterId);
-    }
-  }
 
   const store = db.getClient();
   const notDeleted = isNull(character.deletedAt);
@@ -114,69 +47,98 @@ async function trackKeywordAppearancesInternal(
       : Promise.resolve([]),
   ]);
 
+  const keywordExtractor = new KeywordExtractor();
   keywordExtractor.setKnownCharacters(
     characters.map((c) => c.name),
   );
   keywordExtractor.setKnownTerms(terms.map((t) => t.term));
 
   const keywords = keywordExtractor.extractFromText(content);
+  const charactersByName = new Map(
+    characters.map((entry) => [entry.name, String(entry.id)]),
+  );
+  const termsByName = new Map(
+    terms.map((entry) => [entry.term, String(entry.id)]),
+  );
+  const characterAppearances = keywords.flatMap((keyword) => {
+    if (keyword.type !== "character") return [];
+    const characterId = charactersByName.get(keyword.text);
+    if (!characterId) return [];
+    return [{
+      characterId,
+      projectId,
+      position: keyword.position,
+      context: extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
+    }];
+  });
+  const termAppearances = keywords.flatMap((keyword) => {
+    if (keyword.type !== "term") return [];
+    const termId = termsByName.get(keyword.text);
+    if (!termId) return [];
+    return [{
+      termId,
+      projectId,
+      position: keyword.position,
+      context: extractContext(content, keyword.position, SEARCH_CONTEXT_RADIUS),
+    }];
+  });
+  const appearanceCacheService = await loadAppearanceCacheService();
+  await appearanceCacheService.replaceChapterAppearances({
+    chapterId,
+    characterAppearances,
+    termAppearances,
+    clearCharacters:
+      includeCharacters && options?.clearExisting !== false,
+    clearTerms: includeTerms && options?.clearExisting !== false,
+  });
 
-  if (includeCharacters) {
-    const appearanceCacheService = await loadAppearanceCacheService();
-    for (const keyword of keywords.filter(
-      (entry) => entry.type === "character",
+  const changedFirstAppearanceCount = store.transaction((tx) => {
+    let changes = 0;
+    for (const characterId of new Set(
+      characterAppearances.map((entry) => entry.characterId),
     )) {
-      const char = characters.find(
-        (entry) => entry.name === keyword.text,
-      );
-      if (!char) continue;
-
-      await appearanceCacheService.recordCharacterAppearance({
-        characterId: String(char.id),
-        projectId,
-        chapterId,
-        position: keyword.position,
-        context: extractContext(
-          content,
-          keyword.position,
-          SEARCH_CONTEXT_RADIUS,
-        ),
-      });
-
-      await updateCharacterFirstAppearance(String(char.id), chapterId);
+      changes += tx
+        .update(character)
+        .set({ firstAppearance: chapterId })
+        .where(
+          and(
+            eq(character.id, characterId),
+            eq(character.projectId, projectId),
+            isNull(character.firstAppearance),
+            isNull(character.deletedAt),
+          ),
+        )
+        .run().changes;
     }
-  }
-
-  if (includeTerms) {
-    const appearanceCacheService = await loadAppearanceCacheService();
-    for (const keyword of keywords.filter((entry) => entry.type === "term")) {
-      const t = terms.find((entry) => entry.term === keyword.text);
-      if (!t) continue;
-
-      await appearanceCacheService.recordTermAppearance({
-        termId: String(t.id),
-        projectId,
-        chapterId,
-        position: keyword.position,
-        context: extractContext(
-          content,
-          keyword.position,
-          SEARCH_CONTEXT_RADIUS,
-        ),
-      });
-
-      await updateTermFirstAppearance(String(t.id), chapterId);
+    for (const termId of new Set(
+      termAppearances.map((entry) => entry.termId),
+    )) {
+      changes += tx
+        .update(term)
+        .set({ firstAppearance: chapterId })
+        .where(
+          and(
+            eq(term.id, termId),
+            eq(term.projectId, projectId),
+            isNull(term.firstAppearance),
+            isNull(term.deletedAt),
+          ),
+        )
+        .run().changes;
     }
+    return changes;
+  });
+  if (changedFirstAppearanceCount > 0) {
+    projectService.schedulePackageExport(
+      projectId,
+      "keyword:update-first-appearance",
+    );
   }
 
   logger.info("Keyword tracking completed", {
     chapterId,
-    characterCount: includeCharacters
-      ? keywords.filter((entry) => entry.type === "character").length
-      : 0,
-    termCount: includeTerms
-      ? keywords.filter((entry) => entry.type === "term").length
-      : 0,
+    characterCount: characterAppearances.length,
+    termCount: termAppearances.length,
   });
 }
 
@@ -222,6 +184,7 @@ export async function rebuildProjectKeywordAppearances(
       .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
       .orderBy(chapter.order);
 
+    /* eslint-disable no-await-in-loop -- project rebuild applies chapters in manuscript order. */
     for (const ch of chapters) {
       await trackKeywordAppearancesInternal(
         ch.id,
@@ -234,6 +197,7 @@ export async function rebuildProjectKeywordAppearances(
         },
       );
     }
+    /* eslint-enable no-await-in-loop */
   } catch (error) {
     logger.error("Failed to rebuild project keyword appearances", {
       projectId,

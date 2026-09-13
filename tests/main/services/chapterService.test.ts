@@ -20,6 +20,7 @@ beforeAll(() => {
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,
   });
+  vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue();
   vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
     () => {},
   );

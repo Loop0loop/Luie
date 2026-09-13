@@ -5,6 +5,8 @@ import { createLogger } from "../../../../shared/logger/index.js";
 import {
   ErrorCode,
   LUIE_PACKAGE_EXTENSION,
+  LUIE_MANUSCRIPT_DIR,
+  MARKDOWN_EXTENSION,
   PACKAGE_EXPORT_DEBOUNCE_MS,
 } from "../../../../shared/constants/index.js";
 import type {
@@ -43,6 +45,7 @@ import {
   updateProjectRecord,
 } from "../../core/project/projectMutation.js";
 import { listProjectsNeedingExport } from "../../core/project/projectRevisionStore.js";
+import { writeLuieSqliteEntry } from "../../io/luieSqliteContainer.js";
 const logger = createLogger("ProjectService");
 
 const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
@@ -447,6 +450,12 @@ export class ProjectService {
   async persistPackageAfterMutation(
     projectId: string,
     reason: string,
+    options?: {
+      chapterContent?: {
+        chapterId: string;
+        content: string;
+      };
+    },
   ): Promise<void> {
     if (isPackageExportDisabledForRuntime) {
       if (!this.hasLoggedRuntimeExportSkip) {
@@ -457,6 +466,40 @@ export class ProjectService {
         this.hasLoggedRuntimeExportSkip = true;
       }
       return;
+    }
+    if (options?.chapterContent) {
+      const projectPath = await getCanonicalProjectAttachmentPath(projectId);
+      if (!projectPath) return;
+      try {
+        await writeLuieSqliteEntry({
+          targetPath: projectPath,
+          entryPath: `${LUIE_MANUSCRIPT_DIR}/${options.chapterContent.chapterId}${MARKDOWN_EXTENSION}`,
+          content: options.chapterContent.content,
+          logger,
+        });
+        return;
+      } catch (incrementalError) {
+        logger.warn("Incremental chapter package write failed", {
+          projectId,
+          chapterId: options.chapterContent.chapterId,
+          error: incrementalError,
+        });
+        const fallback = await this.attemptImmediatePackageExport(
+          projectId,
+          `${reason}:incremental-fallback`,
+        );
+        if (fallback.skipped || (fallback.exported && !fallback.error)) return;
+        throw new ServiceError(
+          ErrorCode.FS_WRITE_FAILED,
+          "Failed to persist chapter content to canonical .luie",
+          {
+            projectId,
+            chapterId: options.chapterContent.chapterId,
+            reason,
+          },
+          fallback.error ?? incrementalError,
+        );
+      }
     }
     if (this.shouldDebouncePackageExport(reason)) {
       this.schedulePackageExport(projectId, `${reason}:debounced`);

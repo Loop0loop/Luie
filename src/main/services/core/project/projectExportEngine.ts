@@ -68,7 +68,9 @@ export const exportProjectPackageWithOptions = async (input: {
     worldSourcePath?: string | null;
   };
 }): Promise<boolean> => {
-  const project = await getProjectForExport(input.projectId);
+  const snapshotExportLimit =
+    settingsManager.getAll().snapshotExportLimit ?? SNAPSHOT_FILE_KEEP_COUNT;
+  const project = await getProjectForExport(input.projectId, snapshotExportLimit);
   if (!project) return false;
   const attachedProjectPath = await getProjectAttachmentPath(input.projectId);
 
@@ -85,8 +87,6 @@ export const exportProjectPackageWithOptions = async (input: {
   const { exportChapters, chapterMeta } = buildExportChapterData(project.chapters);
   const characters = buildExportCharacterData(project.characters);
   const terms = buildExportTermData(project.terms);
-  const snapshotExportLimit =
-    settingsManager.getAll().snapshotExportLimit ?? SNAPSHOT_FILE_KEEP_COUNT;
   const snapshots = buildExportSnapshotData(project.snapshots, snapshotExportLimit);
   const memory = await buildMemoryCanonicalPackagePayload(input.projectId);
   const replicaWorld = await readWorldPayloadFromReplica(input.projectId, input.logger);

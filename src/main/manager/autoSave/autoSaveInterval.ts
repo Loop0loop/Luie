@@ -38,7 +38,7 @@ export function createAutoSaveInterval(input: {
           }),
         Promise.resolve(),
       );
-    });
+    }).catch(() => undefined);
   }, input.config.interval);
 
   if (typeof timer.unref === "function") {
