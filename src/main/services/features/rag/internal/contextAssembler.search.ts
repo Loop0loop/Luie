@@ -270,6 +270,7 @@ export async function searchMemoryChunksForRag(
     normalizedQuery,
     resultLimit: limit,
     candidateCap,
+    vectorSearchMode: searchPolicy.vectorSearchMode,
     logger,
     embedQuery: input.embedTexts,
     scope: {

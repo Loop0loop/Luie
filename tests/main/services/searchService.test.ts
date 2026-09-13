@@ -3,7 +3,11 @@ import { searchService } from "../../../src/main/services/features/search/search
 import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
-import { cacheDb } from "../../../src/main/database/cache/index.js";
+import {
+  cacheDb,
+  chapterSearchDocument,
+} from "../../../src/main/database/cache/index.js";
+import { eq } from "drizzle-orm";
 import { chapterSearchCacheService } from "../../../src/main/services/features/search/chapterSearchCacheService.js";
 
 const chapterService = new ChapterService();
@@ -16,6 +20,9 @@ beforeAll(() => {
   vi.spyOn(projectService, "attemptImmediatePackageExport").mockResolvedValue({
     exported: false,
   });
+  vi.spyOn(projectService, "persistPackageAfterMutation").mockResolvedValue(
+    undefined,
+  );
   vi.spyOn(localProjectService, "schedulePackageExport").mockImplementation(
     () => {},
   );
@@ -65,9 +72,10 @@ describe("SearchService", () => {
       content: "유리 돔 아래의 정원은 아직 따뜻했다.",
     });
 
-    await cacheDb.getClient().chapterSearchDocument.deleteMany({
-      where: { projectId: project.id as string },
-    });
+    await cacheDb
+      .getClient()
+      .delete(chapterSearchDocument)
+      .where(eq(chapterSearchDocument.projectId, project.id as string));
 
     const results = await searchService.search({
       projectId: project.id as string,
@@ -75,11 +83,13 @@ describe("SearchService", () => {
       type: "all",
     });
 
-    const restoredCount = await cacheDb
-      .getClient()
-      .chapterSearchDocument.count({
-        where: { projectId: project.id as string },
-      });
+    const restoredCount = (
+      await cacheDb
+        .getClient()
+        .select()
+        .from(chapterSearchDocument)
+        .where(eq(chapterSearchDocument.projectId, project.id as string))
+    ).length;
 
     expect(
       results.some((r) => r.type === "chapter" && r.id === chapter.id),
@@ -104,16 +114,15 @@ describe("SearchService", () => {
       content: "하린은 빛의 복도 끝에서 오래된 문장을 발견했다.",
     });
 
-    const ftsCount = await chapterSearchCacheService.getProjectFtsRowCount(
-      project.id as string,
-    );
     const results = await searchService.search({
       projectId: project.id as string,
       query: "빛의 복도",
       type: "all",
     });
 
-    expect(ftsCount).toBe(1);
+    await expect(
+      chapterSearchCacheService.getProjectFtsRowCount(project.id as string),
+    ).resolves.toBe(1);
     expect(
       results.some((r) => r.type === "chapter" && r.id === chapter.id),
     ).toBe(true);
