@@ -1,18 +1,15 @@
 import crypto from "node:crypto";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, notInArray, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import { memoryBuildJob, memoryChunk } from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
-import {
-  MEMORY_BUILD_JOB_DEDUPE_STATUSES,
-  MEMORY_JOB_TYPES,
-  MEMORY_TARGET_TYPES,
-} from "./memoryJobConstants.js";
+import { MEMORY_JOB_TYPES, MEMORY_TARGET_TYPES } from "./memoryJobConstants.js";
+import { upsertMemoryBuildJob } from "./memoryBuildJobEnqueue.js";
 import { claimMemoryBuildJob } from "./jobControl.js";
 import { chunkText, sha256 } from "./projection/chunking.js";
 import {
-  canRetryMemoryBuildJob,
   MAX_JOB_ATTEMPTS,
+  retryableMemoryBuildJobCondition,
 } from "./projection/jobPolicy.js";
 import { collectMemorySourceRows } from "./projection/sourceRows.js";
 
@@ -31,35 +28,14 @@ class MemoryProjectionService {
   }): Promise<void> {
     const client = db.getClient();
     const now = new Date().toISOString();
-    const existingJobs = await client
-      .select({ id: memoryBuildJob.id })
-      .from(memoryBuildJob)
-      .where(
-        and(
-          eq(memoryBuildJob.projectId, input.projectId),
-          eq(memoryBuildJob.targetType, MEMORY_TARGET_TYPES.CHAPTER),
-          eq(memoryBuildJob.targetId, input.chapterId),
-          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
-          inArray(memoryBuildJob.status, [...MEMORY_BUILD_JOB_DEDUPE_STATUSES]),
-        ),
-      )
-      .limit(1);
-    if (existingJobs.length > 0) {
-      return;
-    }
-
-    await client.insert(memoryBuildJob).values({
-      id: crypto.randomUUID(),
+    upsertMemoryBuildJob({
+      client,
       projectId: input.projectId,
       targetType: MEMORY_TARGET_TYPES.CHAPTER,
       targetId: input.chapterId,
       jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
-      status: "pending",
       priority: input.priority ?? 100,
-      attempts: 0,
-      error: null,
-      createdAt: now,
-      updatedAt: now,
+      now,
     });
   }
 
@@ -74,7 +50,7 @@ class MemoryProjectionService {
     const jobFilters = [
       eq(memoryBuildJob.projectId, input.projectId),
       eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
-      inArray(memoryBuildJob.status, ["pending", "failed"]),
+      retryableMemoryBuildJobCondition(),
     ];
     if (input.sourceType) {
       jobFilters.push(eq(memoryBuildJob.targetType, input.sourceType));
@@ -82,15 +58,12 @@ class MemoryProjectionService {
     if (input.sourceId) {
       jobFilters.push(eq(memoryBuildJob.targetId, input.sourceId));
     }
-    const candidates = await client
+    const jobs = await client
       .select()
       .from(memoryBuildJob)
       .where(and(...jobFilters))
       .orderBy(asc(memoryBuildJob.priority), asc(memoryBuildJob.createdAt))
-      .limit(Math.max(limit * 3, 30));
-    const jobs = candidates
-      .filter((job) => canRetryMemoryBuildJob(job))
-      .slice(0, limit);
+      .limit(limit);
 
     if (jobs.length === 0) {
       return { queued: 0, processed: 0 };
@@ -135,6 +108,43 @@ class MemoryProjectionService {
         const title = source.title?.trim();
         const contextLabel = title ? `${job.targetType}: ${title}` : null;
         const chunks = chunkText(sourceContent);
+        const existingChunks = await client
+          .select()
+          .from(memoryChunk)
+          .where(
+            and(
+              eq(memoryChunk.sourceType, job.targetType),
+              eq(memoryChunk.sourceId, job.targetId),
+            ),
+          )
+          .orderBy(asc(memoryChunk.chunkIndex));
+        const reusableByHash = new Map<string, typeof existingChunks>();
+        for (const existing of existingChunks) {
+          const key = `${existing.contentHash}:${existing.indexTextHash}`;
+          const matches = reusableByHash.get(key);
+          if (matches) matches.push(existing);
+          else reusableByHash.set(key, [existing]);
+        }
+        const nextChunks = chunks.map((chunkItem, index) => {
+          const indexText = contextLabel
+            ? `[${contextLabel}]\n${chunkItem.content}`
+            : chunkItem.content;
+          const contentHash = sha256(chunkItem.content);
+          const indexTextHash = sha256(indexText);
+          const reusable = reusableByHash
+            .get(`${contentHash}:${indexTextHash}`)
+            ?.shift();
+          return {
+            ...chunkItem,
+            id: reusable?.id ?? crypto.randomUUID(),
+            createdAt: reusable?.createdAt ?? now,
+            index,
+            indexText,
+            contentHash,
+            indexTextHash,
+          };
+        });
+        const retainedIds = nextChunks.map((chunkItem) => chunkItem.id);
 
         client.transaction((tx) => {
           tx.run(
@@ -144,34 +154,40 @@ class MemoryProjectionService {
                   WHERE "sourceType" = ${job.targetType} AND "sourceId" = ${job.targetId}
                 );`,
           );
-          tx.delete(memoryChunk)
-            .where(
-              and(
-                eq(memoryChunk.sourceType, job.targetType),
-                eq(memoryChunk.sourceId, job.targetId),
-              ),
-            )
-            .run();
+          if (existingChunks.length > 0) {
+            tx.update(memoryChunk)
+              .set({ chunkIndex: sql`-${memoryChunk.chunkIndex} - 1` })
+              .where(
+                and(
+                  eq(memoryChunk.sourceType, job.targetType),
+                  eq(memoryChunk.sourceId, job.targetId),
+                ),
+              )
+              .run();
+            const obsoleteFilter = and(
+              eq(memoryChunk.sourceType, job.targetType),
+              eq(memoryChunk.sourceId, job.targetId),
+              ...(retainedIds.length > 0
+                ? [notInArray(memoryChunk.id, retainedIds)]
+                : []),
+            );
+            tx.delete(memoryChunk).where(obsoleteFilter).run();
+          }
 
-          for (let index = 0; index < chunks.length; index += 1) {
-            const chunkItem = chunks[index];
-            const chunkId = crypto.randomUUID();
-            const indexText = contextLabel
-              ? `[${contextLabel}]\n${chunkItem.content}`
-              : chunkItem.content;
+          for (const chunkItem of nextChunks) {
             tx.insert(memoryChunk)
               .values({
-                id: chunkId,
+                id: chunkItem.id,
                 projectId: source.projectId,
                 sourceType: job.targetType,
                 sourceId: job.targetId,
                 chapterId: source.chapterId ?? null,
                 sceneId: source.sceneId ?? null,
-                chunkIndex: index,
+                chunkIndex: chunkItem.index,
                 content: chunkItem.content,
-                contentHash: sha256(chunkItem.content),
-                indexText,
-                indexTextHash: sha256(indexText),
+                contentHash: chunkItem.contentHash,
+                indexText: chunkItem.indexText,
+                indexTextHash: chunkItem.indexTextHash,
                 contextLabel,
                 sourceContentHash,
                 startOffset: chunkItem.startOffset,
@@ -179,13 +195,36 @@ class MemoryProjectionService {
                 paragraphStartIndex: chunkItem.paragraphStartIndex,
                 paragraphEndIndex: chunkItem.paragraphEndIndex,
                 tokenCount: chunkItem.content.length,
-                createdAt: now,
+                createdAt: chunkItem.createdAt,
                 updatedAt: now,
+              })
+              .onConflictDoUpdate({
+                target: memoryChunk.id,
+                set: {
+                  projectId: source.projectId,
+                  sourceType: job.targetType,
+                  sourceId: job.targetId,
+                  chapterId: source.chapterId ?? null,
+                  sceneId: source.sceneId ?? null,
+                  chunkIndex: chunkItem.index,
+                  content: chunkItem.content,
+                  contentHash: chunkItem.contentHash,
+                  indexText: chunkItem.indexText,
+                  indexTextHash: chunkItem.indexTextHash,
+                  contextLabel,
+                  sourceContentHash,
+                  startOffset: chunkItem.startOffset,
+                  endOffset: chunkItem.endOffset,
+                  paragraphStartIndex: chunkItem.paragraphStartIndex,
+                  paragraphEndIndex: chunkItem.paragraphEndIndex,
+                  tokenCount: chunkItem.content.length,
+                  updatedAt: now,
+                },
               })
               .run();
             tx.run(
               sql`INSERT INTO "MemoryChunkFts" ("chunkId","projectId","chapterId","content")
-                  VALUES (${chunkId}, ${source.projectId}, ${source.chapterId ?? null}, ${indexText});`,
+                  VALUES (${chunkItem.id}, ${source.projectId}, ${source.chapterId ?? null}, ${chunkItem.indexText});`,
             );
           }
 

@@ -17,26 +17,11 @@ import {
 import { resolveRuntimeModelConfig } from "../llm/modelRuntimeFactory.js";
 import {
   DERIVED_JOB_MAX_ATTEMPTS,
-  DERIVED_JOB_RETRY_BASE_BACKOFF_MS,
 } from "../../../constants/memory.js";
+import { retryableMemoryBuildJobCondition } from "./projection/jobPolicy.js";
 
 const logger = createLogger("EmbeddingProjector");
 const RUNNING_STALE_MS = 5 * 60_000;
-
-function canRetry(job: {
-  status: string;
-  attempts: number;
-  updatedAt: string;
-}): boolean {
-  if (job.status === "pending") return true;
-  if (job.status !== "failed") return false;
-  if (job.attempts >= DERIVED_JOB_MAX_ATTEMPTS) return false;
-  const updatedAtMs = Date.parse(job.updatedAt);
-  if (!Number.isFinite(updatedAtMs)) return true;
-  const backoffMs =
-    DERIVED_JOB_RETRY_BASE_BACKOFF_MS * Math.max(1, job.attempts);
-  return Date.now() - updatedAtMs >= backoffMs;
-}
 
 function vectorToBuffer(vector: Float32Array): Buffer {
   return Buffer.from(vector.buffer, vector.byteOffset, vector.byteLength);
@@ -84,20 +69,18 @@ export class EmbeddingProjector {
       );
 
     const limit = input.limit ?? 1;
-    const candidates = await client
+    const jobs = await client
       .select()
       .from(memoryBuildJob)
       .where(
         and(
           eq(memoryBuildJob.projectId, input.projectId),
           eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_EMBEDDING),
-          inArray(memoryBuildJob.status, ["pending", "failed"]),
+          retryableMemoryBuildJobCondition(),
         ),
       )
       .orderBy(asc(memoryBuildJob.priority), asc(memoryBuildJob.createdAt))
-      .limit(Math.max(limit * 3, 10));
-
-    const jobs = candidates.filter((job) => canRetry(job)).slice(0, limit);
+      .limit(limit);
     if (jobs.length === 0) return { queued: 0, processed: 0 };
 
     const runtimeConfig = await resolveRuntimeModelConfig(input.projectId);

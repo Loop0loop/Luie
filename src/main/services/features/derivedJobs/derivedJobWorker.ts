@@ -1,5 +1,5 @@
 import { createLogger } from "../../../../shared/logger/index.js";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { db, memoryBuildJob } from "../../../infra/database/index.js";
 import { dbMaintenanceService } from "../dbMaintenance/index.js";
 import { embeddingProjector } from "../memory/embeddingProjector.js";
@@ -20,6 +20,8 @@ import {
   scheduleProjectNarrativeCommunities,
   scheduleProjectNarrativeHierarchyScopes,
 } from "../memory/summary/memoryNarrativeSummaryScheduler.js";
+import { setDerivedJobWakeupListener } from "./derivedJobWakeup.js";
+import { MAX_JOB_ATTEMPTS } from "../memory/projection/jobPolicy.js";
 
 const logger = createLogger("DerivedJobWorker");
 const loadAutoSaveManager = async () =>
@@ -37,6 +39,10 @@ const toPositiveInt = (value: string | undefined, fallback: number): number => {
 const TICK_INTERVAL_MS = toPositiveInt(
   process.env.LUIE_DERIVED_TICK_MS,
   isStressMode ? 500 : 500,
+);
+const IDLE_TICK_INTERVAL_MS = toPositiveInt(
+  process.env.LUIE_DERIVED_IDLE_TICK_MS,
+  isStressMode ? 500 : 5_000,
 );
 const SEARCH_BATCH_SIZE = toPositiveInt(
   process.env.LUIE_DERIVED_SEARCH_BATCH,
@@ -91,7 +97,13 @@ const countPendingMemoryJobs = async (
       and(
         eq(memoryBuildJob.projectId, projectId),
         eq(memoryBuildJob.jobType, jobType),
-        inArray(memoryBuildJob.status, ["pending", "failed", "running"]),
+        or(
+          inArray(memoryBuildJob.status, ["pending", "running"]),
+          and(
+            eq(memoryBuildJob.status, "failed"),
+            lt(memoryBuildJob.attempts, MAX_JOB_ATTEMPTS),
+          ),
+        ),
       ),
     );
   return Number(rows[0]?.count ?? 0);
@@ -103,17 +115,39 @@ class DerivedJobWorker {
   private inTick = false;
   private lastEditDeferLogAt = 0;
   private lastTickSlowWarnAt = 0;
+  private wakeRequested = false;
+
+  constructor() {
+    setDerivedJobWakeupListener(() => this.wake());
+  }
+
+  wake(): void {
+    if (!this.running) return;
+    if (this.inTick) {
+      this.wakeRequested = true;
+      return;
+    }
+    this.schedule(0);
+  }
+
+  private schedule(delayMs: number): void {
+    if (!this.running) return;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      void this.tick();
+    }, delayMs);
+  }
 
   start(): void {
     if (this.running) return;
     this.running = true;
-    this.timer = setInterval(() => {
-      void this.tick();
-    }, TICK_INTERVAL_MS);
-    void dbMaintenanceService.recoverStaleRunningJobs();
-    void this.tick();
+    void dbMaintenanceService.recoverStaleRunningJobs().finally(() =>
+      this.wake(),
+    );
     logger.info("Derived job worker started", {
       tickIntervalMs: TICK_INTERVAL_MS,
+      idleTickIntervalMs: IDLE_TICK_INTERVAL_MS,
       searchBatchSize: SEARCH_BATCH_SIZE,
       memoryBatchSize: MEMORY_BATCH_SIZE,
       memoryProjectsPerTick: MEMORY_PROJECTS_PER_TICK,
@@ -123,7 +157,7 @@ class DerivedJobWorker {
   async stop(): Promise<void> {
     this.running = false;
     if (this.timer) {
-      clearInterval(this.timer);
+      clearTimeout(this.timer);
       this.timer = null;
     }
 
@@ -148,12 +182,15 @@ class DerivedJobWorker {
   private async tick(): Promise<void> {
     if (!this.running || this.inTick) return;
     this.inTick = true;
+    this.wakeRequested = false;
     const startedAt = Date.now();
+    let nextDelayMs = IDLE_TICK_INTERVAL_MS;
 
     try {
       const autoSaveManager = await loadAutoSaveManager();
       const pendingSaveCount = autoSaveManager.getPendingSaveCount();
       if (!isStressMode && pendingSaveCount > 0) {
+        nextDelayMs = TICK_INTERVAL_MS;
         if (Date.now() - this.lastEditDeferLogAt >= 10_000) {
           this.lastEditDeferLogAt = Date.now();
           logger.info("Derived job worker tick deferred for active editing", {
@@ -277,6 +314,7 @@ class DerivedJobWorker {
         narrativeSummaryGenerated > 0 ||
         embeddingQueued > 0
       ) {
+        nextDelayMs = TICK_INTERVAL_MS;
         logger.info("Derived job worker tick processed", {
           elapsedMs: Date.now() - startedAt,
           searchQueued: search.queued,
@@ -346,6 +384,7 @@ class DerivedJobWorker {
       });
     } finally {
       this.inTick = false;
+      this.schedule(this.wakeRequested ? 0 : nextDelayMs);
     }
   }
 }

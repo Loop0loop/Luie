@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { MainDrizzleClient } from "../../../infra/database/index.js";
 import {
   character,
@@ -19,42 +19,7 @@ import {
   MEMORY_JOB_TYPES,
   MEMORY_TARGET_TYPES,
 } from "../memory/memoryJobConstants.js";
-
-const MEMORY_BUILD_JOB_DEDUPE_SQL = `'${MEMORY_BUILD_JOB_DEDUPE_STATUSES.join("','")}'`;
-
-async function upsertPendingMemoryBuildJob(input: {
-  client: MainDrizzleClient;
-  projectId: string;
-  targetType: string;
-  targetId: string;
-  jobType: string;
-  priority: number;
-  now: string;
-}): Promise<void> {
-  const existing = await input.client.all<{ id: string }>(
-    sql`SELECT "id" FROM "MemoryBuildJob"
-        WHERE "projectId" = ${input.projectId}
-          AND "targetType" = ${input.targetType}
-          AND "targetId" = ${input.targetId}
-          AND "jobType" = ${input.jobType}
-          AND "status" IN (${sql.raw(MEMORY_BUILD_JOB_DEDUPE_SQL)})
-        ORDER BY "updatedAt" DESC
-        LIMIT 1;`,
-  );
-  if (existing.length > 0) {
-    await input.client.run(
-      sql`UPDATE "MemoryBuildJob"
-          SET "priority" = ${input.priority},
-              "updatedAt" = ${input.now}
-          WHERE "id" = ${existing[0].id};`,
-    );
-    return;
-  }
-  await input.client.run(
-    sql`INSERT INTO "MemoryBuildJob" ("id","projectId","targetType","targetId","jobType","status","priority","attempts","createdAt","updatedAt")
-        VALUES (${crypto.randomUUID()}, ${input.projectId}, ${input.targetType}, ${input.targetId}, ${input.jobType}, 'pending', ${input.priority}, 0, ${input.now}, ${input.now});`,
-  );
-}
+import { upsertMemoryBuildJob } from "../memory/memoryBuildJobEnqueue.js";
 
 const MEMORY_REBUILD_JOB_TYPES = [
   {
@@ -76,9 +41,7 @@ export async function rebuildMemoryChunks(input: {
   const now = new Date().toISOString();
   if (input.sourceType && input.sourceId) {
     for (const job of MEMORY_REBUILD_JOB_TYPES) {
-      // NOTE: duplicate 검사가 직전 write를 관찰해야 하므로 job type별 upsert를 순차 처리한다.
-      // eslint-disable-next-line no-await-in-loop
-      await upsertPendingMemoryBuildJob({
+      upsertMemoryBuildJob({
         client: input.client,
         projectId: input.projectId,
         targetType: input.sourceType,
@@ -195,6 +158,7 @@ export async function rebuildMemoryChunks(input: {
       targetType: memoryBuildJob.targetType,
       targetId: memoryBuildJob.targetId,
       jobType: memoryBuildJob.jobType,
+      status: memoryBuildJob.status,
     })
     .from(memoryBuildJob)
     .where(
@@ -208,18 +172,22 @@ export async function rebuildMemoryChunks(input: {
       ),
     );
 
-  const existingKeys = new Set(
-    existingPending.map(
-      (row) => `${row.targetType}:${row.targetId}:${row.jobType}`,
-    ),
-  );
+  const statusesByKey = new Map<string, Set<string>>();
+  for (const row of existingPending) {
+    const key = `${row.targetType}:${row.targetId}:${row.jobType}`;
+    const statuses = statusesByKey.get(key) ?? new Set<string>();
+    statuses.add(row.status);
+    statusesByKey.set(key, statuses);
+  }
   const toInsert = targets.flatMap((target) =>
-    MEMORY_REBUILD_JOB_TYPES.filter(
-      (job) =>
-        !existingKeys.has(
-          `${target.targetType}:${target.targetId}:${job.jobType}`,
-        ),
-    ).map((job) => ({ ...target, ...job })),
+    MEMORY_REBUILD_JOB_TYPES.filter((job) => {
+      const statuses = statusesByKey.get(
+        `${target.targetType}:${target.targetId}:${job.jobType}`,
+      );
+      if (!statuses) return true;
+      if (statuses.has("pending") || statuses.has("paused")) return false;
+      return statuses.has("running");
+    }).map((job) => ({ ...target, ...job })),
   );
 
   if (toInsert.length > 0) {

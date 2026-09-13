@@ -6,6 +6,7 @@ import {
   eq,
   inArray,
   isNull,
+  isNotNull,
   like,
   sql,
 } from "drizzle-orm";
@@ -66,6 +67,14 @@ function toSafeNumber(value: unknown): number {
   return 0;
 }
 
+function isFtsUnavailableError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("no such table: ChapterSearchDocumentFts") ||
+    message.includes("no such module: fts5")
+  );
+}
+
 const logger = createLogger("ChapterSearchCacheService");
 
 class ChapterSearchCacheService {
@@ -85,15 +94,38 @@ class ChapterSearchCacheService {
     title: string;
     synopsis?: string | null;
     searchText: string;
+    ftsRowId?: number | null;
   }): Promise<void> {
     try {
-      const client = getCacheClient();
-      client.run(
-        sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ${input.chapterId};`,
-      );
-      client.run(
-        sql`INSERT INTO "ChapterSearchDocumentFts" ("chapterId", "projectId", "title", "synopsis", "searchText") VALUES (${input.chapterId}, ${input.projectId}, ${input.title}, ${input.synopsis ?? ""}, ${input.searchText});`,
-      );
+      cacheDb.runSqliteTransaction((sqlite) => {
+        if (input.ftsRowId === null || input.ftsRowId === undefined) {
+          sqlite
+            .prepare(
+              `DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?`,
+            )
+            .run(input.chapterId);
+        } else {
+          sqlite
+            .prepare(`DELETE FROM "ChapterSearchDocumentFts" WHERE rowid = ?`)
+            .run(input.ftsRowId);
+        }
+        const result = sqlite
+          .prepare(
+            `INSERT INTO "ChapterSearchDocumentFts" ("chapterId", "projectId", "title", "synopsis", "searchText") VALUES (?, ?, ?, ?, ?)`,
+          )
+          .run(
+            input.chapterId,
+            input.projectId,
+            input.title,
+            input.synopsis ?? "",
+            input.searchText,
+          );
+        sqlite
+          .prepare(
+            `UPDATE "ChapterSearchDocument" SET "ftsRowId" = ? WHERE "chapterId" = ?`,
+          )
+          .run(Number(result.lastInsertRowid), input.chapterId);
+      });
     } catch (error) {
       this.logFtsUnavailable(
         "Chapter search FTS sync unavailable; keeping projection fallback",
@@ -102,12 +134,21 @@ class ChapterSearchCacheService {
     }
   }
 
-  private async clearFtsByChapter(chapterId: string): Promise<void> {
+  private async clearFtsByChapter(
+    chapterId: string,
+    ftsRowId?: number | null,
+  ): Promise<void> {
     try {
       const client = getCacheClient();
-      client.run(
-        sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ${chapterId};`,
-      );
+      if (ftsRowId === null || ftsRowId === undefined) {
+        client.run(
+          sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ${chapterId};`,
+        );
+      } else {
+        client.run(
+          sql`DELETE FROM "ChapterSearchDocumentFts" WHERE rowid = ${ftsRowId};`,
+        );
+      }
     } catch (error) {
       this.logFtsUnavailable(
         "Chapter search FTS clear unavailable; keeping projection fallback",
@@ -250,6 +291,7 @@ class ChapterSearchCacheService {
       title: input.title,
       synopsis: input.synopsis ?? null,
       searchText,
+      ftsRowId: row.ftsRowId,
     });
     return document;
   }
@@ -312,14 +354,50 @@ class ChapterSearchCacheService {
     return { success: true };
   }
 
+  async refreshChapter(chapterId: string): Promise<void> {
+    const rows = await getMainClient()
+      .select({
+        id: chapter.id,
+        projectId: chapter.projectId,
+        title: chapter.title,
+        synopsis: chapter.synopsis,
+        content: chapter.content,
+        bodyContent: chapterBody.content,
+        wordCount: chapter.wordCount,
+        order: chapter.order,
+      })
+      .from(chapter)
+      .leftJoin(chapterBody, eq(chapterBody.chapterId, chapter.id))
+      .where(and(eq(chapter.id, chapterId), isNull(chapter.deletedAt)))
+      .limit(1);
+    const row = rows[0];
+    if (!row) {
+      await this.clearChapter(chapterId);
+      return;
+    }
+
+    await this.upsertChapter({
+      chapterId: row.id,
+      projectId: row.projectId,
+      title: row.title,
+      synopsis: row.synopsis,
+      content: row.bodyContent ?? row.content,
+      wordCount: row.wordCount,
+      order: row.order,
+    });
+  }
+
   async clearChapter(chapterId: string): Promise<void> {
     const client = getCacheClient();
-    await Promise.all([
-      client
-        .delete(chapterSearchDocument)
-        .where(eq(chapterSearchDocument.chapterId, chapterId)),
-      this.clearFtsByChapter(chapterId),
-    ]);
+    const rows = await client
+      .select({ ftsRowId: chapterSearchDocument.ftsRowId })
+      .from(chapterSearchDocument)
+      .where(eq(chapterSearchDocument.chapterId, chapterId))
+      .limit(1);
+    await client
+      .delete(chapterSearchDocument)
+      .where(eq(chapterSearchDocument.chapterId, chapterId));
+    await this.clearFtsByChapter(chapterId, rows[0]?.ftsRowId);
   }
 
   async clearProject(projectId: string): Promise<void> {
@@ -339,20 +417,31 @@ class ChapterSearchCacheService {
   async ensureProjectHydrated(projectId: string): Promise<void> {
     const cacheClient = getCacheClient();
     const mainClient = getMainClient();
-    const [cacheCountResult, chapterCountResult, ftsCount] = await Promise.all([
-      cacheClient
-        .select({ count: count() })
-        .from(chapterSearchDocument)
-        .where(eq(chapterSearchDocument.projectId, projectId)),
-      mainClient
-        .select({ count: count() })
-        .from(chapter)
-        .where(
-          and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)),
-        ),
-      this.countProjectFtsRows(projectId),
-    ]);
+    const [cacheCountResult, mappedCountResult, chapterCountResult, ftsCount] =
+      await Promise.all([
+        cacheClient
+          .select({ count: count() })
+          .from(chapterSearchDocument)
+          .where(eq(chapterSearchDocument.projectId, projectId)),
+        cacheClient
+          .select({ count: count() })
+          .from(chapterSearchDocument)
+          .where(
+            and(
+              eq(chapterSearchDocument.projectId, projectId),
+              isNotNull(chapterSearchDocument.ftsRowId),
+            ),
+          ),
+        mainClient
+          .select({ count: count() })
+          .from(chapter)
+          .where(
+            and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)),
+          ),
+        this.countProjectFtsRows(projectId),
+      ]);
     const cacheCount = cacheCountResult[0]?.count ?? 0;
+    const mappedCount = mappedCountResult[0]?.count ?? 0;
     const chapterCount = chapterCountResult[0]?.count ?? 0;
 
     if (chapterCount === 0) {
@@ -362,7 +451,9 @@ class ChapterSearchCacheService {
       return;
     }
 
-    const ftsMatchesProjection = ftsCount === null || ftsCount === cacheCount;
+    const ftsMatchesProjection =
+      ftsCount === null ||
+      (ftsCount === cacheCount && mappedCount === cacheCount);
     if (cacheCount === chapterCount && ftsMatchesProjection) {
       return;
     }
@@ -371,7 +462,6 @@ class ChapterSearchCacheService {
   }
 
   async rebuildProject(projectId: string): Promise<void> {
-    const cacheClient = getCacheClient();
     const mainClient = getMainClient();
     const chapters = await mainClient
       .select({
@@ -388,42 +478,77 @@ class ChapterSearchCacheService {
       .where(and(eq(chapter.projectId, projectId), isNull(chapter.deletedAt)))
       .orderBy(asc(chapter.order));
 
-    await this.clearProject(projectId);
-
-    if (chapters.length === 0) {
-      return;
-    }
-
-    await cacheClient.insert(chapterSearchDocument).values(
-      chapters.map((ch) => ({
-        chapterId: ch.id,
-        projectId,
-        title: ch.title,
-        synopsis: ch.synopsis,
-        searchText: buildSearchText({
-          title: ch.title,
-          synopsis: ch.synopsis,
-          content: ch.bodyContent ?? ch.content,
-        }),
-        wordCount: ch.wordCount,
-        chapterOrder: ch.order,
-      })),
-    );
-    await Promise.all(
-      chapters.map(async (ch) => {
-        await this.syncFtsDocument({
-          chapterId: ch.id,
-          projectId,
-          title: ch.title,
-          synopsis: ch.synopsis,
-          searchText: buildSearchText({
-            title: ch.title,
-            synopsis: ch.synopsis,
-            content: ch.bodyContent ?? ch.content,
-          }),
-        });
+    const documents = chapters.map((row) => ({
+      chapterId: row.id,
+      projectId,
+      title: row.title,
+      synopsis: row.synopsis ?? "",
+      searchText: buildSearchText({
+        title: row.title,
+        synopsis: row.synopsis,
+        content: row.bodyContent ?? row.content,
       }),
-    );
+      wordCount: row.wordCount,
+      chapterOrder: row.order,
+    }));
+
+    const replaceRows = (includeFts: boolean) => {
+      cacheDb.runSqliteTransaction((sqlite) => {
+        sqlite
+          .prepare(`DELETE FROM "ChapterSearchDocument" WHERE "projectId" = ?`)
+          .run(projectId);
+        if (includeFts) {
+          sqlite
+            .prepare(
+              `DELETE FROM "ChapterSearchDocumentFts" WHERE "projectId" = ?`,
+            )
+            .run(projectId);
+        }
+
+        const insertProjection = sqlite.prepare(
+          `INSERT INTO "ChapterSearchDocument" ("chapterId", "projectId", "title", "synopsis", "searchText", "wordCount", "chapterOrder", "ftsRowId", "createdAt", "updatedAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        );
+        const insertFts = includeFts
+          ? sqlite.prepare(
+              `INSERT INTO "ChapterSearchDocumentFts" ("chapterId", "projectId", "title", "synopsis", "searchText") VALUES (?, ?, ?, ?, ?)`,
+            )
+          : null;
+        const now = new Date().toISOString();
+        for (const document of documents) {
+          const ftsResult = insertFts?.run(
+            document.chapterId,
+            document.projectId,
+            document.title,
+            document.synopsis,
+            document.searchText,
+          );
+          insertProjection.run(
+            document.chapterId,
+            document.projectId,
+            document.title,
+            document.synopsis,
+            document.searchText,
+            document.wordCount,
+            document.chapterOrder,
+            ftsResult ? Number(ftsResult.lastInsertRowid) : null,
+            now,
+            now,
+          );
+        }
+      });
+    };
+
+    try {
+      replaceRows(true);
+    } catch (error) {
+      if (!isFtsUnavailableError(error)) throw error;
+      this.logFtsUnavailable(
+        "Chapter search FTS rebuild unavailable; keeping projection fallback",
+        error,
+      );
+      await this.clearFtsByProject(projectId);
+      replaceRows(false);
+    }
   }
 }
 

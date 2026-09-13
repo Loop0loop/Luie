@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
@@ -12,6 +13,7 @@ import { ErrorCode } from "../../../src/shared/constants/errors/index.js";
 import {
   db,
   memoryChunk,
+  memoryEmbedding,
   memoryEpisodeExtractionJob,
 } from "../../../src/main/infra/database/index.js";
 import { eq } from "drizzle-orm";
@@ -314,6 +316,114 @@ describe("memoryProjectionService", () => {
     expect(rows[0]?.contextLabel).toBe("chapter: 은하궁 회담");
     expect(rows[0]?.indexText).toContain("은하궁 회담");
     expect(rows[0]?.content).not.toContain("은하궁 회담");
+  });
+
+  it("preserves unchanged chunk ids and embeddings across identical and partial rebuilds", async () => {
+    const project = await localProjectService.createProject({
+      title: "Memory Chunk Reuse",
+      description: "unit",
+      projectPath: "/tmp/memory-chunk-reuse.luie",
+    });
+    const chapter = await chapterService.createChapter({
+      projectId: String(project.id),
+      title: "reuse chapter",
+    });
+    const stableParagraph = "A".repeat(700);
+    const changedParagraph = "B".repeat(700);
+    const initialContent = `${stableParagraph}\n\n${changedParagraph}`;
+    await chapterService.updateChapter({
+      id: String(chapter.id),
+      content: initialContent,
+    });
+    await memoryProjectionService.processPendingChunkJobs({
+      projectId: String(project.id),
+      sourceType: "chapter",
+      sourceId: String(chapter.id),
+      limit: 20,
+    });
+    const initialChunks = await db
+      .getClient()
+      .select()
+      .from(memoryChunk)
+      .where(eq(memoryChunk.sourceId, String(chapter.id)));
+    expect(initialChunks.length).toBeGreaterThan(1);
+    await db
+      .getClient()
+      .insert(memoryEmbedding)
+      .values(
+        initialChunks.map((chunk) => ({
+          id: crypto.randomUUID(),
+          chunkId: chunk.id,
+          projectId: String(project.id),
+          contentHash: chunk.indexTextHash,
+          vec: Buffer.from(new Float32Array([1]).buffer),
+          dimension: 1,
+          model: "reuse-test",
+          createdAt: "2026-09-13T00:00:00.000Z",
+          updatedAt: "2026-09-13T00:00:00.000Z",
+        })),
+      );
+
+    await memoryProjectionService.enqueueChapterChunkRebuild({
+      projectId: String(project.id),
+      chapterId: String(chapter.id),
+      reason: "identical-rebuild",
+    });
+    await memoryProjectionService.processPendingChunkJobs({
+      projectId: String(project.id),
+      sourceType: "chapter",
+      sourceId: String(chapter.id),
+      limit: 20,
+    });
+    const identicalChunks = await db
+      .getClient()
+      .select()
+      .from(memoryChunk)
+      .where(eq(memoryChunk.sourceId, String(chapter.id)));
+    expect(identicalChunks.map((row) => row.id).sort()).toEqual(
+      initialChunks.map((row) => row.id).sort(),
+    );
+    expect(await db.getClient().select().from(memoryEmbedding)).toHaveLength(
+      initialChunks.length,
+    );
+
+    await chapterService.updateChapter({
+      id: String(chapter.id),
+      content: `${stableParagraph}\n\n${"C".repeat(700)}`,
+    });
+    await memoryProjectionService.processPendingChunkJobs({
+      projectId: String(project.id),
+      sourceType: "chapter",
+      sourceId: String(chapter.id),
+      limit: 20,
+    });
+    const partialChunks = await db
+      .getClient()
+      .select()
+      .from(memoryChunk)
+      .where(eq(memoryChunk.sourceId, String(chapter.id)));
+    const stableBefore = initialChunks.find((row) =>
+      row.content.includes(stableParagraph),
+    );
+    const stableAfter = partialChunks.find(
+      (row) => row.contentHash === stableBefore?.contentHash,
+    );
+    const embeddingsAfter = await db.getClient().select().from(memoryEmbedding);
+
+    expect(stableAfter?.id).toBe(stableBefore?.id);
+    expect(
+      embeddingsAfter.some((row) => row.chunkId === stableBefore?.id),
+    ).toBe(true);
+    expect(
+      initialChunks
+        .filter((row) => row.id !== stableBefore?.id)
+        .some((row) => !partialChunks.some((current) => current.id === row.id)),
+    ).toBe(true);
+    expect(
+      embeddingsAfter.every((row) =>
+        partialChunks.some((chunk) => chunk.id === row.chunkId),
+      ),
+    ).toBe(true);
   });
 
   it("queues episode extraction after rebuilding source chunks", async () => {
