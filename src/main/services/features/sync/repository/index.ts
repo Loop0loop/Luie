@@ -68,7 +68,7 @@ class SyncRepository {
       "world_documents",
       accessToken,
       rows.worldDocuments,
-      "id,user_id",
+      "user_id,project_id,doc_type",
     );
     await upsertTable("memos", accessToken, rows.memos, "id,user_id");
     await upsertOptionalTable(

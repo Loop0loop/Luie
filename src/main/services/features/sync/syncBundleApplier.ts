@@ -4,7 +4,7 @@ import { db } from "../../../infra/database/index.js";
 import { project } from "../../../infra/database/index.js";
 import {
   applyChapterTombstones,
-  applyReplicaWorldState,
+  applyReplicaWorldDelta,
   applyProjectDeletes,
   collectDeletedProjectIds,
   upsertChapter,
@@ -20,6 +20,10 @@ import {
   persistBundleToLuiePackages,
 } from "./syncPackagePersistence.js";
 import type { SyncBundle } from "./syncMapper.js";
+import {
+  collectSyncBundleProjectIds,
+  filterSyncBundleByProjectIds,
+} from "./syncDelta.js";
 
 export type SyncCapturedRevisions = ReadonlyMap<string, number>;
 
@@ -59,6 +63,7 @@ export const buildSyncProjectPackagePayload = async (input: {
 
 export const applyMergedBundleToLocalFirstLuie = async (input: {
   bundle: SyncBundle;
+  packageBundle?: SyncBundle;
   hydrateMissingWorldDocsFromPackage: (
     worldDocs: Map<SyncBundle["worldDocuments"][number]["docType"], unknown>,
     projectPath: string,
@@ -80,13 +85,17 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
 }): Promise<void> => {
   const client = db.getClient();
   const deletedProjectIds = collectDeletedProjectIds(input.bundle);
-  const bundleProjectIds = input.bundle.projects.map((project) => project.id);
+  const affectedProjectIds = collectSyncBundleProjectIds(input.bundle);
+  const bundleProjectIds = [...affectedProjectIds];
+  const packageBundle = filterSyncBundleByProjectIds(
+    input.packageBundle ?? input.bundle,
+    affectedProjectIds,
+  );
   const activeProjectIds = [
     ...new Set(
-      input.bundle.projects
+      packageBundle.projects
         .filter(
-          (project) =>
-            !project.deletedAt && !deletedProjectIds.has(project.id),
+          (project) => !project.deletedAt && !deletedProjectIds.has(project.id),
         )
         .map((project) => project.id),
     ),
@@ -106,7 +115,12 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
       upsertEvents(tx, input.bundle.events, deletedProjectIds);
       upsertFactions(tx, input.bundle.factions, deletedProjectIds);
       upsertTerms(tx, input.bundle.terms, deletedProjectIds);
-      applyReplicaWorldState(tx, input.bundle, deletedProjectIds);
+      applyReplicaWorldDelta(
+        tx,
+        input.bundle,
+        input.packageBundle ?? input.bundle,
+        deletedProjectIds,
+      );
       applyChapterTombstones(tx, input.bundle.tombstones, deletedProjectIds);
       applyMemoryCanonicalSyncRows(tx, input.bundle, deletedProjectIds);
 
@@ -136,7 +150,7 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
   }
 
   await persistBundleToLuiePackages({
-    bundle: input.bundle,
+    bundle: packageBundle,
     capturedRevisions,
     hydrateMissingWorldDocsFromPackage:
       input.hydrateMissingWorldDocsFromPackage,

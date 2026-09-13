@@ -14,7 +14,10 @@ import {
   projectSettings,
   term,
 } from "../../../infra/database/index.js";
-export { applyReplicaWorldState } from "./localApply/index.js";
+export {
+  applyReplicaWorldDelta,
+  applyReplicaWorldState,
+} from "./localApply/index.js";
 
 export const collectDeletedProjectIds = (bundle: SyncBundle): Set<string> => {
   const deletedProjectIds = new Set<string>();

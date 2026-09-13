@@ -239,3 +239,164 @@ export const applyReplicaWorldState = (
     }
   }
 };
+
+export const applyReplicaWorldDelta = (
+  tx: DbLike,
+  delta: SyncBundle,
+  merged: SyncBundle,
+  deletedProjectIds: Set<string>,
+): void => {
+  const affectedProjectIds = new Set([
+    ...delta.worldDocuments.map((row) => row.projectId),
+    ...delta.memos.map((row) => row.projectId),
+  ]);
+
+  for (const projectId of affectedProjectIds) {
+    if (deletedProjectIds.has(projectId)) continue;
+    const mergedProject = merged.projects.find((row) => row.id === projectId);
+    if (!mergedProject || mergedProject.deletedAt) continue;
+
+    const { active, deleted } = buildWorldDocumentMap(
+      delta.worldDocuments,
+      projectId,
+    );
+    const { active: mergedDocuments } = buildWorldDocumentMap(
+      merged.worldDocuments,
+      projectId,
+    );
+    const mergedMemos = merged.memos.filter(
+      (memo) => memo.projectId === projectId && !memo.deletedAt,
+    );
+
+    for (const docType of deleted) {
+      if (docType === "scrap") continue;
+      tx.delete(worldDocument)
+        .where(
+          and(
+            eq(worldDocument.projectId, projectId),
+            eq(worldDocument.docType, docType),
+          ),
+        )
+        .run();
+    }
+
+    for (const [docType, doc] of active) {
+      if (docType === "scrap") continue;
+      if (hasInvalidJsonPayloadString(doc.payload)) {
+        logger.warn("Skipping invalid sync world document payload", {
+          projectId,
+          docType,
+        });
+        continue;
+      }
+      const normalizedPayload = normalizeWorldDocumentPayload(
+        projectId,
+        docType,
+        doc.payload,
+        doc.updatedAt,
+        mergedMemos,
+      );
+      tx.insert(worldDocument)
+        .values({
+          id: `${projectId}:${docType}`,
+          projectId,
+          docType,
+          payload: JSON.stringify(normalizedPayload),
+          createdAt: doc.updatedAt,
+          updatedAt: doc.updatedAt,
+        })
+        .onConflictDoUpdate({
+          target: [worldDocument.projectId, worldDocument.docType],
+          set: {
+            payload: JSON.stringify(normalizedPayload),
+            updatedAt: doc.updatedAt,
+          },
+        })
+        .run();
+    }
+
+    const deltaMemos = delta.memos.filter(
+      (memo) => memo.projectId === projectId,
+    );
+    const shouldRewriteScrap =
+      active.has("scrap") || deleted.has("scrap") || deltaMemos.length > 0;
+    if (shouldRewriteScrap) {
+      const mergedScrap = mergedDocuments.get("scrap");
+      if (mergedScrap || mergedMemos.length > 0) {
+        const updatedAt =
+          mergedScrap?.updatedAt ??
+          mergedMemos[0]?.updatedAt ??
+          mergedProject.updatedAt;
+        const payload = normalizeScrapPayload(
+          projectId,
+          mergedScrap?.payload,
+          mergedMemos,
+          updatedAt,
+          logger,
+        );
+        tx.insert(worldDocument)
+          .values({
+            id: `${projectId}:scrap`,
+            projectId,
+            docType: "scrap",
+            payload: JSON.stringify(payload),
+            createdAt: updatedAt,
+            updatedAt,
+          })
+          .onConflictDoUpdate({
+            target: [worldDocument.projectId, worldDocument.docType],
+            set: { payload: JSON.stringify(payload), updatedAt },
+          })
+          .run();
+      } else {
+        tx.delete(worldDocument)
+          .where(
+            and(
+              eq(worldDocument.projectId, projectId),
+              eq(worldDocument.docType, "scrap"),
+            ),
+          )
+          .run();
+      }
+    }
+
+    const orderByMemoId = new Map(
+      mergedMemos.map((memo, index) => [memo.id, index]),
+    );
+    for (const memo of deltaMemos) {
+      if (memo.deletedAt) {
+        tx.delete(scrapMemo)
+          .where(
+            and(eq(scrapMemo.id, memo.id), eq(scrapMemo.projectId, projectId)),
+          )
+          .run();
+        continue;
+      }
+      const values = {
+        id: memo.id,
+        projectId,
+        title: memo.title,
+        content: memo.content,
+        tags: JSON.stringify(memo.tags),
+        sortOrder: orderByMemoId.get(memo.id) ?? 0,
+        createdAt: memo.updatedAt,
+        updatedAt: memo.updatedAt,
+        deletedAt: null,
+      };
+      tx.insert(scrapMemo)
+        .values(values)
+        .onConflictDoUpdate({
+          target: [scrapMemo.id],
+          set: {
+            title: values.title,
+            content: values.content,
+            tags: values.tags,
+            sortOrder: values.sortOrder,
+            updatedAt: values.updatedAt,
+            deletedAt: null,
+          },
+        })
+        .run();
+    }
+  }
+};

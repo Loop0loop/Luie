@@ -14,6 +14,7 @@ import {
   withConflictProjectStates,
   withErrorProjectStates,
 } from "./syncStatusMachine.js";
+import { buildSyncDeltaBundle } from "./syncDelta.js";
 
 type RunExecutorDeps = {
   reason: string;
@@ -30,7 +31,10 @@ type RunExecutorDeps = {
   ) => SyncStatus;
   ensureAccessToken: (syncSettings: SyncSettings) => Promise<string>;
   buildLocalBundle: (userId: string) => Promise<SyncBundle>;
-  applyMergedBundleToLocal: (bundle: SyncBundle) => Promise<void>;
+  applyMergedBundleToLocal: (
+    delta: SyncBundle,
+    merged: SyncBundle,
+  ) => Promise<void>;
   countBundleRows: (bundle: SyncBundle) => number;
   updateStatus: (next: Partial<SyncStatus>) => void;
   applyAuthFailureState: (
@@ -124,8 +128,16 @@ export const executeSyncRun = async (
       };
     }
 
-    await deps.applyMergedBundleToLocal(merged);
-    await syncRepository.upsertBundle(accessToken, merged);
+    const localDelta = buildSyncDeltaBundle(localBundle, merged);
+    const remoteDelta = buildSyncDeltaBundle(remoteBundle, merged);
+    const pulled = deps.countBundleRows(localDelta);
+    const pushed = deps.countBundleRows(remoteDelta);
+    if (pulled > 0) {
+      await deps.applyMergedBundleToLocal(localDelta, merged);
+    }
+    if (pushed > 0) {
+      await syncRepository.upsertBundle(accessToken, remoteDelta);
+    }
 
     const syncedAt = new Date().toISOString();
     const projectLastSyncedAtByProjectId = buildProjectSyncMapForSuccess(
@@ -154,8 +166,8 @@ export const executeSyncRun = async (
     const result: SyncRunResult = {
       success: true,
       message: `SYNC_OK:${deps.reason}`,
-      pulled: deps.countBundleRows(remoteBundle),
-      pushed: deps.countBundleRows(merged),
+      pulled,
+      pushed,
       conflicts,
       syncedAt,
     };

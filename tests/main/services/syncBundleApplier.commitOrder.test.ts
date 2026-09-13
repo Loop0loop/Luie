@@ -30,7 +30,7 @@ vi.mock(
 
 vi.mock("../../../src/main/services/features/sync/syncLocalApply.js", () => ({
   applyChapterTombstones: vi.fn(),
-  applyReplicaWorldState: vi.fn(() => mocked.calls.push("world apply")),
+  applyReplicaWorldDelta: vi.fn(() => mocked.calls.push("world apply")),
   applyProjectDeletes: vi.fn(),
   collectDeletedProjectIds: vi.fn(() => new Set<string>()),
   upsertChapter: vi.fn(),
@@ -81,9 +81,13 @@ const createBundle = (): SyncBundle => ({
   tombstones: [],
 });
 
-const applyBundle = async (bundle = createBundle()) => {
+const applyBundle = async (
+  bundle = createBundle(),
+  packageBundle?: SyncBundle,
+) => {
   await applyMergedBundleToLocalFirstLuie({
     bundle,
+    packageBundle,
     hydrateMissingWorldDocsFromPackage: vi.fn(),
     buildProjectPackagePayload: vi.fn(async () => null),
     logger: {
@@ -97,21 +101,23 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
   beforeEach(() => {
     mocked.calls.length = 0;
     vi.clearAllMocks();
-    mocked.transaction.mockImplementation((callback: (tx: unknown) => unknown) => {
-      const tx = {
-        select: vi.fn(() => ({
-          from: vi.fn(() => ({
-            where: vi.fn(() => ({
-              all: vi.fn(() => {
-                mocked.calls.push("revision capture");
-                return [{ id: "project-1", revision: 7 }];
-              }),
+    mocked.transaction.mockImplementation(
+      (callback: (tx: unknown) => unknown) => {
+        const tx = {
+          select: vi.fn(() => ({
+            from: vi.fn(() => ({
+              where: vi.fn(() => ({
+                all: vi.fn(() => {
+                  mocked.calls.push("revision capture");
+                  return [{ id: "project-1", revision: 7 }];
+                }),
+              })),
             })),
           })),
-        })),
-      };
-      return callback(tx);
-    });
+        };
+        return callback(tx);
+      },
+    );
     mocked.persistBundleToLuiePackages.mockImplementation(async () => {
       mocked.calls.push("package");
       return [];
@@ -147,5 +153,49 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
     );
     expect(mocked.calls).toEqual(["db apply"]);
     expect(mocked.persistBundleToLuiePackages).not.toHaveBeenCalled();
+  });
+
+  it("applies only the delta but persists the affected project's full bundle", async () => {
+    const packageBundle = createBundle();
+    packageBundle.chapters = [
+      {
+        id: "chapter-1",
+        userId: "user-1",
+        projectId: "project-1",
+        title: "Changed",
+        content: "changed",
+        order: 0,
+        wordCount: 1,
+        createdAt: "2026-06-30T00:00:00.000Z",
+        updatedAt: "2026-06-30T00:01:00.000Z",
+      },
+      {
+        id: "chapter-2",
+        userId: "user-1",
+        projectId: "project-1",
+        title: "Unchanged",
+        content: "must remain in the package",
+        order: 1,
+        wordCount: 5,
+        createdAt: "2026-06-30T00:00:00.000Z",
+        updatedAt: "2026-06-30T00:00:00.000Z",
+      },
+    ];
+    const delta = {
+      ...createBundle(),
+      projects: [],
+      chapters: [packageBundle.chapters[0]!],
+    };
+
+    await applyBundle(delta, packageBundle);
+
+    expect(mocked.persistBundleToLuiePackages).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bundle: expect.objectContaining({
+          projects: packageBundle.projects,
+          chapters: packageBundle.chapters,
+        }),
+      }),
+    );
   });
 });

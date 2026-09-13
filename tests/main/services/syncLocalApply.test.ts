@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
+import { eq, sql } from "drizzle-orm";
+import { describe, expect, it, vi } from "vitest";
+import { db } from "../../../src/main/database/index.js";
 import {
   chapter,
   chapterBody,
@@ -8,6 +10,7 @@ import {
   worldDocument,
 } from "../../../src/main/database/schema/index.js";
 import {
+  applyReplicaWorldDelta,
   applyReplicaWorldState,
   upsertChapter,
 } from "../../../src/main/services/features/sync/syncLocalApply.js";
@@ -234,6 +237,194 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
   });
 });
 
+describe("syncLocalApply.applyReplicaWorldDelta", () => {
+  it("updates changed world and memo rows without writing unchanged siblings", async () => {
+    const now = "2026-09-13T00:00:00.000Z";
+    const changedAt = "2026-09-13T00:01:00.000Z";
+    const client = db.getClient();
+    await client.insert(project).values({
+      id: "project-delta",
+      title: "Delta",
+      updatedAt: now,
+    });
+    await client.insert(worldDocument).values([
+      {
+        id: "project-delta:synopsis",
+        projectId: "project-delta",
+        docType: "synopsis",
+        payload: JSON.stringify({ synopsis: "old" }),
+        updatedAt: now,
+      },
+      {
+        id: "project-delta:plot",
+        projectId: "project-delta",
+        docType: "plot",
+        payload: JSON.stringify({ acts: [] }),
+        updatedAt: now,
+      },
+      {
+        id: "project-delta:scrap",
+        projectId: "project-delta",
+        docType: "scrap",
+        payload: JSON.stringify({ memos: [], updatedAt: now }),
+        updatedAt: now,
+      },
+    ]);
+    await client.insert(scrapMemo).values([
+      {
+        id: "memo-changed",
+        projectId: "project-delta",
+        title: "Old",
+        content: "old",
+        tags: "[]",
+        sortOrder: 0,
+        updatedAt: now,
+      },
+      {
+        id: "memo-unchanged",
+        projectId: "project-delta",
+        title: "Keep",
+        content: "keep",
+        tags: "[]",
+        sortOrder: 1,
+        updatedAt: now,
+      },
+    ]);
+
+    client.run(
+      sql.raw(`
+      CREATE TEMP TRIGGER "db11_reject_unchanged_world_update"
+      BEFORE UPDATE ON "WorldDocument"
+      WHEN OLD."projectId" = 'project-delta' AND OLD."docType" = 'plot'
+      BEGIN
+        SELECT RAISE(ABORT, 'unchanged world row was written');
+      END;
+    `),
+    );
+    client.run(
+      sql.raw(`
+      CREATE TEMP TRIGGER "db11_reject_unchanged_memo_delete"
+      BEFORE DELETE ON "ScrapMemo"
+      WHEN OLD."id" = 'memo-unchanged'
+      BEGIN
+        SELECT RAISE(ABORT, 'unchanged memo row was deleted');
+      END;
+    `),
+    );
+    client.run(
+      sql.raw(`
+      CREATE TEMP TRIGGER "db11_reject_unchanged_memo_update"
+      BEFORE UPDATE ON "ScrapMemo"
+      WHEN OLD."id" = 'memo-unchanged'
+      BEGIN
+        SELECT RAISE(ABORT, 'unchanged memo row was updated');
+      END;
+    `),
+    );
+
+    const merged = createEmptySyncBundle();
+    merged.projects.push({
+      id: "project-delta",
+      userId: "user-1",
+      title: "Delta",
+      createdAt: now,
+      updatedAt: changedAt,
+    });
+    merged.worldDocuments.push(
+      {
+        id: "remote-synopsis-id",
+        userId: "user-1",
+        projectId: "project-delta",
+        docType: "synopsis",
+        payload: { synopsis: "new" },
+        updatedAt: changedAt,
+      },
+      {
+        id: "remote-plot-id",
+        userId: "user-1",
+        projectId: "project-delta",
+        docType: "plot",
+        payload: { acts: [] },
+        updatedAt: now,
+      },
+    );
+    merged.memos.push(
+      {
+        id: "memo-changed",
+        userId: "user-1",
+        projectId: "project-delta",
+        title: "New",
+        content: "new",
+        tags: ["changed"],
+        updatedAt: changedAt,
+      },
+      {
+        id: "memo-unchanged",
+        userId: "user-1",
+        projectId: "project-delta",
+        title: "Keep",
+        content: "keep",
+        tags: [],
+        updatedAt: now,
+      },
+    );
+    const delta = createEmptySyncBundle();
+    delta.worldDocuments.push(merged.worldDocuments[0]!);
+    delta.memos.push(merged.memos[0]!);
+
+    try {
+      client.transaction((tx) => {
+        applyReplicaWorldDelta(tx, delta, merged, new Set());
+      });
+    } finally {
+      client.run(
+        sql.raw('DROP TRIGGER IF EXISTS "db11_reject_unchanged_world_update";'),
+      );
+      client.run(
+        sql.raw('DROP TRIGGER IF EXISTS "db11_reject_unchanged_memo_delete";'),
+      );
+      client.run(
+        sql.raw('DROP TRIGGER IF EXISTS "db11_reject_unchanged_memo_update";'),
+      );
+    }
+
+    const documents = await client
+      .select()
+      .from(worldDocument)
+      .where(eq(worldDocument.projectId, "project-delta"));
+    const memos = await client
+      .select()
+      .from(scrapMemo)
+      .where(eq(scrapMemo.projectId, "project-delta"));
+    const synopsis = documents.find((row) => row.docType === "synopsis");
+    const plot = documents.find((row) => row.docType === "plot");
+    const scrap = documents.find((row) => row.docType === "scrap");
+
+    expect(JSON.parse(synopsis!.payload)).toMatchObject({ synopsis: "new" });
+    expect(plot).toMatchObject({
+      payload: JSON.stringify({ acts: [] }),
+      updatedAt: now,
+    });
+    expect(memos).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "memo-changed",
+          title: "New",
+          content: "new",
+        }),
+        expect.objectContaining({
+          id: "memo-unchanged",
+          title: "Keep",
+          content: "keep",
+        }),
+      ]),
+    );
+    expect(
+      JSON.parse(scrap!.payload).memos.map((memo: { id: string }) => memo.id),
+    ).toEqual(["memo-changed", "memo-unchanged"]);
+  });
+});
+
 describe("syncLocalApply.upsertChapter", () => {
   it("runs existing update, new insert, and ChapterBody upserts", () => {
     const chapterValues: Array<Record<string, unknown>> = [];
@@ -275,10 +466,7 @@ describe("syncLocalApply.upsertChapter", () => {
           return {
             run: table === chapter ? chapterInsertRun : otherRun,
             onConflictDoUpdate: vi.fn(
-              (config: {
-                set: Record<string, unknown>;
-                target: unknown[];
-              }) => {
+              (config: { set: Record<string, unknown>; target: unknown[] }) => {
                 if (table === chapterBody) {
                   expect(config.target).toEqual([chapterBody.chapterId]);
                   bodyConflictValues.push(config.set);

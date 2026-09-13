@@ -338,11 +338,14 @@ vi.mock("../../../src/main/services/features/sync/syncRepository.js", () => {
   };
 });
 
-vi.mock("../../../src/main/services/features/project/projectService.js", () => ({
-  projectService: {
-    openLuieProject: (...args: unknown[]) => mocked.openLuieProject(...args),
-  },
-}));
+vi.mock(
+  "../../../src/main/services/features/project/projectService.js",
+  () => ({
+    projectService: {
+      openLuieProject: (...args: unknown[]) => mocked.openLuieProject(...args),
+    },
+  }),
+);
 
 vi.mock("../../../src/main/manager/settings/index.js", () => ({
   settingsManager: {
@@ -509,6 +512,67 @@ describe("SyncService auth hardening", () => {
     expect(result.success).toBe(false);
     expect(result.message).toContain("NETWORK_TIMEOUT");
     expect(service.getStatus().connected).toBe(true);
+  });
+
+  it("skips local apply and remote upsert when both bundles are identical", async () => {
+    const syncedUserId = "00000000-0000-0000-0000-000000000001";
+    const timestamp = "2026-09-13T00:00:00.000Z";
+    mocked.syncSettings.connected = true;
+    mocked.syncSettings.autoSync = false;
+    mocked.syncSettings.userId = syncedUserId;
+    mocked.syncSettings.expiresAt = new Date(
+      Date.now() + 10 * 60 * 1000,
+    ).toISOString();
+    mocked.syncSettings.accessTokenCipher = "cipher";
+    mocked.getAccessToken.mockReturnValue({ token: "access-token" });
+    mocked.getRefreshToken.mockReturnValue({ token: "refresh-token" });
+    mocked.prisma.project.findMany.mockResolvedValue([
+      {
+        id: "project-1",
+        title: "Project",
+        description: null,
+        createdAt: new Date(timestamp),
+        updatedAt: new Date(timestamp),
+        projectPath: null,
+        chapters: [],
+        characters: [],
+        events: [],
+        factions: [],
+        terms: [],
+      },
+    ]);
+    mocked.fetchBundle.mockResolvedValue({
+      projects: [
+        {
+          id: "project-1",
+          userId: syncedUserId,
+          title: "Project",
+          description: null,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        },
+      ],
+      chapters: [],
+      characters: [],
+      events: [],
+      factions: [],
+      terms: [],
+      worldDocuments: [],
+      memos: [],
+      snapshots: [],
+      tombstones: [],
+    });
+
+    const { SyncService } =
+      await import("../../../src/main/services/features/sync/syncService.js");
+    const service = new SyncService();
+    service.initialize();
+    const result = await service.runNow("manual");
+
+    expect(result).toMatchObject({ success: true, pulled: 0, pushed: 0 });
+    expect(mocked.prisma.$transaction).not.toHaveBeenCalled();
+    expect(mocked.writeLuieContainer).not.toHaveBeenCalled();
+    expect(mocked.upsertBundle).not.toHaveBeenCalled();
   });
 
   it("does not launch OAuth again while already connecting", async () => {
@@ -922,7 +986,7 @@ describe("SyncService auth hardening", () => {
 
     expect(mocked.syncSettings.pendingConflictResolutions).toBeUndefined();
     expect(mocked.upsertBundle).toHaveBeenCalledTimes(1);
-    expect(mocked.prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mocked.prisma.$transaction).not.toHaveBeenCalled();
     expect(service.getStatus().conflicts.total).toBe(0);
   });
 
@@ -956,7 +1020,16 @@ describe("SyncService auth hardening", () => {
       snapshots: [],
     });
     mocked.fetchBundle.mockResolvedValue({
-      projects: [],
+      projects: [
+        {
+          id: "project-1",
+          userId: syncedUserId,
+          title: "Remote Project",
+          description: null,
+          createdAt: "2026-02-22T00:00:00.000Z",
+          updatedAt: "2026-02-23T00:00:00.000Z",
+        },
+      ],
       chapters: [],
       characters: [],
       terms: [],
@@ -1031,7 +1104,7 @@ describe("SyncService auth hardening", () => {
     expect(result.success).toBe(true);
     expect(mocked.writeLuieContainer).not.toHaveBeenCalled();
     expect(mocked.readLuieContainerEntry).not.toHaveBeenCalled();
-    expect(mocked.prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(mocked.prisma.$transaction).not.toHaveBeenCalled();
     expect(mocked.upsertBundle).toHaveBeenCalledTimes(1);
   });
 
@@ -1065,7 +1138,16 @@ describe("SyncService auth hardening", () => {
       snapshots: [],
     });
     mocked.fetchBundle.mockResolvedValue({
-      projects: [],
+      projects: [
+        {
+          id: "project-1",
+          userId: syncedUserId,
+          title: "Remote Project",
+          description: null,
+          createdAt: "2026-02-22T00:00:00.000Z",
+          updatedAt: "2026-02-23T00:00:00.000Z",
+        },
+      ],
       chapters: [],
       characters: [],
       terms: [],
