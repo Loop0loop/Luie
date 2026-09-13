@@ -1,10 +1,74 @@
 # Luie DB·저장·검색·동기화 심층 감사
 
-판정: **Risky**. 저장 완료 신호, 트랜잭션 격리, 파생 작업의 최신 세대 보장에 실제 소스로 재현한 결함이 있다. 성능상 가장 큰 공통 비용은 SQLite 엔진 자체보다 **한 번의 본문 변경이 전체 검색 재구축·전체 패키지 생성·전체 chunk 교체를 유발하는 작업 증폭**이다.
+현재 판정: **Risky — 안정화 미완료** (2026-09-13 QA·코드 리뷰 반영). 기존 회귀 31 files / 154 tests는 재실행에서도 통과했으나, P1 결함 3건과 P2 기능 결함 2건 및 성능 검증 공백을 확인했다. 기존 개선 구현과 제한된 범위의 PASS를 전체 `.luie` 안정화 완료로 해석하지 않는다.
+
+이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다. 이번 동기화는 판정과 기록을 정정하며, 아래 잔존 결함을 수정한 작업이 아니다.
+
+검토한 제품 코드·테스트·migration의 누적 커밋 기준은 `ba707bf3adca4c1764b5b41a45aee5ab77eb9db5`다. 원 HEAD `0faf4fad` 위 변경을 작업별 5개 커밋으로 보존했으며, 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
+
+## 현재 항목별 상태
+
+| 항목 | 상태 | 확인한 개선과 잔여 범위 |
+| --- | --- | --- |
+| DB-01·02 | 구현·범위 검증 완료 | pending 세대 보존, queue 직렬화, 저장 실패의 flush·수동 저장 전파. 실제 SQLite 실패부터 renderer 응답까지의 결합 E2E는 별도다. |
+| DB-03 | 구현·범위 검증 완료 | 동기 transaction과 명시적 tx 전달, 실제 DB rollback 격리 검증. |
+| DB-04 | **재개 / P1 잔존** | running 이후 enqueue는 분리했지만 source 선조회 후 claim 전 B 저장이 같은 pending ID에 합쳐져 B의 후속 작업이 사라진다. |
+| DB-05 | 단건 처리 구현·범위 검증 완료 | sourceId별 refresh 적용. 직접 upsert와 dirty worker의 두 write owner는 남고, worker는 직접 쓰기 성공 후에도 실행된다. |
+| DB-06 | **재개 / P2 신규 회귀** | 전체 rebuild transaction·rowid 매핑은 유효하나 동시 단건 upsert가 같은 chapter의 FTS 행을 중복 생성한다. |
+| DB-07 | 구현·mock 계약 검증 완료 | Range·종료 검증과 2,001/1,001행 경계. 실제 서버·RLS·동시 원격 변경은 미검증이다. |
+| DB-08 | 구현·범위 검증 완료 | 불변 chunk ID·embedding 보존을 실제 DB에서 확인했다. 실제 모델 비용·대용량 성능은 미측정이다. |
+| DB-09 | **재개 / P1 신규 회귀** | autosave/manual reason·5분 coalescing·최신 100개 정책은 구현됐으나 기존 대량 이력의 삭제 bind 한도로 본문 저장이 실패한다. |
+| DB-10A·B·C | 구현·범위 검증 완료 | snapshot SQL limit, entry·meta·timestamp transaction, content-only 증분 저장. full/sync export 교차 실행은 추가 검증 대상이다. |
+| DB-10D | 제한된 crash 검증 완료 | Node child writer 호출 전/정상 반환 후 SIGKILL 및 DB 재연결 recovery. commit 도중·packaged Electron 전체 재시작·전원 차단은 미검증이다. |
+| DB-10E | 확대 보류 결정 완료 | full export p95/p99·허용 한계가 없어 world/snapshot 증분 확대를 보류했다. 성능 검증 또는 확대 구현 완료가 아니다. |
+| DB-11 | **재개 / P1 경쟁 확인** | row delta·no-op sync는 유효하나 수집 중 로컬 편집을 포함하지 않은 package payload에 최신 revision을 붙일 수 있다. |
+| DB-12 | **재개 / P2 복구 공백·성능 잔존** | LIMIT 전 runnable 조건·단건 failed reset·idle wake-up은 유효하다. 전체 rebuild의 failed-only 재활성화와 전역 history scan 문제는 남는다. |
+| DB-13 | 구현·범위 검증 완료 / 초기 가정 정정 | commit 후 dispatch·bulk cache transaction 적용. 같은 이름 1,000회가 1,000 appearance가 된다는 초기 가정은 extractor의 중복 제거와 맞지 않는다. |
+| DB-14 | 정책 연결·범위 검증 완료 | low-end lexical hit 시 vector skip을 확인했다. 실제 utility process·모델·corpus ranking 검증 및 rerank cache 적용은 별도다. |
+
+## 최신 QA 발견과 재개 조건
+
+### P1 · DB-04 · claim 전 새 본문이 후속 작업 없이 소실
+
+- 현재 [worker](../../../src/main/services/features/memory/memoryProjectionService.ts)는 source batch 조회 → `setImmediate` → claim 순서다. 그 사이 B가 저장되면 [enqueue](../../../src/main/services/features/memory/memoryBuildJobEnqueue.ts)가 아직 pending인 같은 ID를 갱신한다.
+- 실제 현재 함수·native SQLite 재현: `body=B`, `chunk=A`, `jobs=[completed]`, `latestSourceHasPending=false`. running을 사전 seed하고 테스트가 직접 completed로 바꾸는 기존 테스트는 이 전이를 검증하지 않는다.
+- 재개 조건: source를 claim 후 읽고 완료 시 처리한 generation/hash의 최신성을 확인하며, 선조회→claim 및 claim→완료 양쪽 창에서 새 작업이 보존되는 회귀를 추가한다. [항목 보고서](../database/db-04-derived-job-generation-test-report.md)
+
+### P1 · DB-09 · 대량 기존 revision에서 본문 저장 rollback
+
+- [retention](../../../src/main/services/core/chapter/chapterWriteOperations.ts)은 expired ID를 전부 읽어 하나의 `IN(...)`에 bind한다. 설치 SQLite의 `MAX_VARIABLE_NUMBER=32766` 환경에서 과거 revision 33,000개로 실행하면 `too many SQL variables`가 발생하고 같은 transaction의 본문 변경도 rollback된다.
+- 실제 native SQLite·Drizzle 재현: `bodyAfter=old`, `revisionCountAfter=33000`. 기존 105개 fixture는 업그레이드 데이터 경계를 놓친다.
+- 재개 조건: SQL 서브쿼리 또는 bounded batch로 삭제하고, 대량 기존 이력의 첫 저장·삭제 실패 rollback·5분 coalescing 경계 전후를 검증한다. [항목 보고서](../database/db-09-chapter-revision-retention-test-report.md)
+
+### P1 · DB-11 · 오래된 package payload에 최신 revision을 기록
+
+- local snapshot A 수집 → remote fetch 대기 중 로컬 B 저장·export flush 완료 → remote character delta 도착 순서에서 발생한다. [applier](../../../src/main/services/features/sync/syncBundleApplier.ts)는 delta만 DB에 적용한 뒤 B를 포함한 현재 revision을 캡처하지만 package는 과거 merged bundle A로 만든다.
+- 실제 delta/applier 함수와 DB·파일 경계 mock 재현: `liveBody=B`, `submittedPackageBody=A`, `liveRevision=submittedExportedRevision=12`. 이후 [package writer·checkpoint 경로](../../../src/main/services/features/sync/syncPackagePersistence.ts)를 독립 코드 리뷰로 확인했다. 실파일 종단 경쟁 재현은 수행하지 않았다.
+- DB=B/package=A인데 exported revision이 같으면 stale recovery 대상에서 빠질 수 있다. 재개 조건은 적용 전 snapshot revision 검증·재수집과, 로컬 저장/flush를 포함하는 실제 DB·파일 경쟁 회귀다. [항목 보고서](../database/db-11-sync-delta-test-report.md)
+
+### P2 · DB-06·12 · FTS 동시 갱신과 전체 rebuild 복구
+
+- [FTS upsert](../../../src/main/services/features/search/chapterSearchCacheService.ts): projection의 이전 rowid를 await 뒤 재사용한다. 동시 두 호출의 실제 함수·SQLite 재현에서 FTS 2행, projection 1행이 남았다. 다음 검색에서 전체 rebuild로 복구될 수 있지만 캐시 불일치·작업 증폭 회귀다. projection/현재 rowid 조회/FTS 교체/mapping을 한 동기 transaction에 넣고 동시 갱신을 검증해야 한다.
+- [전체 memory rebuild](../../../src/main/services/features/dbMaintenance/dbMaintenanceMemory.ts): failed-only key는 새 작업 생성과 reset 모두 생략한다. 실제 함수·SQLite에서 `failed/attempts=5`에 rebuild를 요청하면 `queued=1`이지만 해당 job은 `failed/5` 그대로다. 단건 enqueue와 같이 failed를 재활성화하고 paused를 보존하는 경계 검증이 필요하다.
+- [전역 runnable project 조회](../../../src/main/services/features/dbMaintenance/dbMaintenanceService.ts)는 새 index 적용 후에도 실제 조건의 EXPLAIN이 `SCAN MemoryBuildJob USING COVERING INDEX MemoryBuildJob_runnable_idx` + `USE TEMP B-TREE FOR ORDER BY`다. project/job/status를 고정한 다른 쿼리에서 index 이름만 검사한 테스트는 전역 완료 이력 scan 제거의 증거가 아니다. 실제 쿼리·충분한 terminal history로 plan과 latency를 측정해야 한다.
+
+## 최신 검증 근거와 한계
+
+- 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 실제 DB setup 묶음 18 files/67 tests와 비DB 계약 묶음 13 files/87 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
+- `check:drizzle` main/cache 및 `git diff --check` 통과. typecheck는 기존 `Sidebar.tsx:157` TS6133으로 실패했다. source LOC gate 23건 중 7건은 이번 변경의 신규 위반이고 16건은 기존 위반이다. 이를 모두 기존 debt로 분류하지 않는다.
+- [derived DB benchmark](../../../scripts/benchmark-derived-db.mjs)는 `node:sqlite`·축약 schema에서 dataset당 list/open/enqueue를 각각 1회 측정한다. production autosave·FTS·export 경로와 p95/p99를 실행하지 않는다. 기존 7월 save-latency 산출물은 다른 HEAD 결과다.
+- [fullprod E2E](../../../tests/e2e/writingLoop.fullprod.spec.ts)의 p95는 chapter.update API 왕복이며 키 입력→autosave 또는 Cmd+S 완료 전체가 아니다. queue timeout 후 pending/running=0 assertion이 없고 [Electron helper](../../../tests/e2e/_helpers/electronApp.ts)는 DB URL만 격리하고 환경을 상속한다. userData/settings/sync 격리와 queue 완료 판정을 보완한 뒤 현재 코드의 성능을 측정해야 한다.
+- 실제 강제 종료 검증도 writer 시작 전 또는 정상 close 후다. commit 중 crash, authoritative DB writer 종료, packaged Electron 재시작, Windows/Linux·외장/저속 볼륨·전원 차단은 미검증이다.
+- 최신 추가 재현은 `/private/tmp/luie-db04-current-review.cjs`, `/private/tmp/luie-retention-review-repro.cjs`, `/private/tmp/luie-sync-snapshot-review.cjs`에서 수행했다. 이 경로는 임시 산출물이며 저장소에 보존된 회귀 테스트가 아니다. 핵심 조건·결과를 위에 기록했고 다음 수정 시 저장소 테스트로 고정해야 한다.
+- 초기 감사의 임시 스크립트 4개는 재검토 시 존재하지 않았다. 과거 보고서의 HEAD만으로 당시 dirty tree를 복원할 수도 없다. 과거 실행 기록을 현재 checkout의 재현 보장으로 해석하지 않는다.
+
+## 초기 감사 기록 — 아래 경로·결함·측정은 수정 전 이력
+
+아래는 초기 감사에서 관찰한 상태다. 현행 코드 판정은 위 표와 최신 QA 발견을 따른다. 당시 판정은 **Risky**였고 주요 공통 비용은 전체 검색 재구축·전체 패키지 생성·전체 chunk 교체의 작업 증폭이었다.
 
 읽기 전용 감사. 애플리케이션/사용자 데이터/의존성/네이티브 모듈을 수정하지 않았다. 실험은 `/private/tmp` 및 SQLite `:memory:`만 사용했고 임시 DB와 임시 번들은 정리했다. 기준 런타임: macOS arm64, Node v22.23.0, 설치된 better-sqlite3가 보고한 SQLite 3.53.4. 이 수치는 Electron 배포판이나 Windows/Linux 실측값이 아니다.
 
-## 실행 경로
+## 실행 경로 — 초기 감사
 
 1. `AUTO_SAVE` IPC → `AutoSaveManager.triggerSave` → pending map + mirror queue → debounce timer/interval/manual flush → `performAutoSave`.
 2. `ChapterService.updateChapter` → 기존 canonical body 읽기/검증/키워드 추적 시작 → singleton better-sqlite3 connection에서 Chapter + ChapterBody + ChapterRevision + SearchDirtyQueue + MemoryBuildJob 쓰기 → direct search cache upsert → package export debounce 500 ms.
@@ -13,7 +77,7 @@
 5. Sync는 전체 로컬 bundle과 전체 원격 bundle을 모아서 merge → 전체 로컬 upsert 트랜잭션 → .luie persistence → 전체 원격 table POST를 수행한다.
 6. 벡터 검색의 기본 경로는 utility process의 RAG이다. main은 기본값 `LUIE_VECTOR_SEARCH_UTILITY_ONLY=true`로 vector 검색을 생략한다. utility는 자체 better-sqlite3 연결을 열고 scalar `vec_distance_cosine`으로 검색한다.
 
-## 우선 수정해야 할 확정 이슈
+## 우선 수정해야 할 확정 이슈 — 초기 감사
 
 ### DB-01 · P1 · 저장 완료가 새 pending 본문을 지운다 — 실제 함수 재현
 
@@ -79,7 +143,7 @@
 - 최소 수정: 안정적 keyset 또는 Range pagination으로 전체 수집을 보장한다. 가능하면 후속 delta sync의 updatedAt+id cursor와 연결한다. 원격에서 실제로 삭제됐다고 임의 추론해서는 안 된다.
 - 검증: fetch mock에서 1,001/2,001행 및 tombstone을 페이지별 반환하고 전부 복원되는지. `syncRepository.test.ts`의 확인한 테스트는 빈 table/snapshot 제외/payload 필드 중심이고 pagination 경계를 검증하지 않는다.
 
-## 구조적 성능·보관 문제
+## 구조적 성능·보관 문제 — 초기 감사
 
 ### DB-08 · P2 · 동일 chunk까지 재임베딩: hash 재사용이 상위 DELETE로 무효화된다 — 실제 함수 재현
 
@@ -125,6 +189,8 @@
 
 ### DB-13 · P2 · 키워드 추적이 출현 횟수만큼 SQL/commit과 중복 최초 등장 조회를 실행한다
 
+2026-09-13 정정: 같은 인물 1,000회 출현이 1,000개 appearance로 추출된다는 아래 초기 가정은 부정확하다. 기존 `KeywordExtractor`는 `seen`으로 이름 중복을 제거한다. 현재 1,000행 cache transaction 테스트는 bulk API 검증이며 반복 이름 extractor의 실사용 부하 측정이 아니다. [정정과 현재 검증](../database/db-13-keyword-appearance-transaction-test-report.md)을 따른다. no-op 전 dispatch와 추출된 여러 entity의 개별 쓰기 문제는 별도로 개선됐다.
+
 - 위치: `chapterContentValidation.ts:106` 전후 fireAndForget; `src/main/services/features/manuscript/chapterKeywords.ts`의 trackKeywordAppearancesInternal/updateCharacterFirstAppearance/updateTermFirstAppearance; `appearanceCacheService.ts:49`, `:71`, `:145`.
 - Trigger: 같은 인물/용어가 수백~수천 번 나오는 장을 저장한다. 같은 본문 no-op 판단(`chapterWriteOperations.ts:223`)보다 검증/keyword dispatch가 먼저 실행된다.
 - 원인: chapter appearance를 모두 삭제한 뒤 occurrence별 INSERT 반환을 await하고 매번 main entity firstAppearance를 SELECT한다. `characters.find`/`terms.find`도 각 occurrence마다 선형 탐색한다. 최초 등장 때는 entity마다 immediate full package export까지 await한다.
@@ -140,7 +206,7 @@
 - 조건: 기본 main 경로는 process guard로 이미 vector skip한다. 이 문제는 vector enabled utility/RAG 및 override 경로에 해당한다.
 - 검증: low-end+lexical hit+vector-enabled utility 환경에서 embed call=0인지. profile 숫자만 검사하는 `tests/main/services/search/searchOptimizationPolicy.test.ts`와 실제 검색 경로 검증을 연결한다.
 
-## 추가 관찰: 측정 후 결정
+## 추가 관찰: 측정 후 결정 — 초기 감사
 
 - **동기 adapter**: main과 cache는 better-sqlite3이고 `.all/.get/.run`이 호출 thread에서 동기 실행된다. async 함수/Promise.all 표기는 비차단 IO의 근거가 아니다. `busy_timeout=5000`은 lock 경쟁 시 main이 그만큼 응답하지 못할 여지를 주며 `runWalCheckpoint(FULL)`/integrity_check도 동기다. 그렇다고 모든 단건 SQL을 즉시 IPC worker로 옮겨 메시지 비용을 늘릴 이유는 없다. 위 작업 증폭/transaction 오류를 먼저 고치고 큰 batch/export/index를 작업 소유 process로 옮기는 게 우선이다.
 - **벡터 실제 구조**: `chunkSearch.ts:283`은 project/dimension/current hash로 필터 후 native scalar cosine 거리 전체 계산+top-K다. persisted vector 전체를 JS로 읽어 cosine 계산하는 runtime fallback은 찾지 못했다. extension 미가용이면 FTS로 fallback한다. 따라서 “JS 전체 벡터 materialization”을 현행 결함으로 보고하면 안 된다. O(N·D) exact scan 확대 시 utility latency와 memory bandwidth를 측정하고, 후보 한정 또는 기존 sqlite-vec의 다른 검색 방식을 검토하되 새 ANN dependency를 우선 도입하지 않는다.
@@ -148,7 +214,7 @@
 - **과대 bulk IN/VALUES**: chapterSearch rebuild는 모든 chapter를 하나의 INSERT VALUES에 넣고 sync/memory는 모든 id를 IN에 넣는 부분이 있다. 매우 큰 프로젝트에서 SQLite bound variable limit을 넘을 수 있다. 정확한 threshold는 런타임 compile option과 실 SQL bind 수에 따라 다르므로 이번 보고서에서 특정 chapter 수를 보장하지 않는다. bounded batch 검증이 필요하다.
 - **snapshot 보관**: Snapshot에는 별도 retention/prune가 구현되어 있고 AUTO는 id/createdAt만 읽는 경로도 있다. 문제는 그 정책이 ChapterRevision에 적용되지 않고 export 전에는 모든 snapshot body를 읽는다는 점이다.
 
-## 이미 적용된 유효한 구조
+## 이미 적용된 유효한 구조 — 초기 감사
 
 - Chapter list/trash list는 metadata DTO로 본문을 보내지 않는다(`chapterService.ts` getAllChapters/getDeletedChapters). 이 경계를 유지해야 한다.
 - main/cache WAL, foreign_keys=ON, explicit busy timeout; authoritative DB FULL은 저장 안정성 목적이므로 단순 OFF/NORMAL 전환으로 속도만 올리면 안 된다. cache는 regeneration 가능한 전용 table이어서 transaction 정리 후 durability tuning을 따로 검토할 수 있다.
@@ -157,7 +223,7 @@
 - utility에 실제 모델/embedding/RAG가 분리되어 있으며 벡터 guard도 존재한다. SQL 전체를 main에서 돌린다는 포괄 주장은 정확하지 않다.
 - 정상 bulk 읽기 JOIN/Map grouping과 bounded search result도 여러 곳에 이미 있다. 현재 helper들을 재사용하면 됨.
 
-## 검증 산출물과 재실행
+## 검증 산출물과 재실행 — 초기 감사의 임시 기록
 
 모든 스크립트는 사용자 데이터 대신 synthetic fixture를 사용한다. 실제 소스 관련 스크립트는 현재 checkout의 파일을 매번 읽고 설치된 TypeScript/esbuild를 사용한다. 의존성 설치나 rebuild는 하지 않는다.
 
@@ -177,7 +243,7 @@ node /private/tmp/luie-db-audit-check.cjs
 
 기존 테스트는 caller/보장 범위 확인 목적으로 읽었으며 이 하위 감사에서 전체 vitest/qa:core를 실행하지 않았다. root가 수행한 테스트 결과와 합쳐야 한다. 확인한 테스트: dbMaintenanceService, memoryProjectionService, chapterService, manualSaveHandler, autoSaveManager.runtimeStats, syncRepository, syncBundleApplier.commitOrder, syncPackagePersistence.retry 관련 내용.
 
-## 권장 순서와 범위 제한
+## 권장 순서와 범위 제한 — 초기 감사
 
 1. 저장 세대/실패 전달/동기 transaction/derived generation을 먼저 수정한다. 병목을 다른 process로 옮기기 전에 최신성 및 성공 신호를 보장한다.
 2. chapter dirty 단건 처리, FTS transaction/rowid, 불변 chunk 보존, revision retention을 적용하고 같은 부하에서 SQL count·commit count·main event-loop p95/p99·heap/external/RSS·DB/WAL/package bytes를 비교한다.
