@@ -27,18 +27,24 @@ type ColumnPatch = {
   sql: string;
 };
 
-export const CACHE_PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
-  {
-    table: "CharacterAppearance",
-    column: "projectId",
-    sql: 'ALTER TABLE "CharacterAppearance" ADD COLUMN "projectId" TEXT NOT NULL DEFAULT "";',
-  },
-  {
-    table: "TermAppearance",
-    column: "projectId",
-    sql: 'ALTER TABLE "TermAppearance" ADD COLUMN "projectId" TEXT NOT NULL DEFAULT "";',
-  },
-];
+export const CACHE_PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> =
+  [
+    {
+      table: "CharacterAppearance",
+      column: "projectId",
+      sql: 'ALTER TABLE "CharacterAppearance" ADD COLUMN "projectId" TEXT NOT NULL DEFAULT "";',
+    },
+    {
+      table: "TermAppearance",
+      column: "projectId",
+      sql: 'ALTER TABLE "TermAppearance" ADD COLUMN "projectId" TEXT NOT NULL DEFAULT "";',
+    },
+    {
+      table: "ChapterSearchDocument",
+      column: "ftsRowId",
+      sql: 'ALTER TABLE "ChapterSearchDocument" ADD COLUMN "ftsRowId" INTEGER;',
+    },
+  ];
 
 export const CACHE_PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<
   Record<string, ReadonlyArray<string>>
@@ -58,6 +64,7 @@ export const CACHE_PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<
     "searchText",
     "wordCount",
     "chapterOrder",
+    "ftsRowId",
   ],
 };
 
@@ -100,6 +107,7 @@ CREATE TABLE IF NOT EXISTS "ChapterSearchDocument" (
     "searchText" TEXT NOT NULL,
     "wordCount" INTEGER NOT NULL,
     "chapterOrder" INTEGER NOT NULL,
+    "ftsRowId" INTEGER,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

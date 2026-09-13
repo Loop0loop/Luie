@@ -18,6 +18,11 @@ export const searchDirtyQueue = sqliteTable(
   },
   (table) => [
     index("SearchDirtyQueue_projectId_status_idx").on(table.projectId, table.status),
+    index("SearchDirtyQueue_runnable_idx").on(
+      table.status,
+      table.attempts,
+      table.updatedAt,
+    ),
     index("SearchDirtyQueue_source_idx").on(table.sourceType, table.sourceId),
     foreignKey({
       name: "SearchDirtyQueue_projectId_fkey",

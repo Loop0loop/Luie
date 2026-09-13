@@ -73,6 +73,15 @@ export const memoryBuildJob = sqliteTable(
       table.status,
       table.priority,
     ),
+    index("MemoryBuildJob_runnable_idx").on(
+      table.projectId,
+      table.jobType,
+      table.status,
+      table.attempts,
+      table.priority,
+      table.createdAt,
+      table.updatedAt,
+    ),
     index("MemoryBuildJob_target_idx").on(table.targetType, table.targetId),
     foreignKey({
       name: "MemoryBuildJob_projectId_fkey",

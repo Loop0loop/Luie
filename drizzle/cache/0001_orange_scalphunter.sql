@@ -1,0 +1,1 @@
+ALTER TABLE `ChapterSearchDocument` ADD `ftsRowId` integer;

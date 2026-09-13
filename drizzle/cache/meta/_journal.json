@@ -8,6 +8,13 @@
       "when": 1788224657448,
       "tag": "0000_thankful_mariko_yashida",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789287119950,
+      "tag": "0001_orange_scalphunter",
+      "breakpoints": true
     }
   ]
 }

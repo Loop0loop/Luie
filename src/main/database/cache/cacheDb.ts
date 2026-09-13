@@ -16,9 +16,7 @@ import {
   pathExists,
   resolveSqliteDatasourceFromEnv,
 } from "../runtime/index.js";
-import {
-  ensurePackagedCacheSqliteSchema,
-} from "./cacheSchemaBootstrap.js";
+import { ensurePackagedCacheSqliteSchema } from "./cacheSchemaBootstrap.js";
 
 const logger = createLogger("CacheDatabaseService");
 const CACHE_ENV_KEY = "CACHE_DATABASE_URL";
@@ -33,7 +31,8 @@ type PreparedCacheDatabaseContext = {
 
 class CacheDatabaseService {
   private static instance: CacheDatabaseService;
-  private drizzleHandle: DrizzleDatabaseHandle<CacheDrizzleClient> | null = null;
+  private drizzleHandle: DrizzleDatabaseHandle<CacheDrizzleClient> | null =
+    null;
   private dbPath: string | null = null;
   private initPromise: Promise<void> | null = null;
 
@@ -137,9 +136,23 @@ class CacheDatabaseService {
 
   getClient(): CacheDrizzleClient {
     if (!this.drizzleHandle) {
-      throw new Error("Cache database is not initialized. Call cacheDb.initialize() first.");
+      throw new Error(
+        "Cache database is not initialized. Call cacheDb.initialize() first.",
+      );
     }
     return this.drizzleHandle.client;
+  }
+
+  runSqliteTransaction<T>(
+    callback: (sqlite: BetterSqliteDatabase.Database) => T,
+  ): T {
+    if (!this.drizzleHandle) {
+      throw new Error(
+        "Cache database is not initialized. Call cacheDb.initialize() first.",
+      );
+    }
+    const sqlite = this.drizzleHandle.sqlite;
+    return sqlite.transaction(() => callback(sqlite))();
   }
 
   getDatabasePath(): string {
@@ -157,12 +170,16 @@ class CacheDatabaseService {
     walAutocheckpoint: number;
   } {
     if (!this.drizzleHandle) {
-      throw new Error("Cache database is not initialized. Call cacheDb.initialize() first.");
+      throw new Error(
+        "Cache database is not initialized. Call cacheDb.initialize() first.",
+      );
     }
 
     const sqlite = this.drizzleHandle.sqlite;
     return {
-      journalMode: String(sqlite.pragma("journal_mode", { simple: true }) ?? ""),
+      journalMode: String(
+        sqlite.pragma("journal_mode", { simple: true }) ?? "",
+      ),
       foreignKeys: Number(sqlite.pragma("foreign_keys", { simple: true }) ?? 0),
       busyTimeout: Number(sqlite.pragma("busy_timeout", { simple: true }) ?? 0),
       synchronous: Number(sqlite.pragma("synchronous", { simple: true }) ?? 0),
@@ -172,9 +189,13 @@ class CacheDatabaseService {
     };
   }
 
-  runWalCheckpoint(mode: "PASSIVE" | "FULL" | "RESTART" | "TRUNCATE" = "FULL"): unknown {
+  runWalCheckpoint(
+    mode: "PASSIVE" | "FULL" | "RESTART" | "TRUNCATE" = "FULL",
+  ): unknown {
     if (!this.drizzleHandle) {
-      throw new Error("Cache database is not initialized. Call cacheDb.initialize() first.");
+      throw new Error(
+        "Cache database is not initialized. Call cacheDb.initialize() first.",
+      );
     }
     return this.drizzleHandle.sqlite.pragma(`wal_checkpoint(${mode})`);
   }

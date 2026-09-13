@@ -15,8 +15,16 @@ import type { cacheDb as CacheDbService } from "../src/main/database/cache/index
 import * as schema from "../src/main/database/schema/index.js";
 import * as cacheSchema from "../src/main/database/cache/cacheSchema.js";
 
-const testWorkerId = process.env.VITEST_POOL_ID ?? process.env.VITEST_WORKER_ID ?? String(process.pid);
-const testDbDir = path.join(process.cwd(), "drizzle", ".tmp", `vitest-${testWorkerId}`);
+const testWorkerId =
+  process.env.VITEST_POOL_ID ??
+  process.env.VITEST_WORKER_ID ??
+  String(process.pid);
+const testDbDir = path.join(
+  process.cwd(),
+  "drizzle",
+  ".tmp",
+  `vitest-${testWorkerId}`,
+);
 const testDbPath = path.join(testDbDir, "db.sqlite");
 const testCacheDbPath = path.join(testDbDir, "cache.sqlite");
 const skipDbSetup = process.env.SKIP_DB_TEST_SETUP === "1";
@@ -25,15 +33,25 @@ process.env.DATABASE_URL = `file:${testDbPath}`;
 process.env.CACHE_DATABASE_URL = `file:${testCacheDbPath}`;
 process.env.LUIE_USER_DATA_PATH = testDbDir;
 
-vi.mock("electron", () => ({
-  app: {
+vi.mock("electron", () => {
+  const app = {
     isPackaged: false,
     getPath: () => testDbDir,
-  },
-  nativeTheme: {
+  };
+  const nativeTheme = {
     shouldUseDarkColors: false,
-  },
-}));
+  };
+  const BrowserWindow = {
+    getAllWindows: () => [],
+    fromId: () => null,
+  };
+  return {
+    app,
+    nativeTheme,
+    BrowserWindow,
+    default: { app, nativeTheme, BrowserWindow },
+  };
+});
 
 type MainDbClient = ReturnType<(typeof DbService)["getClient"]>;
 type CacheDbClient = ReturnType<(typeof CacheDbService)["getClient"]>;
