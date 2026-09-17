@@ -2,7 +2,7 @@
 
 ## 최신 보정 완료 · 2026-09-13
 
-현재 판정: **PASS**. pending/failed 재enqueue에서 job UUID를 원자적으로 교체해 claim 전 source 변경이 이전 selector에 흡수되지 않게 했다. RED→GREEN 실제 DB 상태와 전체 실행 기록은 [claim 전 generation 보정 보고서](db-04-preclaim-generation-remediation-test-report.md)에 있다.
+현재 판정: **PASS**. pending/failed와 paused 재enqueue에서 job UUID를 원자적으로 교체해 claim 전 source 변경이 이전 selector에 흡수되지 않게 했다. 일반 claim 전 경쟁은 [generation 보정 보고서](db-04-preclaim-generation-remediation-test-report.md), pause 결합 전이는 [DB-04B 보고서](test2/db-04b-paused-generation-remediation-test-report.md)에 있다.
 
 ## 이전 QA 재검토 · 2026-09-13
 
@@ -31,7 +31,7 @@
 - 같은 대상·작업 유형의 `pending` 또는 `failed` row가 있으면 UUID를 교체하고 pending으로 초기화해 이전 claim generation을 무효화한다.
 - `running` row만 있으면 그 row를 갱신하지 않고 별도 `pending` row를 생성한다.
 - worker가 이전 row ID를 `completed`로 바꿔도 새 row ID의 `pending` 상태는 영향을 받지 않는다.
-- `paused` row는 사용자 중지 상태를 유지한다. 이후 DB-12에서 새 source의 `failed` row는 `pending`, attempts 0, error null로 재활성화하도록 확정했다.
+- `paused` row는 상태를 유지하되 UUID와 attempts/error를 새 source generation으로 교체한다. 이후 resume은 새 UUID만 pending으로 만든다.
 - schema column이나 migration은 추가하지 않는다.
 
 ## 상태 모델
@@ -46,7 +46,7 @@
 | P0   | 같은 대상의 작업이 `paused`                                                     |
 | F0   | 같은 대상의 작업이 `failed`                                                     |
 
-주요 검증 전이는 `G0 → G1 → G2 → G3 + G4`다. 최종 보존·재시도 회귀는 `P0 → P0`, `F0 → pending`이다.
+주요 검증 전이는 `G0 → G1 → G2 → G3 + G4`다. 최종 보존·재시도 회귀는 `P0(old ID) → P0(new ID) → pending`, `F0 → pending`이다.
 
 ## 진입·종료 기준
 
@@ -98,7 +98,7 @@
 | 사전 상태 | summary `paused` 1건 또는 embedding `failed` 1건                                        |
 | 입력      | 동일 chapter에 `enqueueChapterDerivedJobs` 호출                                         |
 | 절차      | 상태별 row 준비 → enqueue → row 수·ID·상태·priority·attempts·error 조회                 |
-| 기대 결과 | paused는 기존 ID·상태 유지; failed는 새 UUID의 pending/attempts 0/error null로 재활성화 |
+| 기대 결과 | paused는 새 UUID·paused/attempts 0/error null, resume 뒤 옛 ID claim 실패; failed는 새 UUID의 pending/attempts 0/error null |
 | 실제 결과 | 기대 결과와 일치                                                                        |
 | 결과      | PASS                                                                                    |
 

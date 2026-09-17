@@ -34,9 +34,13 @@ export function upsertMemoryBuildJob(input: {
   );
   const current = existing[0];
   if (current?.status === "paused") {
+    const nextGenerationId = crypto.randomUUID();
     input.client.run(
       sql`UPDATE "MemoryBuildJob"
-          SET "priority" = ${input.priority},
+          SET "id" = ${nextGenerationId},
+              "priority" = ${input.priority},
+              "attempts" = 0,
+              "error" = NULL,
               "updatedAt" = ${input.now}
           WHERE "id" = ${current.id};`,
     );

@@ -2,7 +2,7 @@
 
 기준 문서: [`../performance-audit-2026-09-08/database.md`](../performance-audit-2026-09-08/database.md)
 
-최신 판정: **2026-09-14 정확성 결함 보정 진행 중**. DB-11A world 삭제 부활과 DB-11B 동일 chapter 경쟁을 수정했고, DB-04·DB-06 P2 결합 전이 및 DB-12 성능 근거가 남았다. 2차 순서와 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)에 기록한다.
+최신 판정: **2026-09-18 정확성 결함 보정 진행 중**. DB-11A·DB-11B와 DB-04B를 수정했고, DB-06B 결합 전이 및 DB-12B 성능 근거가 남았다. 2차 순서와 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)에 기록한다.
 
 표시 규칙:
 
@@ -21,10 +21,10 @@
 - [X] **DB-03** chapter create/update의 async 수동 transaction을 동기 `store.transaction()`으로 교체한다.
   - 완료 조건: transaction callback 안에는 동기 DB statement만 있고 다른 도메인의 쓰기가 chapter rollback에 포함되지 않는다.
   - 테스트: [`db-03-chapter-transaction-test-report.md`](db-03-chapter-transaction-test-report.md)
-- [ ] **DB-04** derived job enqueue·claim·complete에 source generation token을 적용한다. pause→변경→resume 결합 전이를 재개한다.
-  - 구현: pending/failed source 재enqueue는 job UUID를 원자적으로 교체해 이전 selector의 claim을 무효화한다. running은 별도 pending successor, paused는 기존 상태를 유지한다.
+- [X] **DB-04** derived job enqueue·claim·complete에 source generation token을 적용한다.
+  - 구현: pending/failed source 재enqueue는 pending UUID를 교체하고, paused는 상태를 유지한 채 UUID와 retry 상태를 교체한다. running은 별도 pending successor를 만든다.
   - 완료 조건: 처리 중 새 source가 저장되면 이전 source 결과로 `completed`를 확정하지 않는다.
-  - 테스트: [`db-04-preclaim-generation-remediation-test-report.md`](db-04-preclaim-generation-remediation-test-report.md)
+  - 테스트: [`db-04-preclaim-generation-remediation-test-report.md`](db-04-preclaim-generation-remediation-test-report.md), [`test2/db-04b-paused-generation-remediation-test-report.md`](test2/db-04b-paused-generation-remediation-test-report.md)
 
 ## 2. `.luie` 저장 범위 축소
 

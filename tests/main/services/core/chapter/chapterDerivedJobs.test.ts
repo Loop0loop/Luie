@@ -13,6 +13,11 @@ import {
   MEMORY_JOB_TYPES,
   MEMORY_TARGET_TYPES,
 } from "../../../../../src/main/services/features/memory/memoryJobConstants.js";
+import {
+  claimMemoryBuildJob,
+  pauseMemoryBuildJobs,
+  resumeMemoryBuildJobs,
+} from "../../../../../src/main/services/features/memory/jobControl.js";
 
 async function seedProject(projectId: string): Promise<void> {
   await db.getClient().insert(project).values({
@@ -175,7 +180,7 @@ describe("enqueueChapterDerivedJobs", () => {
     expect(remainingSearchJobs).toHaveLength(1);
   });
 
-  it("does not create a new pending memory job when a matching paused job exists", async () => {
+  it("rotates a paused generation so a stale selector cannot claim it after resume", async () => {
     const projectId = crypto.randomUUID();
     const chapterId = crypto.randomUUID();
     await seedProject(projectId);
@@ -183,9 +188,10 @@ describe("enqueueChapterDerivedJobs", () => {
       projectId,
       chapterId,
       jobType: MEMORY_JOB_TYPES.REBUILD_SUMMARY,
-      status: "paused",
+      status: "pending",
       priority: 90,
     });
+    await pauseMemoryBuildJobs({ projectId });
 
     await enqueueChapterDerivedJobs({
       projectId,
@@ -200,10 +206,26 @@ describe("enqueueChapterDerivedJobs", () => {
     });
     expect(jobs).toHaveLength(1);
     expect(jobs[0]).toMatchObject({
-      id: pausedJobId,
       status: "paused",
       priority: MEMORY_JOB_PRIORITY.SUMMARY,
+      attempts: 0,
+      error: null,
     });
+    expect(jobs[0]?.id).not.toBe(pausedJobId);
+
+    await resumeMemoryBuildJobs({ projectId });
+    await expect(
+      claimMemoryBuildJob({ jobId: pausedJobId }),
+    ).resolves.toEqual({ claimed: false });
+    await expect(
+      listMemoryJobs({
+        projectId,
+        chapterId,
+        jobType: MEMORY_JOB_TYPES.REBUILD_SUMMARY,
+      }),
+    ).resolves.toEqual([
+      expect.objectContaining({ id: jobs[0]?.id, status: "pending" }),
+    ]);
   });
 
   it("replaces a failed memory job with one pending generation", async () => {

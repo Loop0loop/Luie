@@ -1,10 +1,10 @@
 # Luie DB·저장·검색·동기화 심층 감사
 
-현재 판정: **Risky — 정확성 결함 보정 진행 중** (2026-09-14). DB-11A world 삭제 부활과 DB-11B 동일 chapter 경쟁은 수정했다. DB-04·DB-06 P2 결합 전이와 DB-12 성능 근거 공백은 남았다. 2차 수정과 검증은 [`database/test2`](../database/test2/implementation-todo.md)에서 추적한다.
+현재 판정: **Risky — 정확성 결함 보정 진행 중** (2026-09-18). DB-11A·DB-11B와 DB-04B pause generation은 수정했다. DB-06B clear/upsert 결합 전이와 DB-12B 성능 근거 공백은 남았다. 2차 수정과 검증은 [`database/test2`](../database/test2/implementation-todo.md)에서 추적한다.
 
 이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다.
 
-DB-04·DB-06·DB-09·DB-11·DB-12 보정의 현재 기준은 문서 커밋 `b76d6f0e` 위 작업 트리다. 나머지 제품 코드·테스트·migration의 누적 커밋 기준은 `ba707bf3adca4c1764b5b41a45aee5ab77eb9db5`다. 원 HEAD `0faf4fad` 위 변경을 작업별 5개 커밋으로 보존했으며, 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
+DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 커밋 `21448949`에 고정했다. DB-04B는 그 커밋 이후 작업 트리에서 검증했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
 
 ## 현재 항목별 상태
 
@@ -12,7 +12,7 @@ DB-04·DB-06·DB-09·DB-11·DB-12 보정의 현재 기준은 문서 커밋 `b76d
 | ---------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | DB-01·02   | 구현·범위 검증 완료                  | pending 세대 보존, queue 직렬화, 저장 실패의 flush·수동 저장 전파. 실제 SQLite 실패부터 renderer 응답까지의 결합 E2E는 별도다.                 |
 | DB-03      | 구현·범위 검증 완료                  | 동기 transaction과 명시적 tx 전달, 실제 DB rollback 격리 검증.                                                                                 |
-| DB-04      | 재개 · P2                            | 일반 pending/failed generation은 보정됐으나 pause→source 변경→resume에서 stale selector가 같은 ID를 claim한다.                               |
+| DB-04      | 2차 정확성 보정 완료                  | pending/failed와 paused source 재enqueue가 UUID generation을 교체한다. pause→변경→resume 뒤 stale selector claim 실패를 확인했다.             |
 | DB-05      | 단건 처리 구현·범위 검증 완료        | sourceId별 refresh 적용. 직접 upsert와 dirty worker의 두 write owner는 남고, worker는 직접 쓰기 성공 후에도 실행된다.                          |
 | DB-06      | 재개 · P2                            | upsert transaction은 보정됐으나 clear의 rowid 조회·projection 삭제·FTS 삭제가 분리돼 concurrent upsert와 고아 FTS를 만들 수 있다.             |
 | DB-07      | 구현·mock 계약 검증 완료             | Range·종료 검증과 2,001/1,001행 경계. 실제 서버·RLS·동시 원격 변경은 미검증이다.                                                               |
@@ -33,6 +33,7 @@ DB-04·DB-06·DB-09·DB-11·DB-12 보정의 현재 기준은 문서 커밋 `b76d
 - 보정 전에는 source A 선택과 claim 사이 B enqueue가 같은 pending ID를 유지해 A가 completed되고 B pending이 사라졌다.
 - pending/failed 재enqueue가 UUID를 원자적으로 교체하도록 수정했다. 이전 selector는 옛 UUID의 claim에 실패하며 다음 cycle이 B generation을 처리한다. running에는 별도 pending을 만들고 paused는 유지한다.
 - 실제 worker별 임시 SQLite에서 RED `processed=1`을 확인한 뒤, 수정 후 첫 실행 `processed=0`·새 UUID pending·chunk 0개, 다음 실행 B chunk·completed를 확인했다. [보정 보고서](../database/db-04-preclaim-generation-remediation-test-report.md)
+- DB-04B는 paused row도 상태는 유지하되 UUID와 retry 상태를 새 generation으로 교체한다. resume 뒤 옛 ID claim은 실패하고 새 ID가 pending으로 남는다. [2차 보정 보고서](../database/test2/db-04b-paused-generation-remediation-test-report.md)
 
 ### 해결 · DB-09 · 대량 기존 revision retention
 
@@ -62,7 +63,7 @@ DB-04·DB-06·DB-09·DB-11·DB-12 보정의 현재 기준은 문서 커밋 `b76d
 
 ## 최신 검증 근거와 한계
 
-- 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 이전 DB-04·DB-06·DB-09·DB-11·DB-12 통합 회귀는 33 files/178 tests다. DB-11A 추가 검증은 실제 DB·filesystem 6 files/38 tests, mock 계약 1 file/10 tests, legacy migration 1 file/5 tests가 통과했다. DB-11B는 관련 실제 DB·filesystem 6 files/22 tests와 mock 계약 4 files/30 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
+- 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 2026-09-18 현재 R1/R2 통합 회귀는 33 files/180 tests다. DB-11A 추가 검증은 실제 DB·filesystem 6 files/38 tests, mock 계약 1 file/10 tests, legacy migration 1 file/5 tests가 통과했다. DB-11B는 관련 실제 DB·filesystem 6 files/22 tests와 mock 계약 4 files/30 tests, DB-04B는 관련 실제 DB 4 files/31 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
 - `check:drizzle` main/cache 및 `git diff --check` 통과. typecheck는 기존 `Sidebar.tsx:157` TS6133으로 실패했다. source LOC gate 24건 중 원 HEAD `0faf4fad` 대비 database 누적 변경 파일의 위반은 8건이고 나머지 16건은 기존 위반이다. 이를 모두 기존 debt로 분류하지 않는다.
 - [derived DB benchmark](../../../scripts/benchmark-derived-db.mjs)는 `node:sqlite`·축약 schema에서 dataset당 list/open/enqueue를 각각 1회 측정한다. production autosave·FTS·export 경로와 p95/p99를 실행하지 않는다. 기존 7월 save-latency 산출물은 다른 HEAD 결과다.
 - [fullprod E2E](../../../tests/e2e/writingLoop.fullprod.spec.ts)의 p95는 chapter.update API 왕복이며 키 입력→autosave 또는 Cmd+S 완료 전체가 아니다. queue timeout 후 pending/running=0 assertion이 없고 [Electron helper](../../../tests/e2e/_helpers/electronApp.ts)는 DB URL만 격리하고 환경을 상속한다. userData/settings/sync 격리와 queue 완료 판정을 보완한 뒤 현재 코드의 성능을 측정해야 한다.

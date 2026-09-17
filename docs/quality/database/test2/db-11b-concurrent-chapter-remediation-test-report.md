@@ -215,4 +215,4 @@ SKIP_DB_TEST_SETUP=1 pnpm exec vitest run \
 - [X] 최신 B 재merge가 기존 conflict item을 만들고 두 번째 경쟁은 bounded failure로 끝남을 확인했다.
 - [X] DB-11A 및 관련 sync/export 회귀를 통과했다.
 
-DB-11B의 명시 범위는 완료한다. 전체 database 판정은 DB-04B·DB-06B와 DB-12B가 남아 **Risky**를 유지한다.
+DB-11B의 명시 범위는 완료한다. 이 보고서 작성 당시 DB-04B·DB-06B·DB-12B가 남았으며, 현행 전체 판정은 SSoT와 `implementation-todo.md`를 따른다.

@@ -15,8 +15,9 @@
 - [X] **DB-11B** sync snapshot 이후 저장된 동일 chapter를 stale merge가 덮지 않게 한다.
   - 완료 조건: apply 직전 현재 source가 snapshot과 다르면 stale delta를 적용하지 않고 최신 DB 기준 sync를 다시 실행해 conflict 또는 보존 결과를 만든다.
   - 테스트 보고서: [`db-11b-concurrent-chapter-remediation-test-report.md`](db-11b-concurrent-chapter-remediation-test-report.md)
-- [ ] **DB-04B** pause 중 source 변경의 generation을 보존한다.
+- [X] **DB-04B** pause 중 source 변경의 generation을 보존한다.
   - 완료 조건: `selected A → pause → enqueue B → resume`에서 옛 selector claim이 실패하고 B용 pending generation이 남는다.
+  - 테스트 보고서: [`db-04b-paused-generation-remediation-test-report.md`](db-04b-paused-generation-remediation-test-report.md)
 - [ ] **DB-06B** `clearChapter`의 projection·FTS 삭제를 한 transaction으로 묶는다.
   - 완료 조건: stale rowid 조회와 동시 upsert가 겹쳐도 projection 없는 FTS 고아 행이 남지 않으며 FTS 부재 fallback을 유지한다.
 - [ ] **DB-12B** production runnable query의 순차 latency와 실제 SQL plan을 측정한다.
