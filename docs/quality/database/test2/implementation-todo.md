@@ -21,5 +21,6 @@
 - [X] **DB-06B** `clearChapter`의 projection·FTS 삭제를 한 transaction으로 묶는다.
   - 완료 조건: stale rowid 조회와 동시 upsert가 겹쳐도 projection 없는 FTS 고아 행이 남지 않으며 FTS 부재 fallback을 유지한다.
   - 테스트 보고서: [`db-06b-clear-transaction-remediation-test-report.md`](db-06b-clear-transaction-remediation-test-report.md)
-- [ ] **DB-12B** production runnable query의 순차 latency와 실제 SQL plan을 측정한다.
+- [X] **DB-12B** production runnable query의 순차 latency와 실제 SQL plan을 측정한다.
   - 완료 조건: 독립 warm-up·순차 표본의 p50/p95/p99를 기록하고, production이 실행하는 SQL과 같은 query object 또는 캡처 SQL로 plan을 검사한다.
+  - 테스트 보고서: [`db-12b-production-query-evidence-test-report.md`](db-12b-production-query-evidence-test-report.md)

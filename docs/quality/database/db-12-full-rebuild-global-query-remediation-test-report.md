@@ -2,11 +2,11 @@
 
 ## 판정
 
-- [X] **PASS · 2026-09-13 KST**
+- [X] **PASS · 기능 보정 2026-09-13, production query 근거 보정 2026-09-18 KST**
 - 전체 memory rebuild가 failed-only generation을 실제 실행 가능한 `pending/attempts=0/error=null`로 재활성화한다.
 - 사용자 중지 의미인 paused generation은 ID·상태·attempts·error를 보존한다.
 - global runnable project 조회는 completed와 attempts 5 이상 failed를 물리적으로 포함하지 않는 partial index를 명시적으로 사용한다.
-- 50,000건 completed history와 pending 1건에서 실제 production predicate·group/order/limit query의 plan과 20회 p95 상한을 검증했다.
+- 50,000건 completed history와 pending 1건에서 production과 공유하는 query builder의 plan, 독립 warm-up 뒤 50회 순차 p50/p95/p99를 검증했다. 상세 수치는 [DB-12B 보고서](test2/db-12b-production-query-evidence-test-report.md)를 따른다.
 
 ## 추적성
 
@@ -63,7 +63,7 @@
 - `tests/setup.ts`가 worker별 `drizzle/.tmp/vitest-<id>/db.sqlite`와 cache DB를 준비하고 테스트마다 row를 정리한다.
 - 사용자 DB, 사용자 `.luie`, 실제 Supabase는 사용하지 않았다. Electron 객체는 공통 테스트 mock이다.
 - query test는 recursive CTE로 completed job 50,000건을 한 임시 main DB에 넣고 pending 1건을 추가한 뒤 `ANALYZE`를 실행했다.
-- 측정은 같은 warm 연결에서 실제 `listProjectsWithPendingMemoryJobs(20)`을 20회 호출했다. p95는 정렬된 duration의 95번째 백분위 표본이다.
+- 최신 측정은 같은 warm 연결에서 5회 독립 warm-up 뒤 실제 `listProjectsWithPendingMemoryJobs(20)`을 50회 순차 호출했다. p50/p95/p99는 정렬된 duration 표본에서 계산한다.
 
 ## 테스트 케이스
 
@@ -85,9 +85,9 @@
 | --- | --- |
 | 목적 | representative 단건 query가 아니라 worker가 호출하는 전역 query의 history scan 제거 확인 |
 | 사전 상태 | completed 50,000건, pending 1건, migration/bootstrap 적용, `ANALYZE` 완료 |
-| 입력 | `listProjectsWithPendingMemoryJobs(20)` 20회와 같은 predicate의 `EXPLAIN QUERY PLAN` |
-| 관찰점 | 반환 project, sqlite_master index SQL, plan detail, 20회 p95 |
-| 통과 조건 | 매회 pending project 1개, partial `WHERE` 존재, plan에 global index, p95 < 50ms |
+| 입력 | `listProjectsWithPendingMemoryJobs(20)` 5회 warm-up + 50회 순차 표본과 같은 query builder의 `EXPLAIN QUERY PLAN` |
+| 관찰점 | 반환 project, sqlite_master index SQL, plan detail, p50/p95/p99 |
+| 통과 조건 | 매회 pending project 1개, partial `WHERE` 존재, plan에 global index, p50≤p95≤p99, p95 < 50ms |
 | 보정 전 실제 결과 | **FAIL** — `SCAN MemoryBuildJob USING COVERING INDEX MemoryBuildJob_runnable_idx`와 `USE TEMP B-TREE FOR ORDER BY` |
 | 보정 후 실제 결과 | **PASS** — `SCAN ... MemoryBuildJob_global_runnable_idx`; p95 상한 통과 |
 
@@ -164,7 +164,7 @@ pnpm run check:drizzle:main
 pnpm exec eslint <DB-12 변경 source와 테스트>
 ```
 
-결과: 첫 실행은 테스트의 순차 측정 loop가 `no-await-in-loop` 1건으로 실패했다. 같은 20회 호출을 `Promise.all` 측정으로 바꾼 뒤 **PASS, error 0개**였다.
+과거 실행에서는 순차 측정 loop를 `Promise.all`로 바꿔 lint를 통과시켰으나 latency 근거가 무효해졌다. DB-12B는 promise chain으로 순차 실행을 유지하면서 **PASS, error 0개**를 확인했다.
 
 ```sh
 pnpm run typecheck
@@ -195,7 +195,7 @@ git diff --check
 
 - 진입 기준: failed-only 전체 rebuild와 실제 global query plan 반례가 현재 service/SQLite에서 재현될 것.
 - 종료 기준: failed/paused 상태 전이, 50,000건 query 결과·partial plan·p95 상한, 기존 retry/idle/schema 회귀, migration check, ESLint, build가 통과할 것. 전체 typecheck의 별도 기존 오류는 원인과 파일을 분리 기록할 것.
-- 현재 결과: 명시한 종료 기준을 충족해 DB-12를 `[X]`로 전환한다.
+- 현재 결과: 기능 보정과 DB-12B production query 근거가 모두 종료 기준을 충족해 DB-12를 `[X]`로 전환한다.
 
 ## 검증 한계
 

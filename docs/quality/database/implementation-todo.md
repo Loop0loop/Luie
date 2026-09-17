@@ -2,7 +2,7 @@
 
 기준 문서: [`../performance-audit-2026-09-08/database.md`](../performance-audit-2026-09-08/database.md)
 
-최신 판정: **2026-09-18 성능 근거 보정 진행 중**. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례를 수정했고 DB-12B 성능 근거가 남았다. 2차 순서와 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)에 기록한다.
+최신 판정: **2026-09-18 2차 보정 완료, 실환경 검증 미완료**. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례와 DB-12B production query 근거를 보정했다. 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)에 기록한다.
 
 표시 규칙:
 
@@ -56,10 +56,10 @@
   - 구현: reason 분리, autosave coalescing, 저장 transaction 안의 SQL subquery retention. 삭제 대상 ID를 애플리케이션 bind 목록으로 만들지 않는다.
   - 완료 조건: 기존 revision 33,000건의 첫 저장 성공·최신 100건, 5분 경계 전후, 삭제 실패 시 본문과 revision rollback.
   - 테스트: [`db-09-large-history-remediation-test-report.md`](db-09-large-history-remediation-test-report.md)
-- [ ] **DB-12** 실행 가능 job 조건을 SQL에 넣고 전체 rebuild 재활성화, partial index, idle wake-up을 적용한다. 독립 query latency와 production SQL plan 근거를 보완한다.
+- [X] **DB-12** 실행 가능 job 조건을 SQL에 넣고 전체 rebuild 재활성화, partial index, idle wake-up을 적용하며 production query latency와 SQL plan을 검증한다.
   - 구현: failed-only 전체 rebuild는 generation ID 교체와 pending/0/null reset, paused 보존. global query는 completed·exhausted failed를 제외한 partial index를 명시적으로 사용한다.
-  - 완료 조건: 상태 전이 matrix, 50,000 terminal + 1 pending 실제 query plan, 20회 p95 < 50ms, migration/schema, idle wake-up 통과.
-  - 테스트: [`db-12-full-rebuild-global-query-remediation-test-report.md`](db-12-full-rebuild-global-query-remediation-test-report.md)
+  - 완료 조건: 상태 전이 matrix, 50,000 terminal + 1 pending production query plan, 독립 warm-up 뒤 50회 순차 p50/p95/p99와 p95 < 50ms, migration/schema, idle wake-up 통과.
+  - 테스트: [`db-12-full-rebuild-global-query-remediation-test-report.md`](db-12-full-rebuild-global-query-remediation-test-report.md), [`test2/db-12b-production-query-evidence-test-report.md`](test2/db-12b-production-query-evidence-test-report.md)
 - [X] **DB-13** 키워드 출현 변경을 집합 단위 transaction으로 처리한다.
   - 테스트: [`db-13-keyword-appearance-transaction-test-report.md`](db-13-keyword-appearance-transaction-test-report.md)
 - [X] **DB-14** 기존 low-end `vectorSearchMode`를 실제 search executor에 연결한다.

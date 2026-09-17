@@ -20,6 +20,18 @@ const SEARCH_RETRY_BASE_BACKOFF_MS = 2_000;
 const STALE_RUNNING_THRESHOLD_MS = 30_000;
 const LONG_PENDING_THRESHOLD_MS = 60_000;
 
+export const buildPendingMemoryProjectsQuery = (
+  limit: number,
+  nowMs = Date.now(),
+) => sql`
+  SELECT "projectId"
+  FROM "MemoryBuildJob" INDEXED BY "MemoryBuildJob_global_runnable_idx"
+  WHERE ${retryableMemoryBuildJobCondition(nowMs)}
+  GROUP BY "projectId"
+  ORDER BY max("updatedAt") DESC
+  LIMIT ${limit};
+`;
+
 class DbMaintenanceService {
   async purgeOrphanDerivedRows(options?: { dryRun?: boolean }): Promise<{
     dryRun: boolean;
@@ -444,14 +456,9 @@ class DbMaintenanceService {
 
   async listProjectsWithPendingMemoryJobs(limit = 20): Promise<string[]> {
     const client = db.getClient();
-    const rows = await client.all<{ projectId: string }>(sql`
-      SELECT "projectId"
-      FROM "MemoryBuildJob" INDEXED BY "MemoryBuildJob_global_runnable_idx"
-      WHERE ${retryableMemoryBuildJobCondition()}
-      GROUP BY "projectId"
-      ORDER BY max("updatedAt") DESC
-      LIMIT ${limit};
-    `);
+    const rows = await client.all<{ projectId: string }>(
+      buildPendingMemoryProjectsQuery(limit),
+    );
     return rows.map((row) => row.projectId);
   }
 

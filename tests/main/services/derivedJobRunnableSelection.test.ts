@@ -7,16 +7,38 @@ import {
   memoryBuildJob,
   searchDirtyQueue,
 } from "../../../src/main/database/schema/index.js";
-import { dbMaintenanceService } from "../../../src/main/services/features/dbMaintenance/index.js";
+import {
+  buildPendingMemoryProjectsQuery,
+  dbMaintenanceService,
+} from "../../../src/main/services/features/dbMaintenance/dbMaintenanceService.js";
 import { ChapterService } from "../../../src/main/services/features/manuscript/chapterService.js";
 import {
   MEMORY_JOB_TYPES,
   MEMORY_TARGET_TYPES,
 } from "../../../src/main/services/features/memory/memoryJobConstants.js";
 import { memoryProjectionService } from "../../../src/main/services/features/memory/memoryProjectionService.js";
-import { retryableMemoryBuildJobCondition } from "../../../src/main/services/features/memory/projection/jobPolicy.js";
 import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
+
+const measureSequentially = async (
+  count: number,
+  task: () => Promise<void>,
+): Promise<number[]> => {
+  const durations: number[] = [];
+  await Array.from({ length: count }).reduce<Promise<void>>(
+    (previous) =>
+      previous.then(async () => {
+        const startedAt = performance.now();
+        await task();
+        durations.push(performance.now() - startedAt);
+      }),
+    Promise.resolve(),
+  );
+  return durations;
+};
+
+const percentile = (sorted: number[], value: number): number =>
+  sorted[Math.ceil(sorted.length * value) - 1] ?? Infinity;
 
 describe("derived job runnable SQL selection", () => {
   const projects = new ProjectService();
@@ -43,20 +65,23 @@ describe("derived job runnable SQL selection", () => {
     const projectId = String(project.id);
     const chapterId = String(chapter.id);
     const oldIso = "2020-01-01T00:00:00.000Z";
-    await db.getClient().insert(searchDirtyQueue).values(
-      Array.from({ length: 40 }, () => ({
-        id: crypto.randomUUID(),
-        projectId,
-        sourceType: MEMORY_TARGET_TYPES.CHAPTER,
-        sourceId: crypto.randomUUID(),
-        reason: "exhausted fixture",
-        status: "failed",
-        attempts: 5,
-        error: "TERMINAL",
-        createdAt: oldIso,
-        updatedAt: oldIso,
-      })),
-    );
+    await db
+      .getClient()
+      .insert(searchDirtyQueue)
+      .values(
+        Array.from({ length: 40 }, () => ({
+          id: crypto.randomUUID(),
+          projectId,
+          sourceType: MEMORY_TARGET_TYPES.CHAPTER,
+          sourceId: crypto.randomUUID(),
+          reason: "exhausted fixture",
+          status: "failed",
+          attempts: 5,
+          error: "TERMINAL",
+          createdAt: oldIso,
+          updatedAt: oldIso,
+        })),
+      );
 
     const result = await dbMaintenanceService.processPendingSearchJobs({
       limit: 1,
@@ -88,21 +113,24 @@ describe("derived job runnable SQL selection", () => {
     const projectId = String(project.id);
     const chapterId = String(chapter.id);
     const oldIso = "2020-01-01T00:00:00.000Z";
-    await db.getClient().insert(memoryBuildJob).values(
-      Array.from({ length: 40 }, () => ({
-        id: crypto.randomUUID(),
-        projectId,
-        targetType: MEMORY_TARGET_TYPES.CHAPTER,
-        targetId: crypto.randomUUID(),
-        jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
-        status: "failed",
-        priority: 1,
-        attempts: 5,
-        error: "TERMINAL",
-        createdAt: oldIso,
-        updatedAt: oldIso,
-      })),
-    );
+    await db
+      .getClient()
+      .insert(memoryBuildJob)
+      .values(
+        Array.from({ length: 40 }, () => ({
+          id: crypto.randomUUID(),
+          projectId,
+          targetType: MEMORY_TARGET_TYPES.CHAPTER,
+          targetId: crypto.randomUUID(),
+          jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+          status: "failed",
+          priority: 1,
+          attempts: 5,
+          error: "TERMINAL",
+          createdAt: oldIso,
+          updatedAt: oldIso,
+        })),
+      );
 
     const processed = await memoryProjectionService.processPendingChunkJobs({
       projectId,
@@ -205,27 +233,28 @@ describe("derived job runnable SQL selection", () => {
     });
     await client.run(sql`ANALYZE;`);
 
-    const durations = await Promise.all(
-      Array.from({ length: 20 }, async () => {
-        const startedAt = performance.now();
-        expect(
-          await dbMaintenanceService.listProjectsWithPendingMemoryJobs(20),
-        ).toEqual([projectId]);
-        return performance.now() - startedAt;
-      }),
+    const query = buildPendingMemoryProjectsQuery(
+      20,
+      Date.parse("2026-09-13T00:01:00.000Z"),
     );
+    await measureSequentially(5, async () => {
+      expect(
+        await dbMaintenanceService.listProjectsWithPendingMemoryJobs(20),
+      ).toEqual([projectId]);
+    });
+    const durations = await measureSequentially(50, async () => {
+      expect(
+        await dbMaintenanceService.listProjectsWithPendingMemoryJobs(20),
+      ).toEqual([projectId]);
+    });
     durations.sort((a, b) => a - b);
-    const p95 = durations[Math.ceil(durations.length * 0.95) - 1] ?? Infinity;
+    const p50 = percentile(durations, 0.5);
+    const p95 = percentile(durations, 0.95);
+    const p99 = percentile(durations, 0.99);
 
-    const plan = await client.all<{ detail: string }>(sql`
-      EXPLAIN QUERY PLAN
-      SELECT "projectId"
-      FROM "MemoryBuildJob" INDEXED BY "MemoryBuildJob_global_runnable_idx"
-      WHERE ${retryableMemoryBuildJobCondition()}
-      GROUP BY "projectId"
-      ORDER BY max("updatedAt") DESC
-      LIMIT 20;
-    `);
+    const plan = await client.all<{ detail: string }>(
+      sql`EXPLAIN QUERY PLAN ${query}`,
+    );
     const indexRows = await client.all<{ sql: string }>(sql`
       SELECT "sql" FROM sqlite_master
       WHERE "type" = 'index' AND "name" = 'MemoryBuildJob_global_runnable_idx';
@@ -235,6 +264,8 @@ describe("derived job runnable SQL selection", () => {
     expect(plan.map((row) => row.detail).join(" ")).toContain(
       "MemoryBuildJob_global_runnable_idx",
     );
+    expect(p50).toBeLessThanOrEqual(p95);
+    expect(p95).toBeLessThanOrEqual(p99);
     expect(p95).toBeLessThan(50);
   });
 });

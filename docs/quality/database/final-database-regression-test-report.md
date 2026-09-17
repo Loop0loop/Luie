@@ -1,6 +1,6 @@
 # Database TODO 최종 회귀 테스트 보고서
 
-현재 판정: **Risky — 성능 근거 보정 진행 중**. 2026-09-18 현재 R1/R2 통합 회귀는 180건이 통과했다. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례를 수정했으며 DB-12B가 남았다. 항목의 현행 상태는 [기준 SSoT](../performance-audit-2026-09-08/database.md)와 [`test2/implementation-todo.md`](test2/implementation-todo.md)를 따른다.
+현재 판정: **Risky — 2차 보정 완료, 실환경 검증 미완료**. 2026-09-18 현재 R1/R2 통합 회귀 182건과 DB-04B·DB-06B·DB-12B 후속 회귀가 통과했다. source LOC gate와 실제 Electron·사용자 규모 성능/crash 검증 전에는 release 안정화 완료로 올리지 않는다.
 
 ## 문서 정보
 
@@ -31,7 +31,7 @@
 
 | 묶음 | 실행 상태                                                                                      | 결과                    |
 | ---- | ---------------------------------------------------------------------------------------------- | ----------------------- |
-| R1   | 실제 main/cache DB, FTS/vector, transaction rollback, 300장/1,000 appearance, `.luie`, SIGKILL | 19 files, 77 tests PASS |
+| R1   | 실제 main/cache DB, FTS/vector, transaction rollback, 300장/1,000 appearance, `.luie`, SIGKILL | 19 files, 79 tests PASS |
 | R2   | DB setup 생략, mock IPC/service/HTTP, autosave 경쟁, export queue, sync pagination/delta        | 14 files, 103 tests PASS |
 | R3   | main/cache Drizzle migration journal·schema                                                    | PASS                    |
 | R4   | 1K/3K chapter derived DB benchmark threshold                                                   | PASS                    |
@@ -39,7 +39,7 @@
 | R6   | 변경 source와 신규 테스트 ESLint, whitespace diff                                              | PASS                    |
 | R7   | TypeScript 전체                                                                                | 기존 renderer 오류 1건  |
 
-총 회귀 결과는 **33 files, 180 tests passed**다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
+총 회귀 결과는 **33 files, 182 tests passed**다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
 
 ## 기존 실행 기록
 
@@ -70,7 +70,7 @@ pnpm exec vitest run \
 
 상태: `SKIP_DB_TEST_SETUP`을 사용하지 않았다. worker별 임시 main/cache SQLite를 초기화하고 FTS5/sqlite-vec, transaction failure trigger, 300장 FTS, 1,000 appearance bulk, revision retention, `.luie` entry transaction, child `SIGKILL` 후 startup recovery를 실행했다. sync world/memo delta에는 미변경 sibling UPDATE/DELETE를 `RAISE(ABORT)` 하는 TEMP trigger 3개를 설치했다.
 
-결과: **19 files passed, 77 tests passed**.
+2026-09-18 재실행 결과: **19 files passed, 79 tests passed**. DB-06B clear/upsert·FTS 부재 회귀 2건이 추가됐다.
 
 초기 분류 실행에서 이 묶음 중 `chapterService`, `chapterDerivedJobs`, `chapterKeywordDispatchAfterCommit`을 비DB 묶음에 잘못 넣어 DB 초기화 전 8건이 실패했다. 실제 DB setup으로 옮긴 뒤 `chapterDerivedJobs`의 paused 보존/failed 재활성화 모순 2건을 발견했고 공통 enqueue helper를 수정했다. 최종 동일 실제 DB 범위는 모두 통과했다.
 
@@ -168,9 +168,9 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 미커밋 변경분이다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존하며, 이후 작업별 커밋은 검토 소스를 식별하기 위한 기록이다. 개별 과거 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
 
-- R1의 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **19 files, 77 tests PASS**. DB-06 동시 FTS·mapping 실패 rollback, DB-09 33,000건 retention·5분 경계·DELETE 실패 rollback, DB-11 stale package/revision, DB-12 failed/paused 전체 rebuild와 50,000건 global query를 포함한다.
+- R1의 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **19 files, 79 tests PASS**. DB-06 upsert/clear 경쟁·mapping 실패 rollback·FTS 부재 fallback, DB-09 33,000건 retention·5분 경계·DELETE 실패 rollback, DB-11 stale package/revision, DB-12 failed/paused 전체 rebuild와 50,000건 global query를 포함한다.
 - R2의 동일 명령을 `SKIP_DB_TEST_SETUP=1`인 mock 계약 환경에서 재실행: **14 files, 103 tests PASS**. DB-11이 재사용하는 export queue와 world tombstone read/revive 회귀를 포함한다.
-- 합계 **33 files, 180 tests PASS**. DB-04 claim 전 경쟁, DB-06 동시 FTS, DB-09 대량 이력, DB-11 stale package/world tombstone, DB-12 전체 rebuild/global query를 영구 회귀에 포함했다.
+- 합계 **33 files, 182 tests PASS**. DB-04 claim 전 경쟁, DB-06 upsert/clear 동시성, DB-09 대량 이력, DB-11 stale package/world tombstone, DB-12 전체 rebuild/global query를 영구 회귀에 포함했다.
 - `pnpm run check:drizzle` main/cache와 `git diff --check` 재실행: PASS. packaged Electron에서의 기존 DB 업그레이드 실행을 뜻하지 않는다.
 - `pnpm run build` 재실행: PASS — main 938, preload 31, renderer 2,952 modules transformed.
 - 변경된 database source·회귀 테스트 ESLint: PASS. `check:core-complexity`는 renderer 기존 advisory 2건을 출력하고 PASS했다.
@@ -220,7 +220,7 @@ LOC는 `scripts/check-source-loc.mjs`와 같은 줄 계산법을 사용했다. d
 
 ## 최신 최종 판정
 
-- 기존 DB-01~14 보고 범위와 DB-11A·DB-11B·DB-04B·DB-06B 후속 정확성 반례는 완료했다. DB-12B 측정 보정이 남았다.
-- 현재 R1/R2 회귀 180건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests는 검증한 입력·상태에서 통과했다. 실제 SQLite·임시 파일 사용은 유효한 통합 증거지만, mock 경계·제한된 crash 위치·미측정 실환경 성능까지 보장하지 않는다.
+- 기존 DB-01~14 보고 범위와 DB-11A·DB-11B·DB-04B·DB-06B 후속 정확성 반례, DB-12B production query 근거 보정을 완료했다.
+- 현재 R1/R2 회귀 182건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests, DB-12 관련 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 실제 SQLite·임시 파일 사용은 유효한 통합 증거지만, 제한된 crash 위치와 미측정 실환경 성능까지 보장하지 않는다.
 - TypeScript 기존 renderer 오류 1건, source LOC database 누적 변경 파일 8건·기존 16건, 기존 persist/main-service boundary gate 실패를 각각 남긴다. 이전의 “남은 실패는 기존 debt뿐”이라는 판정을 철회한다.
 - DB-10D는 명시한 Node writer 전후·DB 재연결 복구 범위만 완료이며, DB-10E는 조건부 확대 보류다. 후속 수정·반례 회귀와 현재 revision의 실제 Electron/사용자 규모 검증 후 안정화 여부를 다시 판정한다.
