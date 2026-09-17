@@ -166,7 +166,7 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 ## 2026-09-13 최신 QA 검증 결과
 
-검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 미커밋 변경분이다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존하며, 이후 작업별 커밋은 검토 소스를 식별하기 위한 기록이다. 개별 과거 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
+검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 변경분이다. 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존한다. 그보다 앞선 개별 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
 
 - R1의 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **19 files, 79 tests PASS**. DB-06 upsert/clear 경쟁·mapping 실패 rollback·FTS 부재 fallback, DB-09 33,000건 retention·5분 경계·DELETE 실패 rollback, DB-11 stale package/revision, DB-12 failed/paused 전체 rebuild와 50,000건 global query를 포함한다.
 - R2의 동일 명령을 `SKIP_DB_TEST_SETUP=1`인 mock 계약 환경에서 재실행: **14 files, 103 tests PASS**. DB-11이 재사용하는 export queue와 world tombstone read/revive 회귀를 포함한다.

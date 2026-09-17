@@ -4,7 +4,7 @@
 
 이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다.
 
-DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`에 고정했다. DB-12B는 그 커밋 이후 작업 트리에서 검증했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
+DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
 
 ## 현재 항목별 상태
 

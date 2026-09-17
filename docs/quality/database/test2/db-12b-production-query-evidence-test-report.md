@@ -4,6 +4,7 @@
 
 - [X] **PASS — production query 공유·순차 p50/p95/p99 측정 완료 (2026-09-18 KST)**
 - 기준 parent commit: `9a23054e`
+- 구현·검증 commit: `2d3219bf`
 
 ## 원인과 수정
 
