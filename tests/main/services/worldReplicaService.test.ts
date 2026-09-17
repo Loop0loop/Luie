@@ -140,6 +140,47 @@ describe("worldReplicaService", () => {
     });
   });
 
+  it("returns a tombstone without exposing its stale payload", async () => {
+    mocked.worldDocumentFindUnique.mockReturnValue({
+      payload: JSON.stringify({ synopsis: "deleted text" }),
+      updatedAt: new Date("2026-03-12T01:00:00.000Z"),
+      deletedAt: new Date("2026-03-12T02:00:00.000Z"),
+    });
+
+    await expect(
+      worldReplicaService.getDocument({
+        projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+        docType: "synopsis",
+      }),
+    ).resolves.toEqual({
+      found: false,
+      payload: null,
+      updatedAt: "2026-03-12T01:00:00.000Z",
+      deletedAt: "2026-03-12T02:00:00.000Z",
+    });
+  });
+
+  it("clears the tombstone when a world document is saved again", async () => {
+    mocked.worldDocumentFindUnique.mockReturnValue({
+      payload: JSON.stringify({ synopsis: "deleted text" }),
+      updatedAt: new Date("2026-03-12T01:00:00.000Z"),
+      deletedAt: new Date("2026-03-12T02:00:00.000Z"),
+    });
+
+    await worldReplicaService.setDocument({
+      projectId: "7a8dba7d-52c0-4d11-a86a-2ed82a6ab9b1",
+      docType: "synopsis",
+      payload: { synopsis: "restored text" },
+    });
+
+    expect(mocked.worldDocumentWrite).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: JSON.stringify({ synopsis: "restored text" }),
+        deletedAt: null,
+      }),
+    );
+  });
+
   it("reconstructs scrap memos from replica rows when document payload is missing", async () => {
     mocked.worldDocumentFindUnique.mockReturnValue(null);
     mocked.scrapMemoFindMany.mockResolvedValue([

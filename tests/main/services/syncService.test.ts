@@ -295,6 +295,7 @@ vi.mock(
             { cause: error },
           );
         }
+        return { status: "applied" as const };
       },
     };
   },

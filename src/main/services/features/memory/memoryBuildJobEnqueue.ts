@@ -43,9 +43,12 @@ export function upsertMemoryBuildJob(input: {
     return;
   }
   if (current && current.status !== "running") {
+    // The row ID is the claim generation token; rotate it to invalidate stale selectors.
+    const nextGenerationId = crypto.randomUUID();
     input.client.run(
       sql`UPDATE "MemoryBuildJob"
-          SET "status" = 'pending',
+          SET "id" = ${nextGenerationId},
+              "status" = 'pending',
               "priority" = ${input.priority},
               "attempts" = 0,
               "error" = NULL,

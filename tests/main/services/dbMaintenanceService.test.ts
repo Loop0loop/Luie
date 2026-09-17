@@ -226,6 +226,89 @@ describe("dbMaintenanceService", () => {
     }
   });
 
+  it("reactivates failed jobs and preserves paused jobs during a full memory rebuild", async () => {
+    const project = await localProjectService.createProject({
+      title: "DB Maintenance Full Retry",
+      projectPath: "/tmp/db-maint-full-retry.luie",
+    });
+    const chapter = await chapterService.createChapter({
+      projectId: String(project.id),
+      title: "failed rebuild target",
+    });
+    const projectId = String(project.id);
+    const chapterId = String(chapter.id);
+    await db
+      .getClient()
+      .update(memoryBuildJob)
+      .set({
+        status: "failed",
+        attempts: 5,
+        error: "TERMINAL_CHUNK",
+      })
+      .where(
+        and(
+          eq(memoryBuildJob.projectId, projectId),
+          eq(memoryBuildJob.targetId, chapterId),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_CHUNKS),
+        ),
+      );
+    await db
+      .getClient()
+      .update(memoryBuildJob)
+      .set({
+        status: "paused",
+        attempts: 3,
+        error: "USER_PAUSED",
+      })
+      .where(
+        and(
+          eq(memoryBuildJob.projectId, projectId),
+          eq(memoryBuildJob.targetId, chapterId),
+          eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_EMBEDDING),
+        ),
+      );
+    const before = await db
+      .getClient()
+      .select()
+      .from(memoryBuildJob)
+      .where(eq(memoryBuildJob.targetId, chapterId));
+    const failedBefore = before.find(
+      (job) => job.jobType === MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+    );
+    const pausedBefore = before.find(
+      (job) => job.jobType === MEMORY_JOB_TYPES.REBUILD_EMBEDDING,
+    );
+
+    const result = await dbMaintenanceService.rebuildMemoryChunks({
+      projectId,
+    });
+
+    const after = await db
+      .getClient()
+      .select()
+      .from(memoryBuildJob)
+      .where(eq(memoryBuildJob.targetId, chapterId));
+    const reactivated = after.find(
+      (job) => job.jobType === MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+    );
+    const pausedAfter = after.find(
+      (job) => job.jobType === MEMORY_JOB_TYPES.REBUILD_EMBEDDING,
+    );
+    expect(result).toEqual({ queued: 1, processed: 0 });
+    expect(reactivated).toMatchObject({
+      status: "pending",
+      attempts: 0,
+      error: null,
+    });
+    expect(reactivated?.id).not.toBe(failedBefore?.id);
+    expect(pausedAfter).toMatchObject({
+      id: pausedBefore?.id,
+      status: "paused",
+      attempts: 3,
+      error: "USER_PAUSED",
+    });
+  });
+
   it("recovers stale running memory jobs with an explicit recovery marker", async () => {
     const project = await localProjectService.createProject({
       title: "DB Maintenance Memory Recovery",

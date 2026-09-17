@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import {
+  CACHE_PACKAGED_SCHEMA_FTS_BOOTSTRAP_SQL,
   cacheDb,
   chapterSearchDocument,
 } from "../../../src/main/database/cache/index.js";
@@ -74,6 +75,150 @@ const readMappedFtsCount = (projectId: string): number =>
   });
 
 describe("chapter search cache rebuild", () => {
+  it("keeps the projection fallback when FTS5 is unavailable", async () => {
+    const target = await insertProjectWithChapters(1);
+    const chapterId = target.chapterIds[0] as string;
+    let searchResults: Awaited<
+      ReturnType<typeof chapterSearchCacheService.searchProjectChapters>
+    >;
+    cacheDb.runSqliteTransaction((sqlite) => {
+      sqlite.exec(`DROP TABLE "ChapterSearchDocumentFts"`);
+    });
+    try {
+      await chapterSearchCacheService.upsertChapter({
+        chapterId,
+        projectId: target.projectId,
+        title: "Projection fallback",
+        content: "fallback body",
+        wordCount: 2,
+        order: 0,
+      });
+      searchResults = await chapterSearchCacheService.searchProjectChapters(
+        target.projectId,
+        "fallback body",
+      );
+    } finally {
+      cacheDb.runSqliteTransaction((sqlite) => {
+        sqlite.exec(CACHE_PACKAGED_SCHEMA_FTS_BOOTSTRAP_SQL);
+      });
+    }
+
+    const [projection] = await cacheDb
+      .getClient()
+      .select()
+      .from(chapterSearchDocument)
+      .where(eq(chapterSearchDocument.chapterId, chapterId));
+    expect(projection?.searchText).toContain("fallback body");
+    expect(searchResults.map((row) => row.chapterId)).toEqual([chapterId]);
+  });
+
+  it("keeps one mapped FTS row when two upserts for the same chapter start together", async () => {
+    const target = await insertProjectWithChapters(1);
+    const unrelated = await insertProjectWithChapters(1);
+    await chapterSearchCacheService.rebuildProject(target.projectId);
+    await chapterSearchCacheService.rebuildProject(unrelated.projectId);
+    const chapterId = target.chapterIds[0] as string;
+
+    await Promise.all([
+      chapterSearchCacheService.upsertChapter({
+        chapterId,
+        projectId: target.projectId,
+        title: "Concurrent alpha",
+        content: "alpha body",
+        wordCount: 2,
+        order: 0,
+      }),
+      chapterSearchCacheService.upsertChapter({
+        chapterId,
+        projectId: target.projectId,
+        title: "Concurrent beta",
+        content: "beta body",
+        wordCount: 2,
+        order: 0,
+      }),
+    ]);
+
+    const state = cacheDb.runSqliteTransaction((sqlite) => {
+      const projection = sqlite
+        .prepare(
+          `SELECT "ftsRowId", "searchText" FROM "ChapterSearchDocument" WHERE "chapterId" = ?`,
+        )
+        .get(chapterId) as { ftsRowId: number; searchText: string };
+      const ftsRows = sqlite
+        .prepare(
+          `SELECT rowid, "searchText" FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ? ORDER BY rowid`,
+        )
+        .all(chapterId) as Array<{ rowid: number; searchText: string }>;
+      return { projection, ftsRows };
+    });
+
+    expect(state.ftsRows).toHaveLength(1);
+    expect(state.ftsRows[0]).toEqual({
+      rowid: state.projection.ftsRowId,
+      searchText: state.projection.searchText,
+    });
+    expect(state.projection.searchText).toMatch(/Concurrent (alpha|beta)/);
+    expect(readMappedFtsCount(target.projectId)).toBe(1);
+    expect(readMappedFtsCount(unrelated.projectId)).toBe(1);
+  });
+
+  it("rolls back a single projection and FTS replacement when mapping fails", async () => {
+    const target = await insertProjectWithChapters(1);
+    await chapterSearchCacheService.rebuildProject(target.projectId);
+    const chapterId = target.chapterIds[0] as string;
+    const before = cacheDb.runSqliteTransaction((sqlite) => ({
+      projection: sqlite
+        .prepare(
+          `SELECT * FROM "ChapterSearchDocument" WHERE "chapterId" = ?`,
+        )
+        .get(chapterId),
+      fts: sqlite
+        .prepare(
+          `SELECT rowid, * FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?`,
+        )
+        .all(chapterId),
+    }));
+
+    cacheDb.runSqliteTransaction((sqlite) => {
+      sqlite.exec(`CREATE TEMP TRIGGER "fail_single_fts_mapping"
+        BEFORE UPDATE OF "ftsRowId" ON "ChapterSearchDocument"
+        WHEN NEW."chapterId" = '${chapterId}'
+        BEGIN
+          SELECT RAISE(ABORT, 'forced single mapping failure');
+        END;`);
+    });
+    try {
+      await expect(
+        chapterSearchCacheService.upsertChapter({
+          chapterId,
+          projectId: target.projectId,
+          title: "Rejected update",
+          content: "must roll back",
+          wordCount: 3,
+          order: 0,
+        }),
+      ).rejects.toThrow("forced single mapping failure");
+    } finally {
+      cacheDb.runSqliteTransaction((sqlite) => {
+        sqlite.exec(`DROP TRIGGER IF EXISTS "fail_single_fts_mapping"`);
+      });
+    }
+
+    const after = cacheDb.runSqliteTransaction((sqlite) => ({
+      projection: sqlite
+        .prepare(
+          `SELECT * FROM "ChapterSearchDocument" WHERE "chapterId" = ?`,
+        )
+        .get(chapterId),
+      fts: sqlite
+        .prepare(
+          `SELECT rowid, * FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?`,
+        )
+        .all(chapterId),
+    }));
+    expect(after).toEqual(before);
+  });
+
   it("rebuilds 300 chapters with mapped FTS rowids and preserves unrelated rows", async () => {
     const unrelated = await insertProjectWithChapters(1);
     const target = await insertProjectWithChapters(300);

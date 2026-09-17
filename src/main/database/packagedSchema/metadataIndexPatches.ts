@@ -11,6 +11,11 @@ export const PACKAGED_SCHEMA_INDEX_PATCHES: ReadonlyArray<IndexPatch> = [
     sql: 'CREATE INDEX IF NOT EXISTS "MemoryBuildJob_runnable_idx" ON "MemoryBuildJob"("projectId", "jobType", "status", "attempts", "priority", "createdAt", "updatedAt");',
   },
   {
+    name: "MemoryBuildJob_global_runnable_idx",
+    table: "MemoryBuildJob",
+    sql: 'CREATE INDEX IF NOT EXISTS "MemoryBuildJob_global_runnable_idx" ON "MemoryBuildJob"("status", "attempts", "updatedAt", "projectId") WHERE "status" = \'pending\' OR ("status" = \'failed\' AND "attempts" < 5);',
+  },
+  {
     name: "Character_projectId_createdAt_idx",
     table: "Character",
     sql: 'CREATE INDEX IF NOT EXISTS "Character_projectId_createdAt_idx" ON "Character"("projectId", "createdAt");',

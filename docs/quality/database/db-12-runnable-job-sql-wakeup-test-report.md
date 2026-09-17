@@ -1,8 +1,10 @@
 # DB-12 실행 가능 job SQL·idle wake-up 테스트 보고서
 
-## 최신 QA 재검토 · 2026-09-13
+## 최신 보정 판정 · 2026-09-13
 
-현재 판정: **REOPEN · P2 · 전체 rebuild의 failed 재활성화 누락 및 전역 history scan 잔존.** SQL LIMIT 이전 terminal 제외, 단건 enqueue reset, idle wake-up의 기존 PASS는 유효하다. 이번 재검토에서는 제품 코드를 수정하지 않았다.
+현재 판정: **PASS · 전체 rebuild 재활성화와 global history scan 보정 완료.** failed-only generation reset, paused 보존, 50,000건 terminal history의 실제 global query plan과 p95 상한을 영구 회귀로 추가했다. 상세 RED/GREEN과 통과 조건은 [보정 보고서](db-12-full-rebuild-global-query-remediation-test-report.md)를 기준으로 한다.
+
+### 보정 전 QA 재현 기록
 
 - [dbMaintenanceMemory.ts](../../../src/main/services/features/dbMaintenance/dbMaintenanceMemory.ts)의 전체 rebuild bulk 분기(182~189행)는 matching failed만 있으면 작업을 추가하거나 reset하지 않는다. 실제 함수에 attempts=5 failed chunk를 준비하고 전체 rebuild를 호출한 결과 응답은 `queued=1`이었지만 job은 `failed/5` 그대로였다. 단건 [memoryBuildJobEnqueue.ts](../../../src/main/services/features/memory/memoryBuildJobEnqueue.ts)의 pending/0/null 재활성화 계약이 전체 경로에는 적용되지 않았다.
 - [dbMaintenanceService.ts](../../../src/main/services/features/dbMaintenance/dbMaintenanceService.ts)의 `listProjectsWithPendingMemoryJobs`와 동일한 실제 Drizzle predicate/group/order 쿼리는 새 migration 적용 후 `SCAN MemoryBuildJob USING COVERING INDEX MemoryBuildJob_runnable_idx`, `USE TEMP B-TREE FOR ORDER BY`였다. 현재 index가 전역 완료 이력 scan을 제거했다는 근거는 없다.
@@ -177,6 +179,6 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 ## 판정과 잔여 범위
 
-- 기존 테스트에서는 SQL runnable 조건, 후보 window starvation 제거, 단건 enqueue generation reset, 제한된 representative query의 index 사용, idle wake-up이 PASS였다. 전체 rebuild failed 복구와 전역 history scan이 남아 현재 DB-12는 REOPEN이다.
+- SQL runnable 조건, 후보 starvation 제거, 단건·전체 rebuild generation reset, 실제 global partial-index query, idle wake-up이 모두 통과해 현재 DB-12는 완료다.
 - completed/terminal history 삭제 정책은 감사 범위에서 별도 보관 정책으로 분리되어 있으며 이번 항목에서는 row를 삭제하지 않았다.
 - 운영 장시간 배터리 사용량과 cold-disk latency는 측정하지 않았다. 검증은 tick 횟수·실제 SQLite 선택 결과·query plan을 대상으로 했다.

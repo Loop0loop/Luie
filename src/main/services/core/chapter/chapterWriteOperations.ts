@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import { chapter, chapterRevision } from "../../../infra/database/index.js";
 import type { MainDrizzleClient } from "../../../infra/database/index.js";
@@ -39,7 +39,7 @@ const AUTOSAVE_REVISION_COALESCE_MS = 5 * 60 * 1000;
 const MAX_CHAPTER_REVISIONS = 100;
 type ChapterRevisionStore = Pick<
   MainDrizzleClient,
-  "select" | "insert" | "update" | "delete" | "all"
+  "select" | "insert" | "update" | "run"
 >;
 
 const persistChapterRevision = (input: {
@@ -88,23 +88,15 @@ const persistChapterRevision = (input: {
       .run();
   }
 
-  const expired = input.tx.all<{ id: string }>(
-    sql`SELECT "id" FROM "ChapterRevision"
-        WHERE "chapterId" = ${input.chapterId}
-        ORDER BY "createdAt" DESC, "id" DESC
-        LIMIT -1 OFFSET ${MAX_CHAPTER_REVISIONS};`,
-  );
-  if (expired.length > 0) {
-    input.tx
-      .delete(chapterRevision)
-      .where(
-        inArray(
-          chapterRevision.id,
-          expired.map((row) => row.id),
-        ),
-      )
-      .run();
-  }
+  input.tx.run(sql`
+    DELETE FROM "ChapterRevision"
+    WHERE "id" IN (
+      SELECT "id" FROM "ChapterRevision"
+      WHERE "chapterId" = ${input.chapterId}
+      ORDER BY "createdAt" DESC, "id" DESC
+      LIMIT -1 OFFSET ${MAX_CHAPTER_REVISIONS}
+    );
+  `);
 };
 
 export const createChapterRecord = async (input: {

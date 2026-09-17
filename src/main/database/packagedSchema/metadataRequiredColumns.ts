@@ -351,7 +351,7 @@ export const PACKAGED_SCHEMA_REQUIRED_COLUMNS: Readonly<Record<string, ReadonlyA
   Character: ["id", "projectId", "firstAppearance", "attributes", "deletedAt"],
   Event: ["id", "projectId", "name", "deletedAt"],
   Faction: ["id", "projectId", "name", "deletedAt"],
-  WorldDocument: ["id", "projectId", "docType", "payload"],
+  WorldDocument: ["id", "projectId", "docType", "payload", "deletedAt"],
   ScrapMemo: ["id", "projectId", "title", "content", "tags", "sortOrder", "updatedAt", "deletedAt"],
   Term: ["id", "projectId", "term", "order", "deletedAt"],
   Snapshot: ["id", "projectId", "content", "contentLength", "type"],

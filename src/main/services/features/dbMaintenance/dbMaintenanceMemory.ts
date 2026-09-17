@@ -20,6 +20,7 @@ import {
   MEMORY_TARGET_TYPES,
 } from "../memory/memoryJobConstants.js";
 import { upsertMemoryBuildJob } from "../memory/memoryBuildJobEnqueue.js";
+import { requestDerivedJobWakeup } from "../derivedJobs/derivedJobWakeup.js";
 
 const MEMORY_REBUILD_JOB_TYPES = [
   {
@@ -189,6 +190,26 @@ export async function rebuildMemoryChunks(input: {
       return statuses.has("running");
     }).map((job) => ({ ...target, ...job })),
   );
+  const toReactivate = targets.flatMap((target) =>
+    MEMORY_REBUILD_JOB_TYPES.filter((job) => {
+      const statuses = statusesByKey.get(
+        `${target.targetType}:${target.targetId}:${job.jobType}`,
+      );
+      return statuses?.size === 1 && statuses.has("failed");
+    }).map((job) => ({ ...target, ...job })),
+  );
+
+  for (const target of toReactivate) {
+    upsertMemoryBuildJob({
+      client: input.client,
+      projectId: input.projectId,
+      targetType: target.targetType,
+      targetId: target.targetId,
+      jobType: target.jobType,
+      priority: target.priority,
+      now,
+    });
+  }
 
   if (toInsert.length > 0) {
     await input.client.insert(memoryBuildJob).values(
@@ -205,6 +226,7 @@ export async function rebuildMemoryChunks(input: {
         updatedAt: now,
       })),
     );
+    requestDerivedJobWakeup();
   }
 
   return { queued: targets.length, processed: 0 };

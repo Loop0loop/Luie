@@ -32,13 +32,16 @@ const buildWorldDocumentMap = (
     SyncBundle["worldDocuments"][number]["docType"],
     SyncBundle["worldDocuments"][number]
   >();
-  const deleted = new Set<SyncBundle["worldDocuments"][number]["docType"]>();
+  const deleted = new Map<
+    SyncBundle["worldDocuments"][number]["docType"],
+    SyncBundle["worldDocuments"][number]
+  >();
 
   for (const doc of sortByUpdatedAtDesc(worldDocuments)) {
     if (doc.projectId !== projectId) continue;
     if (active.has(doc.docType) || deleted.has(doc.docType)) continue;
     if (doc.deletedAt) {
-      deleted.add(doc.docType);
+      deleted.set(doc.docType, doc);
       continue;
     }
     active.set(doc.docType, doc);
@@ -102,6 +105,33 @@ const normalizeWorldDocumentPayload = (
 const hasInvalidJsonPayloadString = (payload: unknown): boolean =>
   typeof payload === "string" && parseWorldJsonSafely(payload) === null;
 
+const upsertWorldDocumentTombstone = (
+  tx: DbLike,
+  projectId: string,
+  doc: SyncBundle["worldDocuments"][number],
+): void => {
+  const deletedAt = doc.deletedAt ?? doc.updatedAt;
+  tx.insert(worldDocument)
+    .values({
+      id: `${projectId}:${doc.docType}`,
+      projectId,
+      docType: doc.docType,
+      payload: JSON.stringify(doc.payload ?? {}),
+      createdAt: doc.updatedAt,
+      updatedAt: doc.updatedAt,
+      deletedAt,
+    })
+    .onConflictDoUpdate({
+      target: [worldDocument.projectId, worldDocument.docType],
+      set: {
+        payload: JSON.stringify(doc.payload ?? {}),
+        updatedAt: doc.updatedAt,
+        deletedAt,
+      },
+    })
+    .run();
+};
+
 export const applyReplicaWorldState = (
   tx: DbLike,
   bundle: SyncBundle,
@@ -124,15 +154,9 @@ export const applyReplicaWorldState = (
         updatedAt: memo.updatedAt,
       }));
 
-    for (const docType of deletedDocTypes) {
-      tx.delete(worldDocument)
-        .where(
-          and(
-            eq(worldDocument.projectId, proj.id),
-            eq(worldDocument.docType, docType),
-          ),
-        )
-        .run();
+    for (const [docType, doc] of deletedDocTypes) {
+      if (docType === "scrap") continue;
+      upsertWorldDocumentTombstone(tx, proj.id, doc);
     }
 
     for (const [docType, doc] of worldDocMap.entries()) {
@@ -161,12 +185,14 @@ export const applyReplicaWorldState = (
           payload: JSON.stringify(normalizedPayload),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          deletedAt: null,
         })
         .onConflictDoUpdate({
           target: [worldDocument.projectId, worldDocument.docType],
           set: {
             payload: JSON.stringify(normalizedPayload),
             updatedAt: new Date().toISOString(),
+            deletedAt: null,
           },
         })
         .run();
@@ -189,24 +215,23 @@ export const applyReplicaWorldState = (
           payload: JSON.stringify(normalizedScrapPayload),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          deletedAt: null,
         })
         .onConflictDoUpdate({
           target: [worldDocument.projectId, worldDocument.docType],
           set: {
             payload: JSON.stringify(normalizedScrapPayload),
             updatedAt: new Date().toISOString(),
+            deletedAt: null,
           },
         })
         .run();
     } else if (deletedDocTypes.has("scrap")) {
-      tx.delete(worldDocument)
-        .where(
-          and(
-            eq(worldDocument.projectId, proj.id),
-            eq(worldDocument.docType, "scrap"),
-          ),
-        )
-        .run();
+      upsertWorldDocumentTombstone(
+        tx,
+        proj.id,
+        deletedDocTypes.get("scrap")!,
+      );
     }
 
     const shouldRewriteScrapMemos =
@@ -268,16 +293,9 @@ export const applyReplicaWorldDelta = (
       (memo) => memo.projectId === projectId && !memo.deletedAt,
     );
 
-    for (const docType of deleted) {
+    for (const [docType, doc] of deleted) {
       if (docType === "scrap") continue;
-      tx.delete(worldDocument)
-        .where(
-          and(
-            eq(worldDocument.projectId, projectId),
-            eq(worldDocument.docType, docType),
-          ),
-        )
-        .run();
+      upsertWorldDocumentTombstone(tx, projectId, doc);
     }
 
     for (const [docType, doc] of active) {
@@ -304,12 +322,14 @@ export const applyReplicaWorldDelta = (
           payload: JSON.stringify(normalizedPayload),
           createdAt: doc.updatedAt,
           updatedAt: doc.updatedAt,
+          deletedAt: null,
         })
         .onConflictDoUpdate({
           target: [worldDocument.projectId, worldDocument.docType],
           set: {
             payload: JSON.stringify(normalizedPayload),
             updatedAt: doc.updatedAt,
+            deletedAt: null,
           },
         })
         .run();
@@ -342,21 +362,52 @@ export const applyReplicaWorldDelta = (
             payload: JSON.stringify(payload),
             createdAt: updatedAt,
             updatedAt,
+            deletedAt: null,
           })
           .onConflictDoUpdate({
             target: [worldDocument.projectId, worldDocument.docType],
-            set: { payload: JSON.stringify(payload), updatedAt },
+            set: {
+              payload: JSON.stringify(payload),
+              updatedAt,
+              deletedAt: null,
+            },
           })
           .run();
       } else {
-        tx.delete(worldDocument)
-          .where(
-            and(
-              eq(worldDocument.projectId, projectId),
-              eq(worldDocument.docType, "scrap"),
-            ),
-          )
-          .run();
+        const deletedScrap = deleted.get("scrap");
+        if (deletedScrap) {
+          upsertWorldDocumentTombstone(tx, projectId, deletedScrap);
+        } else {
+          const updatedAt =
+            sortByUpdatedAtDesc(deltaMemos)[0]?.updatedAt ??
+            mergedProject.updatedAt;
+          const payload = normalizeScrapPayload(
+            projectId,
+            undefined,
+            [],
+            updatedAt,
+            logger,
+          );
+          tx.insert(worldDocument)
+            .values({
+              id: `${projectId}:scrap`,
+              projectId,
+              docType: "scrap",
+              payload: JSON.stringify(payload),
+              createdAt: updatedAt,
+              updatedAt,
+              deletedAt: null,
+            })
+            .onConflictDoUpdate({
+              target: [worldDocument.projectId, worldDocument.docType],
+              set: {
+                payload: JSON.stringify(payload),
+                updatedAt,
+                deletedAt: null,
+              },
+            })
+            .run();
+        }
       }
     }
 

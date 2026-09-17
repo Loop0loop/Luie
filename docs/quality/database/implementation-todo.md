@@ -2,7 +2,7 @@
 
 기준 문서: [`../performance-audit-2026-09-08/database.md`](../performance-audit-2026-09-08/database.md)
 
-최신 판정: **2026-09-13 QA·code review 기준 안정화 미완료**. 기존 구현과 회귀 154건 통과는 유지하되 DB-04·DB-06·DB-09·DB-11·DB-12를 재개한다. 기준 SSoT의 최신 상태를 이 목록과 [최신 통합 판정](final-database-regression-test-report.md)에 반영했으며, 개별 결과본의 과거 PASS는 현재 항목 종료를 뜻하지 않는다.
+최신 판정: **2026-09-14 정확성 결함 보정 진행 중**. DB-11A world 삭제 부활과 DB-11B 동일 chapter 경쟁을 수정했고, DB-04·DB-06 P2 결합 전이 및 DB-12 성능 근거가 남았다. 2차 순서와 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)에 기록한다.
 
 표시 규칙:
 
@@ -21,11 +21,10 @@
 - [X] **DB-03** chapter create/update의 async 수동 transaction을 동기 `store.transaction()`으로 교체한다.
   - 완료 조건: transaction callback 안에는 동기 DB statement만 있고 다른 도메인의 쓰기가 chapter rollback에 포함되지 않는다.
   - 테스트: [`db-03-chapter-transaction-test-report.md`](db-03-chapter-transaction-test-report.md)
-- [ ] **DB-04 · P1 · 재개** derived job enqueue·claim·complete에 source generation 또는 hash CAS를 적용한다.
-  - 구현됨: running row와 후속 pending row의 ID를 분리한다.
-  - 잔존: source A를 선조회한 뒤 아직 pending인 job에 B 변경이 합쳐지면, worker는 A로 completed 처리하고 B를 처리할 pending을 남기지 않는다. 실제 native 재현에서 body B/chunk A/completed·pending 0을 확인했다.
+- [ ] **DB-04** derived job enqueue·claim·complete에 source generation token을 적용한다. pause→변경→resume 결합 전이를 재개한다.
+  - 구현: pending/failed source 재enqueue는 job UUID를 원자적으로 교체해 이전 selector의 claim을 무효화한다. running은 별도 pending successor, paused는 기존 상태를 유지한다.
   - 완료 조건: 처리 중 새 source가 저장되면 이전 source 결과로 `completed`를 확정하지 않는다.
-  - 테스트: [`db-04-derived-job-generation-test-report.md`](db-04-derived-job-generation-test-report.md)
+  - 테스트: [`db-04-preclaim-generation-remediation-test-report.md`](db-04-preclaim-generation-remediation-test-report.md)
 
 ## 2. `.luie` 저장 범위 축소
 
@@ -46,22 +45,21 @@
 
 - [X] **DB-05** chapter dirty 처리에서 `sourceId` 단건 upsert를 사용하고 전체 rebuild를 명시적 작업으로 제한한다.
   - 테스트: [`db-05-scoped-search-dirty-test-report.md`](db-05-scoped-search-dirty-test-report.md)
-- [ ] **DB-06 · P2 · 재개** 전체 FTS rebuild를 한 transaction과 prepared INSERT로 처리하고 단건 row lookup을 O(1) 경로로 바꾼다.
-  - 구현됨: 전체 rebuild transaction/prepared INSERT와 FTS rowid mapping.
-  - 잔존: 동일 chapter의 동시 단건 upsert가 이전 rowid를 공유해 projection 1개에 FTS row 2개를 남긴다. 실제 native 재현을 기준으로 단건 projection/FTS 갱신의 경쟁을 함께 해결해야 한다.
-  - 테스트: [`db-06-fts-transaction-rowid-test-report.md`](db-06-fts-transaction-rowid-test-report.md)
+- [ ] **DB-06** 전체 rebuild와 단건 projection/FTS 갱신을 transaction으로 처리하고 rowid mapping을 사용한다. clear/upsert 경쟁을 재개한다.
+  - 구현: 전체 rebuild prepared INSERT, 단건 projection·FTS 교체·mapping의 한 동기 transaction, FTS 부재 projection fallback.
+  - 완료 조건: 동일 chapter 동시 upsert 뒤 projection/FTS 각 1건과 mapping 일치, 다른 project 보존, mapping 실패 시 전체 단건 갱신 rollback.
+  - 테스트: [`db-06-concurrent-upsert-remediation-test-report.md`](db-06-concurrent-upsert-remediation-test-report.md)
 - [X] **DB-08** 변하지 않은 memory chunk와 embedding을 보존한다.
   - 테스트: [`db-08-memory-chunk-reuse-test-report.md`](db-08-memory-chunk-reuse-test-report.md)
-- [ ] **DB-09 · P1 · 재개** autosave/manual revision reason을 구분한 뒤 ChapterRevision 보관 정책과 상한을 확정한다.
+- [X] **DB-09** autosave/manual revision reason을 구분한 뒤 ChapterRevision 보관 정책과 상한을 확정한다.
   - 정책: 5분 autosave coalescing, chapter별 최신 100개 보관.
-  - 구현됨: reason 분리, autosave coalescing, 저장 transaction 내 retention.
-  - 잔존: 기존 revision 33,000건의 정리 대상 ID를 단일 `IN`에 넣어 `too many SQL variables`가 발생하고 최신 본문 저장도 rollback된다. 실제 native/Drizzle 재현에서 이전 본문 보존·새 본문 저장 실패를 확인했다. 큰 기존 이력에도 저장 가능한 bounded 삭제가 필요하다.
-  - 테스트: [`db-09-chapter-revision-retention-test-report.md`](db-09-chapter-revision-retention-test-report.md)
-- [ ] **DB-12 · P2 · 재개** 실행 가능 job 조건을 SQL에 넣고 이에 맞는 index·idle wake-up을 적용한다.
-  - 구현됨: SQL runnable 조건, index 추가, memory failed 재활성화, idle wake-up.
-  - 잔존 기능 결함: memory chunk의 failed/attempts 5 작업에 전체 memory rebuild를 요청하면 queued 1로 반환하지만 failed/attempts 5가 유지되어 실행되지 않는다. 실제 native DB로 확인했다.
-  - 별도 성능 잔존: 실제 global runnable query plan은 covering index SCAN과 TEMP B-TREE를 사용한다. 단순화한 쿼리의 index 검증으로 이 경로를 완료 처리하지 않으며, terminal history 규모별 실제 query plan과 latency를 검증한다.
-  - 테스트: [`db-12-runnable-job-sql-wakeup-test-report.md`](db-12-runnable-job-sql-wakeup-test-report.md)
+  - 구현: reason 분리, autosave coalescing, 저장 transaction 안의 SQL subquery retention. 삭제 대상 ID를 애플리케이션 bind 목록으로 만들지 않는다.
+  - 완료 조건: 기존 revision 33,000건의 첫 저장 성공·최신 100건, 5분 경계 전후, 삭제 실패 시 본문과 revision rollback.
+  - 테스트: [`db-09-large-history-remediation-test-report.md`](db-09-large-history-remediation-test-report.md)
+- [ ] **DB-12** 실행 가능 job 조건을 SQL에 넣고 전체 rebuild 재활성화, partial index, idle wake-up을 적용한다. 독립 query latency와 production SQL plan 근거를 보완한다.
+  - 구현: failed-only 전체 rebuild는 generation ID 교체와 pending/0/null reset, paused 보존. global query는 completed·exhausted failed를 제외한 partial index를 명시적으로 사용한다.
+  - 완료 조건: 상태 전이 matrix, 50,000 terminal + 1 pending 실제 query plan, 20회 p95 < 50ms, migration/schema, idle wake-up 통과.
+  - 테스트: [`db-12-full-rebuild-global-query-remediation-test-report.md`](db-12-full-rebuild-global-query-remediation-test-report.md)
 - [X] **DB-13** 키워드 출현 변경을 집합 단위 transaction으로 처리한다.
   - 테스트: [`db-13-keyword-appearance-transaction-test-report.md`](db-13-keyword-appearance-transaction-test-report.md)
 - [X] **DB-14** 기존 low-end `vectorSearchMode`를 실제 search executor에 연결한다.
@@ -71,17 +69,16 @@
 
 - [X] **DB-07** 모든 원격 table 조회에 안정적 pagination과 종료 검증을 적용한다.
   - 테스트: [`db-07-remote-pagination-test-report.md`](db-07-remote-pagination-test-report.md)
-- [ ] **DB-11 · P1 · 재개** baseline/hash/`updatedAt`으로 변경된 row만 local apply와 remote upsert에 포함한다.
-  - 구현됨: local/remote row delta, no-op write 생략, world/memo sibling 비변경.
-  - 잔존: local snapshot A 이후 B를 저장·flush한 동안 remote character만 바뀌면, delta는 DB 본문 B를 유지하지만 오래된 merged bundle A로 package를 만들고 최신 revision을 캡처한다. 실제 delta/applier와 DB·파일 mock으로 재현했고 실제 write/mark 소스를 교차 확인했다. 현재 DB와 package payload가 같은 revision을 대표하는지 보장해야 한다.
-  - 테스트: [`db-11-sync-delta-test-report.md`](db-11-sync-delta-test-report.md)
+- [X] **DB-11** baseline/hash/`updatedAt`으로 변경된 row만 local apply와 remote upsert에 포함하고 후속 정확성 반례를 보정한다.
+  - 구현: local/remote row delta, no-op write 생략, world/memo sibling 비변경. local apply 뒤 package는 stale merged payload 대신 `ProjectExportQueue`가 authoritative DB에서 구성한다.
+  - [X] DB-11A: world tombstone을 local DB에 보존해 즉시 export·실패 retry·DB 재연결에서 package fallback 부활을 막고 local save 시 되살린다.
+  - [X] DB-11B: apply transaction에서 current chapter와 snapshot을 비교하고, stale이면 local을 1회 재수집해 B/C conflict 또는 bounded stale 실패로 끝낸다.
+  - 테스트: [`db-11-authoritative-package-remediation-test-report.md`](db-11-authoritative-package-remediation-test-report.md), [`test2/db-11a-world-deletion-remediation-test-report.md`](test2/db-11a-world-deletion-remediation-test-report.md), [`test2/db-11b-concurrent-chapter-remediation-test-report.md`](test2/db-11b-concurrent-chapter-remediation-test-report.md)
 
 ## 후속 진행 순서
 
-1. P1: DB-04 source 조회/claim 경쟁, DB-09 대량 기존 revision 저장 실패, DB-11 stale package/revision 불일치.
-2. P2: DB-06 단건 FTS 경쟁, DB-12 전체 memory rebuild 재활성화와 실제 runnable query plan.
-3. 신규 source LOC 게이트 실패 7건을 기존 실패 16건과 분리해 처리한다.
-4. 현재 소스의 실제 Electron·사용자 규모 package에서 p95/p99·실패율·event-loop·write bytes와 crash/restart 범위를 확장 검증한다.
+1. 원 HEAD 대비 database 누적 변경 파일의 source LOC 게이트 실패 8건을 기존 실패 16건과 분리해 처리한다.
+2. 현재 소스의 실제 Electron·사용자 규모 package에서 p95/p99·실패율·event-loop·write bytes와 crash/restart 범위를 확장 검증한다.
 
 DB-10E는 DB-10D 측정으로 전체 export가 여전히 병목일 때만 구현한다. 현재는 측정 gate 미충족으로 확대 보류 판정을 완료했다.
 

@@ -1,8 +1,12 @@
 # DB-11 동기화 row delta 테스트 보고서
 
-## 최신 판정 — REOPEN (2026-09-13 QA 재검토)
+## 최신 판정 — PASS (2026-09-13 보정)
 
-기존 테스트의 PASS 실행 이력은 아래에 보존한다. 원 감사에서 미검증으로 남긴 remote fetch 중 로컬 편집 경쟁은 현재 소스와 격리한 계약 재현에서 DB/package 불일치 및 잘못된 완료 revision을 만드는 P1 경로로 확인됐다. 제품 수정은 아직 적용하지 않았다.
+sync의 package 저장을 기존 `ProjectExportQueue`의 authoritative DB export로 전환했다. 실제 임시 DB·`.luie`에서 stale A + local B + remote character delta를 실행하고 DB/package B 및 revision 완료 상태를 확인했다. 후속 world 삭제와 동일 chapter 경쟁 보정은 [DB-11A](test2/db-11a-world-deletion-remediation-test-report.md), [DB-11B](test2/db-11b-concurrent-chapter-remediation-test-report.md)를 기준으로 한다.
+
+## 이전 재개 근거 — 2026-09-13 QA 재검토
+
+아래 내용은 보정 전 결함과 당시 실행 이력이다.
 
 - 발생 순서: sync가 chapter 본문 A를 local snapshot에 수집한 뒤 fetch를 기다리는 동안 로컬 본문 B의 DB 저장과 package flush가 끝난다. 원격에서는 같은 프로젝트의 character만 바뀐다. `localDelta`에는 character만 포함되지만 전체 merged `packageBundle`에는 이전 본문 A가 남는다.
 - 소스 근거: [syncRunExecutor.ts](../../../src/main/services/features/sync/syncRunExecutor.ts)는 원격 fetch와 local 수집을 병렬 실행하고 snapshot 이후 revision 검증 없이 delta를 전달한다. [syncBundleApplier.ts](../../../src/main/services/features/sync/syncBundleApplier.ts)는 delta만 DB에 반영한 후 B를 포함한 현재 revision을 캡처하고, package에는 기존 merged bundle을 전달한다. [syncPackagePersistence.ts](../../../src/main/services/features/sync/syncPackagePersistence.ts)는 그 bundle의 본문 A를 작성한 뒤 캡처한 revision을 완료 처리한다. [projectRevisionStore.ts](../../../src/main/services/core/project/projectRevisionStore.ts)의 `markProjectExported`는 revision 숫자 범위를 검사하며 package 본문과 DB의 일치를 검사하지 않는다.
@@ -232,7 +236,7 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 ## 판정과 잔여 범위
 
-- 최초 실행에서는 무작업 sync의 write 0회, 양방향 row delta, 실제 SQLite sibling row 비변경 계약을 검증해 PASS로 판정했다. 최신 판정은 위 로컬 편집 경쟁에 따른 REOPEN이다.
-- 현재 방식은 local·remote whole bundle fetch와 merge를 유지하고 local write·package write·remote POST 범위를 줄인다. 동시 편집의 정확성은 확인되지 않았으며 위 결함을 해결해야 한다. cursor 기반 remote delta fetch와 table별 POST batching은 실제 payload/latency 측정에서 필요성이 확인될 때 추가한다.
+- 최초 실행에서는 무작업 sync의 write 0회, 양방향 row delta, 실제 SQLite sibling row 비변경 계약을 검증해 PASS로 판정했다. 이후 로컬 편집 경쟁으로 한 차례 REOPEN됐고, 현재는 문서 상단 authoritative package 보정으로 해결됐다.
+- 현재 방식은 local·remote whole bundle fetch와 merge를 유지하고 local write·remote POST 범위를 줄인다. package write는 delta commit 뒤 authoritative DB export queue가 담당한다. cursor 기반 remote delta fetch와 table별 POST batching은 실제 payload/latency 측정에서 필요성이 확인될 때 추가한다.
 - canonical hash는 `updatedAt`이 같은 row에만 계산한다. 배열 순서는 의미 있는 payload로 보존하고 object key 순서만 정규화한다.
-- remote fetch 대기 중 local 편집 경쟁은 원 감사의 미검증 관찰에서 현재 소스·격리 계약 재현으로 확인된 결함으로 격상했다. 실제 DB·package·재시작 종단 재현은 후속 검증으로 남아 있다.
+- remote fetch 대기 중 local 편집 경쟁은 실제 DB·package·DB 재연결 종단 회귀로 옮겼다. 실제 원격 서버 동시 편집과 packaged Electron 재시작은 별도 범위다.

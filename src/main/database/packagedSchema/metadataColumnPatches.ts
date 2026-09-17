@@ -111,6 +111,11 @@ export const PACKAGED_SCHEMA_COLUMN_PATCHES: ReadonlyArray<ColumnPatch> = [
     sql: 'ALTER TABLE "Term" ADD COLUMN "deletedAt" DATETIME;',
   },
   {
+    table: "WorldDocument",
+    column: "deletedAt",
+    sql: 'ALTER TABLE "WorldDocument" ADD COLUMN "deletedAt" DATETIME;',
+  },
+  {
     table: "WorldEntity",
     column: "deletedAt",
     sql: 'ALTER TABLE "WorldEntity" ADD COLUMN "deletedAt" DATETIME;',

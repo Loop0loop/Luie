@@ -208,6 +208,7 @@ export const readWorldPayloadFromReplica = async (
   return {
     synopsis: {
       found: synopsis.found,
+      deleted: Boolean(synopsis.deletedAt),
       parsed: safeParseWorldPayloadForExport(
         synopsis.payload,
         LuieWorldSynopsisSchema,
@@ -221,6 +222,7 @@ export const readWorldPayloadFromReplica = async (
     },
     plot: {
       found: plot.found,
+      deleted: Boolean(plot.deletedAt),
       parsed: safeParseWorldPayloadForExport(
         plot.payload,
         LuieWorldPlotSchema,
@@ -234,6 +236,7 @@ export const readWorldPayloadFromReplica = async (
     },
     drawing: {
       found: drawing.found,
+      deleted: Boolean(drawing.deletedAt),
       parsed: safeParseWorldPayloadForExport(
         drawing.payload,
         LuieWorldDrawingSchema,
@@ -247,6 +250,7 @@ export const readWorldPayloadFromReplica = async (
     },
     mindmap: {
       found: mindmap.found,
+      deleted: Boolean(mindmap.deletedAt),
       parsed: safeParseWorldPayloadForExport(
         mindmap.payload,
         LuieWorldMindmapSchema,
@@ -260,6 +264,7 @@ export const readWorldPayloadFromReplica = async (
     },
     memos: {
       found: memos.found,
+      deleted: Boolean(memos.deletedAt),
       parsed: safeParseWorldPayloadForExport(
         memos.data,
         LuieWorldScrapMemosSchema,
@@ -273,6 +278,7 @@ export const readWorldPayloadFromReplica = async (
     },
     graph: {
       found: graph.found,
+      deleted: Boolean(graph.deletedAt),
       parsed: safeParseWorldPayloadForExport(
         graph.payload,
         LuieWorldGraphSchema,

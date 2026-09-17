@@ -85,13 +85,17 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
   it("applies the latest world document tombstone", () => {
     const run = vi.fn();
     const where = vi.fn(() => ({ run }));
+    const worldDocumentValues: unknown[] = [];
     const tx = {
       delete: vi.fn(() => ({ where })),
       insert: vi.fn(() => ({
-        values: vi.fn(() => ({
+        values: vi.fn((value) => {
+          worldDocumentValues.push(value);
+          return {
           onConflictDoUpdate: vi.fn(() => ({ run })),
           run,
-        })),
+          };
+        }),
       })),
       update: vi.fn(() => ({
         set: vi.fn(() => ({ where })),
@@ -129,8 +133,15 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
 
     applyReplicaWorldState(tx, bundle, new Set());
 
-    expect(tx.delete).toHaveBeenCalledWith(worldDocument);
-    expect(tx.insert).not.toHaveBeenCalledWith(worldDocument);
+    expect(tx.delete).not.toHaveBeenCalledWith(worldDocument);
+    expect(tx.insert).toHaveBeenCalledWith(worldDocument);
+    expect(worldDocumentValues).toContainEqual(
+      expect.objectContaining({
+        projectId: "project-1",
+        docType: "synopsis",
+        deletedAt: "2026-03-04T00:00:00.000Z",
+      }),
+    );
     expect(tx.update).toHaveBeenCalledWith(project);
   });
 

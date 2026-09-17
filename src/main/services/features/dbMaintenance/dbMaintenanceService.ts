@@ -444,13 +444,14 @@ class DbMaintenanceService {
 
   async listProjectsWithPendingMemoryJobs(limit = 20): Promise<string[]> {
     const client = db.getClient();
-    const rows = await client
-      .select({ projectId: memoryBuildJob.projectId })
-      .from(memoryBuildJob)
-      .where(retryableMemoryBuildJobCondition())
-      .groupBy(memoryBuildJob.projectId)
-      .orderBy(sql`max(${memoryBuildJob.updatedAt}) DESC`)
-      .limit(limit);
+    const rows = await client.all<{ projectId: string }>(sql`
+      SELECT "projectId"
+      FROM "MemoryBuildJob" INDEXED BY "MemoryBuildJob_global_runnable_idx"
+      WHERE ${retryableMemoryBuildJobCondition()}
+      GROUP BY "projectId"
+      ORDER BY max("updatedAt") DESC
+      LIMIT ${limit};
+    `);
     return rows.map((row) => row.projectId);
   }
 

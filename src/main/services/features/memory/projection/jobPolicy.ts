@@ -5,22 +5,33 @@ export const MAX_JOB_ATTEMPTS = 5;
 export const BASE_RETRY_BACKOFF_MS = 2_000;
 
 export function retryableMemoryBuildJobCondition(nowMs = Date.now()) {
-  return or(
-    eq(memoryBuildJob.status, "pending"),
-    and(
-      eq(memoryBuildJob.status, "failed"),
-      or(
-        ...Array.from({ length: MAX_JOB_ATTEMPTS }, (_, attempts) =>
-          and(
-            eq(memoryBuildJob.attempts, attempts),
-            or(
-              lte(
-                memoryBuildJob.updatedAt,
-                new Date(
-                  nowMs - getMemoryBuildJobRetryBackoffMs(attempts),
-                ).toISOString(),
+  const pending = sql`${memoryBuildJob.status} = 'pending'`;
+  const failed = sql`${memoryBuildJob.status} = 'failed'`;
+  return and(
+    or(
+      pending,
+      and(
+        failed,
+        sql`${memoryBuildJob.attempts} < ${sql.raw(String(MAX_JOB_ATTEMPTS))}`,
+      ),
+    ),
+    or(
+      pending,
+      and(
+        failed,
+        or(
+          ...Array.from({ length: MAX_JOB_ATTEMPTS }, (_, attempts) =>
+            and(
+              eq(memoryBuildJob.attempts, attempts),
+              or(
+                lte(
+                  memoryBuildJob.updatedAt,
+                  new Date(
+                    nowMs - getMemoryBuildJobRetryBackoffMs(attempts),
+                  ).toISOString(),
+                ),
+                sql`julianday(${memoryBuildJob.updatedAt}) IS NULL`,
               ),
-              sql`julianday(${memoryBuildJob.updatedAt}) IS NULL`,
             ),
           ),
         ),

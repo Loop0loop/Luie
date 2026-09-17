@@ -1,0 +1,1 @@
+ALTER TABLE `WorldDocument` ADD `deletedAt` text;

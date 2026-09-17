@@ -1,10 +1,14 @@
 # DB-04 파생 작업 generation 테스트 보고서
 
-## 최신 QA 재검토 · 2026-09-13
+## 최신 보정 완료 · 2026-09-13
 
-현재 판정: **REOPEN · P1 · source 선조회 이후 claim 이전의 최신 작업 유실이 남아 있다.** 아래 PASS는 당시 테스트 케이스의 실행 기록이며 DB-04 전체 해결을 의미하지 않는다. 이번 재검토에서는 제품 코드를 수정하지 않았다.
+현재 판정: **PASS**. pending/failed 재enqueue에서 job UUID를 원자적으로 교체해 claim 전 source 변경이 이전 selector에 흡수되지 않게 했다. RED→GREEN 실제 DB 상태와 전체 실행 기록은 [claim 전 generation 보정 보고서](db-04-preclaim-generation-remediation-test-report.md)에 있다.
 
-- [memoryProjectionService.ts](../../../src/main/services/features/memory/memoryProjectionService.ts)의 source batch 선조회(72행) → `setImmediate`(81행) → claim(83행) 사이에 source B를 저장하면, [memoryBuildJobEnqueue.ts](../../../src/main/services/features/memory/memoryBuildJobEnqueue.ts)의 pending 병합(45행)이 기존 row ID를 유지한다. worker는 선조회한 A를 처리하고 그 row를 completed로 확정한다.
+## 이전 QA 재검토 · 2026-09-13
+
+당시 판정: **REOPEN · P1 · source 선조회 이후 claim 이전의 최신 작업 유실이 남아 있었다.** 아래 내용은 보정 전 재현 이력이다.
+
+- 당시 [memoryProjectionService.ts](../../../src/main/services/features/memory/memoryProjectionService.ts)의 source batch 선조회(72행) → `setImmediate`(81행) → claim(83행) 사이에 source B를 저장하면, [memoryBuildJobEnqueue.ts](../../../src/main/services/features/memory/memoryBuildJobEnqueue.ts)가 기존 row ID를 유지했다. worker는 선조회한 A를 처리하고 그 row를 completed로 확정했다.
 - 현재 소스를 로드한 실제 함수·native SQLite `:memory:` 재현 결과는 `body=B`, `chunk=A`, `jobs=[completed]`, `latestSourceHasPending=false`였다. Node v22.23.0, SQLite 3.53.4에서 DB singleton과 logger를 격리하고 worker yield에 synthetic B 저장과 실제 enqueue를 주입했다. 실제 Electron 장시간 경쟁 실측은 아니다.
 - 재실행 스크립트는 `/private/tmp/luie-db04-current-review.cjs`이며 `node /private/tmp/luie-db04-current-review.cjs`로 실행했다. 임시 경로 산출물이므로 저장소에 영구 보관된 회귀 테스트는 아니다.
 - 기존 상태 모델은 이미 running인 G0에서 시작해 이 창을 누락했다. 종료 기준에는 선조회 이후 claim 이전 변경, 실제 최신 chunk 내용, 후속 job 유무를 추가해야 한다. source를 claim 후 읽고 완료 시 generation/hash를 대조하는 보장이 아직 필요하다.
@@ -24,7 +28,7 @@
 ## 변경 계약
 
 - `MemoryBuildJob`과 `SearchDirtyQueue`의 row ID를 source 작업 generation 식별자로 사용한다.
-- 같은 대상·작업 유형의 `pending` row가 있으면 최신 reason·priority·timestamp를 그 row에 합쳐 작업 수를 제한한다.
+- 같은 대상·작업 유형의 `pending` 또는 `failed` row가 있으면 UUID를 교체하고 pending으로 초기화해 이전 claim generation을 무효화한다.
 - `running` row만 있으면 그 row를 갱신하지 않고 별도 `pending` row를 생성한다.
 - worker가 이전 row ID를 `completed`로 바꿔도 새 row ID의 `pending` 상태는 영향을 받지 않는다.
 - `paused` row는 사용자 중지 상태를 유지한다. 이후 DB-12에서 새 source의 `failed` row는 `pending`, attempts 0, error null로 재활성화하도록 확정했다.
@@ -32,15 +36,15 @@
 
 ## 상태 모델
 
-| 상태 | 설명                                                                                |
-| ---- | ----------------------------------------------------------------------------------- |
-| G0   | source A용 작업 row가 `running`                                                     |
-| G1   | source B 저장으로 서로 다른 ID의 후속 row가 `pending`                               |
-| G2   | source C 저장이 기존 후속 `pending` row에 합쳐져 `running` 1건·`pending` 1건을 유지 |
-| G3   | source A worker가 자신의 row ID만 `completed`로 변경                                |
-| G4   | 최신 source를 처리할 후속 row가 계속 `pending`                                      |
-| P0   | 같은 대상의 작업이 `paused`                                                         |
-| F0   | 같은 대상의 작업이 `failed`                                                         |
+| 상태 | 설명                                                                            |
+| ---- | ------------------------------------------------------------------------------- |
+| G0   | source A용 작업 row가 `running`                                                 |
+| G1   | source B 저장으로 서로 다른 ID의 후속 row가 `pending`                           |
+| G2   | source C 저장이 후속 `pending` UUID를 교체해 `running` 1건·`pending` 1건을 유지 |
+| G3   | source A worker가 자신의 row ID만 `completed`로 변경                            |
+| G4   | 최신 source를 처리할 후속 row가 계속 `pending`                                  |
+| P0   | 같은 대상의 작업이 `paused`                                                     |
+| F0   | 같은 대상의 작업이 `failed`                                                     |
 
 주요 검증 전이는 `G0 → G1 → G2 → G3 + G4`다. 최종 보존·재시도 회귀는 `P0 → P0`, `F0 → pending`이다.
 
@@ -88,15 +92,15 @@
 
 ### TC-DB-04-C: paused 보존과 failed 재활성화 회귀
 
-| 항목      | 내용                                                                                       |
-| --------- | ------------------------------------------------------------------------------------------ |
-| 목적      | generation 분리로 사용자 pause와 새 source retry 정책이 우회되지 않는지 확인               |
-| 사전 상태 | summary `paused` 1건 또는 embedding `failed` 1건                                           |
-| 입력      | 동일 chapter에 `enqueueChapterDerivedJobs` 호출                                            |
-| 절차      | 상태별 row 준비 → enqueue → row 수·ID·상태·priority·attempts·error 조회                    |
-| 기대 결과 | 새 row 없이 기존 ID 유지; paused는 유지; failed는 pending/attempts 0/error null로 재활성화 |
-| 실제 결과 | 기대 결과와 일치                                                                           |
-| 결과      | PASS                                                                                       |
+| 항목      | 내용                                                                                    |
+| --------- | --------------------------------------------------------------------------------------- |
+| 목적      | generation 분리로 사용자 pause와 새 source retry 정책이 우회되지 않는지 확인            |
+| 사전 상태 | summary `paused` 1건 또는 embedding `failed` 1건                                        |
+| 입력      | 동일 chapter에 `enqueueChapterDerivedJobs` 호출                                         |
+| 절차      | 상태별 row 준비 → enqueue → row 수·ID·상태·priority·attempts·error 조회                 |
+| 기대 결과 | paused는 기존 ID·상태 유지; failed는 새 UUID의 pending/attempts 0/error null로 재활성화 |
+| 실제 결과 | 기대 결과와 일치                                                                        |
+| 결과      | PASS                                                                                    |
 
 ## 실행 기록
 
@@ -161,11 +165,11 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 ## 테스트 환경에서 확인된 제약
 
-초기 실행에서 `memoryProjectionService.test.ts`와 `chapterSummaryProjector.test.ts`는 suite import 단계에서 `tests/setup.ts`의 Electron mock 때문에 종료됐고, `embeddingProjector.test.ts`는 자체 DB mock과 공통 setup이 충돌했다. 이후 공통 test setup을 현재 import 계약에 맞추고 비DB embedding 테스트만 `SKIP_DB_TEST_SETUP=1`로 분리했다. 최종 실제 DB 통합 실행은 `memoryProjectionService.test.ts`를 포함한 18 files/67 tests가 통과했고 DB-12 결합 실행에서 `chapterSummaryProjector.test.ts`도 통과했다.
+초기 실행에서 `memoryProjectionService.test.ts`와 `chapterSummaryProjector.test.ts`는 suite import 단계에서 `tests/setup.ts`의 Electron mock 때문에 종료됐고, `embeddingProjector.test.ts`는 자체 DB mock과 공통 setup이 충돌했다. 이후 공통 test setup을 현재 import 계약에 맞추고 비DB embedding 테스트만 `SKIP_DB_TEST_SETUP=1`로 분리했다. DB-09 완료 직후 실제 DB 통합 실행은 `memoryProjectionService.test.ts`를 포함한 18 files/71 tests가 통과했고 `chapterSummaryProjector.test.ts`도 관련 회귀에서 통과했다.
 
-## 잔여 검증 범위
+## 현재 잔여 검증 범위
 
-- 이번 구현은 running 이후 새 enqueue에 별도 row ID를 사용해 후속 `pending`을 보존한다. 별도 source hash column과 schema migration은 추가하지 않았다.
-- source 선조회 이후 claim 이전에 enqueue되면 기존 pending ID에 병합되어 최신 source의 후속 작업이 없어지는 영구 불일치가 재현됐다. DB-04는 해결 완료로 판정하지 않는다.
+- running 이후에는 별도 pending을 만들고 claim 이전에는 pending UUID를 교체해 최신 작업을 보존한다. 별도 source hash column과 schema migration은 추가하지 않았다.
+- 과거 claim 전 유실 반례는 저장소의 실제 SQLite 회귀 테스트로 고정됐고 수정 후 통과했다.
 - 실제 Electron main loop와 utility process를 함께 실행하는 장시간 경쟁 테스트는 수행하지 않았다.
 - exhausted `failed` 작업의 새 source 재활성화는 DB-12에서 검증했고, 사용자 `paused`는 재활성화 대상에서 제외한다.

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { performance } from "node:perf_hooks";
 import { and, eq, sql } from "drizzle-orm";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { db } from "../../../src/main/database/index.js";
@@ -13,6 +14,7 @@ import {
   MEMORY_TARGET_TYPES,
 } from "../../../src/main/services/features/memory/memoryJobConstants.js";
 import { memoryProjectionService } from "../../../src/main/services/features/memory/memoryProjectionService.js";
+import { retryableMemoryBuildJobCondition } from "../../../src/main/services/features/memory/projection/jobPolicy.js";
 import { ProjectService } from "../../../src/main/services/features/project/projectService.js";
 import { projectService } from "../../../src/main/services/features/project/projectService.js";
 
@@ -158,5 +160,81 @@ describe("derived job runnable SQL selection", () => {
     expect(memoryPlan.map((row) => row.detail).join(" ")).toContain(
       "MemoryBuildJob_runnable_idx",
     );
+  });
+
+  it("uses the actual global runnable query without scanning terminal history", async () => {
+    const project = await projects.createProject({
+      title: "DB-12 global runnable plan",
+      projectPath: "/tmp/db-12-global-runnable-plan.luie",
+    });
+    const projectId = String(project.id);
+    const client = db.getClient();
+    await client.run(sql`
+      WITH RECURSIVE seq(n) AS (
+        SELECT 1
+        UNION ALL
+        SELECT n + 1 FROM seq WHERE n < 50000
+      )
+      INSERT INTO "MemoryBuildJob"
+        ("id", "projectId", "targetType", "targetId", "jobType", "status", "priority", "attempts", "error", "createdAt", "updatedAt")
+      SELECT
+        'terminal-' || n,
+        ${projectId},
+        'chapter',
+        'terminal-target-' || n,
+        'rebuild_chunks',
+        'completed',
+        80,
+        1,
+        NULL,
+        '2020-01-01T00:00:00.000Z',
+        '2020-01-01T00:00:00.000Z'
+      FROM seq;
+    `);
+    await client.insert(memoryBuildJob).values({
+      id: crypto.randomUUID(),
+      projectId,
+      targetType: MEMORY_TARGET_TYPES.CHAPTER,
+      targetId: "runnable-target",
+      jobType: MEMORY_JOB_TYPES.REBUILD_CHUNKS,
+      status: "pending",
+      priority: 80,
+      attempts: 0,
+      createdAt: "2026-09-13T00:00:00.000Z",
+      updatedAt: "2026-09-13T00:00:00.000Z",
+    });
+    await client.run(sql`ANALYZE;`);
+
+    const durations = await Promise.all(
+      Array.from({ length: 20 }, async () => {
+        const startedAt = performance.now();
+        expect(
+          await dbMaintenanceService.listProjectsWithPendingMemoryJobs(20),
+        ).toEqual([projectId]);
+        return performance.now() - startedAt;
+      }),
+    );
+    durations.sort((a, b) => a - b);
+    const p95 = durations[Math.ceil(durations.length * 0.95) - 1] ?? Infinity;
+
+    const plan = await client.all<{ detail: string }>(sql`
+      EXPLAIN QUERY PLAN
+      SELECT "projectId"
+      FROM "MemoryBuildJob" INDEXED BY "MemoryBuildJob_global_runnable_idx"
+      WHERE ${retryableMemoryBuildJobCondition()}
+      GROUP BY "projectId"
+      ORDER BY max("updatedAt") DESC
+      LIMIT 20;
+    `);
+    const indexRows = await client.all<{ sql: string }>(sql`
+      SELECT "sql" FROM sqlite_master
+      WHERE "type" = 'index' AND "name" = 'MemoryBuildJob_global_runnable_idx';
+    `);
+    expect(indexRows[0]?.sql).toContain("WHERE");
+    expect(indexRows[0]?.sql).toContain("attempts");
+    expect(plan.map((row) => row.detail).join(" ")).toContain(
+      "MemoryBuildJob_global_runnable_idx",
+    );
+    expect(p95).toBeLessThan(50);
   });
 });

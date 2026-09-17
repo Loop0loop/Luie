@@ -1,6 +1,6 @@
 # Database TODO 최종 회귀 테스트 보고서
 
-현재 판정: **Risky — `.luie` 안정화 미완료**. 2026-09-13 QA·code review에서 기존 회귀 154건을 재실행해 통과했지만, 기존 테스트가 다루지 않은 결함과 검증 공백을 확인했다. DB-04·DB-06·DB-09·DB-11·DB-12를 재개한다. 아래의 과거 실행 기록과 개별 보고서의 PASS는 해당 테스트 범위의 결과로 보존한다. 항목의 현행 상태는 [기준 SSoT](../performance-audit-2026-09-08/database.md)에 두고 이 문서와 `implementation-todo.md`에 동기화한다.
+현재 판정: **Risky — 2차 정확성 보정 진행 중**. 기존 통합 회귀 178건은 과거 범위에서 통과했다. 후속 QA의 DB-11A world 삭제 부활과 DB-11B 동일 chapter 경쟁은 수정했으며 DB-04B, DB-06B, DB-12B가 남았다. 항목의 현행 상태는 [기준 SSoT](../performance-audit-2026-09-08/database.md)와 [`test2/implementation-todo.md`](test2/implementation-todo.md)를 따른다.
 
 ## 문서 정보
 
@@ -10,36 +10,36 @@
 | 테스트 설계 기법 | ISTQB 명세 기반 테스트, 상태 전이, 경곗값 분석, 오류 추정, 회귀 테스트                         |
 | 테스트 레벨      | Unit / Component Integration / Real DB·Filesystem·Process Integration / Build                  |
 | 실행일           | 2026-09-13 KST                                                                                 |
-| 기준 HEAD        | `0faf4fad`                                                                                     |
+| 기준             | `b76d6f0e` 작업 트리; 기존 154건 실행 기준은 `0faf4fad` 위 변경                               |
 | 환경             | Darwin 25.6.0 arm64, Node.js v22.23.0, pnpm 12.3.4, Vitest 5.0.0, worker별 임시 SQLite·`.luie` |
 
 ## QA 검토 소스의 커밋 기준
 
 원 실행은 `0faf4fad` 위 미커밋 변경에서 수행했다. QA 재검토 후 그 제품 코드·테스트·migration을 변경 없이 아래 5개 작업 커밋으로 나눴다. 누적 코드 기준은 `ba707bf3adca4c1764b5b41a45aee5ab77eb9db5`이며, 이어지는 문서 커밋은 SSoT·TODO·보고서 판정 동기화다. 이는 기존 개별 실행의 dirty tree fingerprint를 소급 복원했다는 의미가 아니다.
 
-| 커밋 | 작업 범위 |
-| --- | --- |
-| `cc53190e` | main/cache schema·migration·packaged bootstrap, cache transaction API, 공통 테스트 Electron mock |
-| `5b45fa9e` | 파생 enqueue·runnable 선택·wake-up, chunk 재사용, 검색 dirty 범위·FTS transaction 및 관련 테스트 |
+| 커밋       | 작업 범위                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `cc53190e` | main/cache schema·migration·packaged bootstrap, cache transaction API, 공통 테스트 Electron mock             |
+| `5b45fa9e` | 파생 enqueue·runnable 선택·wake-up, chunk 재사용, 검색 dirty 범위·FTS transaction 및 관련 테스트             |
 | `a93ea9f5` | 저장 세대·실패 전파, chapter transaction·revision 정책, keyword 갱신, export 조회·증분 패키지 및 관련 테스트 |
-| `2e5e50b4` | low-end vector 정책 실행 연결과 검색 테스트 |
-| `ba707bf3` | 원격 pagination·row delta·local apply와 동기화 테스트 |
+| `2e5e50b4` | low-end vector 정책 실행 연결과 검색 테스트                                                                  |
+| `ba707bf3` | 원격 pagination·row delta·local apply와 동기화 테스트                                                        |
 
-DB-04·06·09·11·12의 최신 잔존 문제는 이 코드 기준에서도 수정되지 않았다. 커밋 분리는 작업 이력 정리이며 안정화 완료나 새로운 테스트 PASS를 뜻하지 않는다. 문서 동기화에서는 상대 링크·명령·현재/과거 판정의 정합성과 whitespace diff를 확인했고, 코드 변경이 없어 앞서 통과한 제품 검사를 반복하지 않았다.
+문서 커밋 `b76d6f0e` 뒤 작업 트리에서 DB-04 claim 전 generation 유실, DB-06 동시 FTS 중복, DB-09 대량 revision bind 실패, DB-11 stale sync package/revision, DB-12 전체 rebuild와 global history scan을 수정했다.
 
 ## 기존 실행의 검증 범위
 
 | 묶음 | 실행 상태                                                                                      | 결과                    |
 | ---- | ---------------------------------------------------------------------------------------------- | ----------------------- |
-| R1   | 실제 main/cache DB, FTS/vector, transaction rollback, 300장/1,000 appearance, `.luie`, SIGKILL | 18 files, 67 tests PASS |
-| R2   | DB setup 생략, mock IPC/service/HTTP, autosave 경쟁, worker timer, sync pagination/delta       | 13 files, 87 tests PASS |
+| R1   | 실제 main/cache DB, FTS/vector, transaction rollback, 300장/1,000 appearance, `.luie`, SIGKILL | 19 files, 77 tests PASS |
+| R2   | DB setup 생략, mock IPC/service/HTTP, autosave 경쟁, export queue, sync pagination/delta        | 14 files, 101 tests PASS |
 | R3   | main/cache Drizzle migration journal·schema                                                    | PASS                    |
 | R4   | 1K/3K chapter derived DB benchmark threshold                                                   | PASS                    |
 | R5   | Electron main/preload/renderer production bundle                                               | PASS                    |
 | R6   | 변경 source와 신규 테스트 ESLint, whitespace diff                                              | PASS                    |
 | R7   | TypeScript 전체                                                                                | 기존 renderer 오류 1건  |
 
-총 회귀 결과는 **31 files, 154 tests passed**다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
+총 회귀 결과는 **33 files, 178 tests passed**다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
 
 ## 기존 실행 기록
 
@@ -64,12 +64,13 @@ pnpm exec vitest run \
   tests/main/services/projectSaveRecovery.integration.test.ts \
   tests/main/services/rag/contextAssemblerSearch.test.ts \
   tests/main/services/searchService.test.ts \
-  tests/main/services/syncLocalApply.test.ts
+  tests/main/services/syncLocalApply.test.ts \
+  tests/main/services/syncStalePackageRevision.test.ts
 ```
 
 상태: `SKIP_DB_TEST_SETUP`을 사용하지 않았다. worker별 임시 main/cache SQLite를 초기화하고 FTS5/sqlite-vec, transaction failure trigger, 300장 FTS, 1,000 appearance bulk, revision retention, `.luie` entry transaction, child `SIGKILL` 후 startup recovery를 실행했다. sync world/memo delta에는 미변경 sibling UPDATE/DELETE를 `RAISE(ABORT)` 하는 TEMP trigger 3개를 설치했다.
 
-결과: **18 files passed, 67 tests passed**.
+결과: **19 files passed, 77 tests passed**.
 
 초기 분류 실행에서 이 묶음 중 `chapterService`, `chapterDerivedJobs`, `chapterKeywordDispatchAfterCommit`을 비DB 묶음에 잘못 넣어 DB 초기화 전 8건이 실패했다. 실제 DB setup으로 옮긴 뒤 `chapterDerivedJobs`의 paused 보존/failed 재활성화 모순 2건을 발견했고 공통 enqueue helper를 수정했다. 최종 동일 실제 DB 범위는 모두 통과했다.
 
@@ -82,6 +83,7 @@ SKIP_DB_TEST_SETUP=1 pnpm exec vitest run \
   tests/main/services/autoSaveManager.runtimeStats.test.ts \
   tests/main/services/derivedJobWorkerWakeup.test.ts \
   tests/main/services/projectExportEngine.test.ts \
+  tests/main/services/projectExportQueue.test.ts \
   tests/main/services/projectService.immediateDurability.test.ts \
   tests/main/services/snapshotService.packageBehavior.unit.test.ts \
   tests/main/services/syncBundleApplier.commitOrder.test.ts \
@@ -94,7 +96,7 @@ SKIP_DB_TEST_SETUP=1 pnpm exec vitest run \
 
 상태: 실제 DB를 검증하지 않는 mock 범위만 넣었다. 저장 세대 경쟁과 실패 전파, export 선택, 5K~5M snapshot body 전달, idle wake-up, 2,001/1,001 원격 pagination, 무작업/directional sync delta를 실행했다.
 
-결과: **13 files passed, 87 tests passed**.
+결과: **14 files passed, 101 tests passed**.
 
 ### R3: migration
 
@@ -153,7 +155,7 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 - `check:core-complexity`: PASS. renderer 기존 advisory 2건만 출력됐다.
 - `check:persist-contracts`: 기존 `graphStore.ts`의 persist option 누락 1건으로 실패했다. database 변경과 무관하다.
-- `check:source-loc`: 당시 실패를 기존 대형 파일 중심으로 설명했으나, 최신 QA에서 **신규 7건·기존 16건**으로 정정했다. 상세 비교는 아래 최신 검증 결과를 따른다. 기능·정확성 검사를 완화하거나 baseline을 올리지 않았다.
+- `check:source-loc`: 당시 실패를 기존 대형 파일 중심으로 설명했으나, 최신 QA에서 **원 HEAD 대비 database 누적 변경 파일 8건·기존 16건**으로 정정했다. 상세 비교는 아래 최신 검증 결과를 따른다. 기능·정확성 검사를 완화하거나 baseline을 올리지 않았다.
 - `verify:packaged-drizzle`은 빌드된 app resources 경로를 요구한다. 로컬 `resources/`에는 builder가 복사하기 전의 drizzle 산출물이 없어 검증 대상으로 사용할 수 없으며, `electron-builder.json`은 root `drizzle`을 `extraResources/drizzle`로 복사하도록 유지한다.
 
 ## 이전 판정 기록 — 최신 QA에서 대체됨
@@ -166,24 +168,29 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 미커밋 변경분이다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존하며, 이후 작업별 커밋은 검토 소스를 식별하기 위한 기록이다. 개별 과거 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
 
-- R1의 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **18 files, 67 tests PASS**.
-- R2의 동일 명령을 `SKIP_DB_TEST_SETUP=1`인 mock 계약 환경에서 재실행: **13 files, 87 tests PASS**.
-- 합계 **31 files, 154 tests PASS**. 추가 재현에서 발견한 결함은 이 154건에 포함되지 않은 상태 전이·경계의 문제이며, 회귀 통과가 해당 결함의 부재를 뜻하지 않는다.
+- R1의 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **19 files, 77 tests PASS**. DB-06 동시 FTS·mapping 실패 rollback, DB-09 33,000건 retention·5분 경계·DELETE 실패 rollback, DB-11 stale package/revision, DB-12 failed/paused 전체 rebuild와 50,000건 global query를 포함한다.
+- R2의 동일 명령을 `SKIP_DB_TEST_SETUP=1`인 mock 계약 환경에서 재실행: **14 files, 101 tests PASS**. DB-11이 재사용하는 export queue 13건을 추가했다.
+- 합계 **33 files, 178 tests PASS**. DB-04 claim 전 경쟁, DB-06 동시 FTS, DB-09 대량 이력, DB-11 stale package, DB-12 전체 rebuild/global query를 영구 회귀에 포함했다.
 - `pnpm run check:drizzle` main/cache와 `git diff --check` 재실행: PASS. packaged Electron에서의 기존 DB 업그레이드 실행을 뜻하지 않는다.
+- `pnpm run build` 재실행: PASS — main 938, preload 31, renderer 2,952 modules transformed.
+- 변경된 database source·회귀 테스트 ESLint: PASS. `check:core-complexity`는 renderer 기존 advisory 2건을 출력하고 PASS했다.
 - `pnpm run typecheck` 재실행: 기존 `Sidebar.tsx`의 `TS6133` 1건을 재현했다. 기존 renderer 오류와 아래 database 잔존 결함을 구분한다.
-- `node scripts/check-source-loc.mjs` 재실행: **23건 실패**. 원 HEAD 대비 신규 실패 7건과 기존 실패 16건으로 분류했다.
+- `check:persist-contracts`: 기존 `graphStore.ts` persist option 누락 1건으로 실패. `check:main-service-boundaries`: 기존 `autoSaveMirrorStore.ts` legacy import 1건으로 실패. `check:target-file-drift`는 task packet 부재로 enforcement를 건너뛰었다.
+- `verify:packaged-drizzle`은 `<resourcesPath>` 인수 없이 실행해 usage exit 1이었다. migration/schema 검증은 `check:drizzle`과 실제 worker DB bootstrap으로 수행했으며 packaged app resources 검증으로 확대하지 않는다.
+- `node scripts/check-source-loc.mjs` 재실행: **24건 실패**. 원 HEAD `0faf4fad` 대비 database 누적 변경 파일 8건과 기존 범위 16건으로 분류했다.
 
-| 이번 변경으로 새로 실패한 파일 | 원 HEAD LOC → 검토 시 LOC | 실패 원인 |
-| --- | --- | --- |
-| `src/main/services/features/dbMaintenance/dbMaintenanceService.ts` | 498 → 521 | 새 500줄 초과 |
-| `src/main/services/features/search/chapterSearchCacheService.ts` | 431 → 556 | 새 500줄 초과 |
-| `tests/main/services/syncLocalApply.test.ts` | 350 → 538 | 새 500줄 초과 |
-| `src/main/services/features/project/projectService.ts` | 522 → 565 | 허용 baseline 526 초과 |
-| `tests/main/services/luieContainer.test.ts` | 570 → 641 | 허용 baseline 570 초과 |
-| `tests/main/services/projectExportEngine.test.ts` | 630 → 681 | 허용 baseline 630 초과 |
-| `tests/main/services/syncService.test.ts` | 1243 → 1325 | 허용 baseline 1243 초과 |
+| 이번 변경으로 새로 실패한 파일                                     | 원 HEAD LOC → 검토 시 LOC | 실패 원인               |
+| ------------------------------------------------------------------ | ------------------------- | ----------------------- |
+| `src/main/services/features/dbMaintenance/dbMaintenanceService.ts` | 498 → 522                 | 새 500줄 초과           |
+| `src/main/services/features/search/chapterSearchCacheService.ts`   | 431 → 567                 | 새 500줄 초과           |
+| `tests/main/services/memoryProjectionService.test.ts`              | 366 → 589                 | 새 500줄 초과           |
+| `tests/main/services/syncLocalApply.test.ts`                       | 350 → 538                 | 새 500줄 초과           |
+| `src/main/services/features/project/projectService.ts`             | 522 → 565                 | 허용 baseline 526 초과  |
+| `tests/main/services/luieContainer.test.ts`                        | 570 → 641                 | 허용 baseline 570 초과  |
+| `tests/main/services/projectExportEngine.test.ts`                  | 630 → 681                 | 허용 baseline 630 초과  |
+| `tests/main/services/syncService.test.ts`                          | 1243 → 1325               | 허용 baseline 1243 초과 |
 
-LOC는 `scripts/check-source-loc.mjs`와 같은 줄 계산법을 사용했다. 신규 7건은 기존 debt로 종료할 수 없으며, 크기 자체를 데이터 손실 결함으로 해석하지는 않는다.
+LOC는 `scripts/check-source-loc.mjs`와 같은 줄 계산법을 사용했다. database 누적 변경 파일 8건은 기존 debt로 종료할 수 없으며, 크기 자체를 데이터 손실 결함으로 해석하지는 않는다.
 
 ### 환경과 성능 증거의 범위
 
@@ -197,24 +204,23 @@ LOC는 `scripts/check-source-loc.mjs`와 같은 줄 계산법을 사용했다. �
 
 원 감사 `database.md`의 `/private/tmp/luie-*.cjs` 재현 스크립트 4개는 현재 존재하지 않는다. 과거 원인 분석 기록은 보존하되, 해당 명령을 현재 재실행 가능한 증거로 분류하지 않는다.
 
-### 재개 항목과 근거
+### 보정 항목과 근거
 
-| 항목 | 이미 구현된 범위 | 최신 QA의 잔존 문제와 증거 |
-| --- | --- | --- |
-| **DB-04 · P1** | running과 후속 pending row ID 분리 | `memoryProjectionService.ts`가 source A를 선조회한 뒤 claim 전에 B 저장이 기존 pending에 합쳐진다. 실제 native 재현: body B, chunk A, job completed, 후속 pending 0. 기존 테스트는 running을 미리 seed하고 직접 completed로 바꿔 이 틈을 검사하지 않았다. |
-| **DB-09 · P1** | reason 분리, coalescing, 최신 100개 retention | `chapterWriteOperations.ts`가 기존 revision의 삭제 대상 ID를 단일 `IN`에 넣는다. 실제 native/Drizzle에 revision 33,000건을 넣은 재현에서 `too many SQL variables`로 본문 저장 transaction도 rollback되어 이전 본문이 남았다. 105건 테스트로는 이 경계를 검증하지 못했다. |
-| **DB-11 · P1** | 양방향 row delta, no-op write 생략, sibling 비변경 | local snapshot A 이후 B를 저장·flush하고 remote character delta를 적용하면 DB 본문은 B지만 package payload는 오래된 A이고 최신 revision 12가 캡처된다. 실제 delta/applier와 DB·파일 mock으로 재현하고 실제 package write/mark 호출 소스를 교차 확인했다. end-to-end 실제 파일 재현과는 구분한다. |
-| **DB-06 · P2** | 전체 FTS transaction/prepared INSERT, rowid mapping | `chapterSearchCacheService.ts`의 동시 단건 upsert가 같은 이전 rowid를 사용한다. 실제 native 재현에서 projection 1개·FTS row 2개가 남았다. 전체 rebuild 원자성 테스트와 별도로 단건 projection/FTS의 경쟁을 해결해야 한다. |
-| **DB-12 · P2** | SQL runnable 조건, 단건 memory failed 재활성화, idle wake-up | memory chunk의 failed/attempts 5 작업에 전체 memory rebuild를 요청하면 queued 1을 반환하지만 failed/attempts 5가 유지된다. 실제 native DB 재현으로 실행되지 않는 작업의 접수 응답을 확인했다. |
-| **DB-12 · 성능 잔존/검증 공백** | runnable index 추가와 기존 query plan 검사 | 실제 global runnable query plan은 covering index SCAN과 TEMP B-TREE를 사용한다. 단순화한 query의 index 사용 결과를 실제 worker query의 최적화 완료로 확대할 수 없다. terminal history 규모별 실 query plan·latency 검증이 필요하다. |
+| 항목                            | 구현 범위                                                           | 최신 QA 보정 결과와 증거                                                                                                                                                                                                                                                                         |
+| ------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **DB-04 · 해결**                | pending/failed UUID generation 교체, running successor, paused 보존 | 실제 SQLite RED에서 claim 전 B 유실을 재현하고 수정 후 이전 claim 0행·새 pending·다음 cycle B chunk를 확인했다. [보정 보고서](db-04-preclaim-generation-remediation-test-report.md)                                                                                                              |
+| **DB-09 · 해결**                | reason 분리, coalescing, SQL subquery 최신 100개 retention          | 실제 `ChapterService.updateChapter`와 SQLite에서 33,000건 저장·100건 상한, 299,999/300,000ms 경계, 강제 DELETE 실패 rollback을 확인했다. [보정 보고서](db-09-large-history-remediation-test-report.md)                                                                                       |
+| **DB-11 · 2차 보정 완료**       | 양방향 row delta, authoritative export, world tombstone, snapshot precondition | DB-11A 즉시 export·실패 retry·DB 재연결·revive와 DB-11B body/metadata stale 거부·B/C conflict·bounded retry를 확인했다. [DB-11A](test2/db-11a-world-deletion-remediation-test-report.md), [DB-11B](test2/db-11b-concurrent-chapter-remediation-test-report.md) |
+| **DB-06 · 해결**                | 전체·단건 FTS transaction, prepared INSERT, rowid mapping           | 동시 단건 upsert 뒤 projection/FTS 각 1건과 mapping 일치, mapping 실패 시 전체 단건 rollback을 실제 cache SQLite에서 확인했다. [보정 보고서](db-06-concurrent-upsert-remediation-test-report.md)                                                                                                  |
+| **DB-12 · 해결**                | 전체 rebuild generation reset, global partial index, idle wake-up  | failed-only는 새 ID의 pending/0/null, paused는 보존했다. 50,000 completed + 1 pending의 실제 global query가 terminal 제외 partial index를 사용하고 20회 p95 < 50ms를 통과했다. [보정 보고서](db-12-full-rebuild-global-query-remediation-test-report.md)                                                |
 
-최신 QA의 임시 재현 스크립트에는 `/private/tmp/luie-db04-current-review.cjs`, `/private/tmp/luie-retention-review-repro.cjs`, `/private/tmp/luie-sync-snapshot-review.cjs`가 사용됐다. 임시 경로는 영구 검증 산출물이 아니며, 존재·재현 가능성이 계속 유지된다고 가정하지 않는다. 수정 시 해당 반례를 저장소 회귀 테스트로 남겨야 한다.
+최신 QA의 임시 재현 스크립트에는 `/private/tmp/luie-db04-current-review.cjs`, `/private/tmp/luie-retention-review-repro.cjs`, `/private/tmp/luie-sync-snapshot-review.cjs`가 사용됐다. 임시 경로는 영구 검증 산출물이 아니다. DB-04·DB-09·DB-11 반례는 저장소 테스트로 옮겼다.
 
 원 SSOT DB-13의 “같은 인물 1,000회 출현 → appearance INSERT 1,000회” 가정은 현재 extractor의 `seen` dedupe와 맞지 않는다. [DB-13 결과본](db-13-keyword-appearance-transaction-test-report.md)은 이 가정을 이미 정정했다. cache API 1,000행 rollback 검증과 반복 이름 1개 추출 검증을 구분한다.
 
 ## 최신 최종 판정
 
-- **`.luie` 안정화 미완료**. P1 3건, P2 기능 결함 2건, DB-12 query plan 잔존과 실환경·성능 검증 공백이 있다. DB-04·DB-06·DB-09·DB-11·DB-12의 과거 PASS를 항목 종료로 유지하지 않는다.
-- 기존 회귀 154건은 현재 검증한 입력·상태에서 통과했다. 실제 SQLite·임시 파일 사용은 유효한 통합 증거지만, mock 경계·제한된 crash 위치·미측정 성능까지 보장하지 않는다.
-- TypeScript 기존 renderer 오류 1건, source LOC 신규 7건·기존 16건, 기존 persist gate 실패를 각각 남긴다. 이전의 “남은 실패는 기존 debt뿐”이라는 판정을 철회한다.
+- 기존 DB-01~14 보고 범위와 DB-11A·DB-11B 후속 반례는 완료했다. DB-04B·DB-06B 결합 전이와 DB-12B 측정 보정이 남았다.
+- 현재 회귀 178건은 검증한 입력·상태에서 통과했다. 실제 SQLite·임시 파일 사용은 유효한 통합 증거지만, mock 경계·제한된 crash 위치·미측정 실환경 성능까지 보장하지 않는다.
+- TypeScript 기존 renderer 오류 1건, source LOC database 누적 변경 파일 8건·기존 16건, 기존 persist/main-service boundary gate 실패를 각각 남긴다. 이전의 “남은 실패는 기존 debt뿐”이라는 판정을 철회한다.
 - DB-10D는 명시한 Node writer 전후·DB 재연결 복구 범위만 완료이며, DB-10E는 조건부 확대 보류다. 후속 수정·반례 회귀와 현재 revision의 실제 Electron/사용자 규모 검증 후 안정화 여부를 다시 판정한다.

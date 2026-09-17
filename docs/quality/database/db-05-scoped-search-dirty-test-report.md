@@ -78,7 +78,7 @@ pnpm exec vitest run tests/main/services/dbMaintenanceService.test.ts
 
 결과: **1 file passed, 5 tests passed**.
 
-초기 결합 실행에서는 새 테스트의 cache module import 경로가 실제 index 경로와 달라 suite가 시작되지 않았다. import를 `src/main/database/cache/index.js`로 교정한 뒤 같은 전용 file 전체가 통과했다. 당시 `searchService.test.ts`는 Electron mock의 default export 누락으로 import 단계에서 중단됐으나, 최종 실제 DB 통합 실행에서는 이 파일을 포함한 18 files/67 tests가 통과해 현재 잔여 실패가 아니다.
+초기 결합 실행에서는 새 테스트의 cache module import 경로가 실제 index 경로와 달라 suite가 시작되지 않았다. import를 `src/main/database/cache/index.js`로 교정한 뒤 같은 전용 file 전체가 통과했다. 당시 `searchService.test.ts`는 Electron mock의 default export 누락으로 import 단계에서 중단됐으나, DB-09 완료 직후 실제 DB 통합 실행에서는 이 파일을 포함한 18 files/71 tests가 통과해 잔여 실패가 아니었다.
 
 ### 정적 검사
 

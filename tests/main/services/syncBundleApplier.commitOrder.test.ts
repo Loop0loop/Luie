@@ -5,10 +5,11 @@ const mocked = vi.hoisted(() => ({
   transaction: vi.fn((callback: (tx: unknown) => unknown) => {
     return callback({});
   }),
-  persistBundleToLuiePackages: vi.fn(async () => {
+  exportProjectPackageNow: vi.fn(async () => {
     mocked.calls.push("package");
-    return [];
+    return true;
   }),
+  schedulePackageExport: vi.fn(),
 }));
 
 vi.mock("../../../src/main/infra/database/index.js", () => ({
@@ -24,7 +25,16 @@ vi.mock(
   "../../../src/main/services/features/sync/syncPackagePersistence.js",
   () => ({
     buildProjectPackagePayload: vi.fn(),
-    persistBundleToLuiePackages: mocked.persistBundleToLuiePackages,
+  }),
+);
+
+vi.mock(
+  "../../../src/main/services/features/project/projectService.js",
+  () => ({
+    projectService: {
+      exportProjectPackageNow: mocked.exportProjectPackageNow,
+      schedulePackageExport: mocked.schedulePackageExport,
+    },
   }),
 );
 
@@ -118,9 +128,9 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
         return callback(tx);
       },
     );
-    mocked.persistBundleToLuiePackages.mockImplementation(async () => {
+    mocked.exportProjectPackageNow.mockImplementation(async () => {
       mocked.calls.push("package");
-      return [];
+      return true;
     });
   });
 
@@ -134,11 +144,9 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
       "revision capture",
       "package",
     ]);
-    expect(mocked.persistBundleToLuiePackages).toHaveBeenCalledTimes(1);
-    expect(mocked.persistBundleToLuiePackages).toHaveBeenCalledWith(
-      expect.objectContaining({
-        capturedRevisions: new Map([["project-1", 7]]),
-      }),
+    expect(mocked.exportProjectPackageNow).toHaveBeenCalledWith(
+      "project-1",
+      "sync",
     );
   });
 
@@ -152,10 +160,22 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
       "SYNC_DB_CACHE_APPLY_FAILED:project-1",
     );
     expect(mocked.calls).toEqual(["db apply"]);
-    expect(mocked.persistBundleToLuiePackages).not.toHaveBeenCalled();
+    expect(mocked.exportProjectPackageNow).not.toHaveBeenCalled();
   });
 
-  it("applies only the delta but persists the affected project's full bundle", async () => {
+  it("queues a retry when the authoritative package export fails", async () => {
+    mocked.exportProjectPackageNow.mockResolvedValueOnce(false);
+
+    await expect(applyBundle()).rejects.toThrow(
+      "SYNC_LUIE_PERSIST_FAILED:project-1",
+    );
+    expect(mocked.schedulePackageExport).toHaveBeenCalledWith(
+      "project-1",
+      "sync:retry",
+    );
+  });
+
+  it("applies only the delta and exports the affected project from DB", async () => {
     const packageBundle = createBundle();
     packageBundle.chapters = [
       {
@@ -189,13 +209,9 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
 
     await applyBundle(delta, packageBundle);
 
-    expect(mocked.persistBundleToLuiePackages).toHaveBeenCalledWith(
-      expect.objectContaining({
-        bundle: expect.objectContaining({
-          projects: packageBundle.projects,
-          chapters: packageBundle.chapters,
-        }),
-      }),
+    expect(mocked.exportProjectPackageNow).toHaveBeenCalledWith(
+      "project-1",
+      "sync",
     );
   });
 });

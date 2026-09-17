@@ -363,8 +363,8 @@ export class SyncService {
       ensureAccessToken: async (syncSettings) =>
         await this.ensureAccessToken(syncSettings),
       buildLocalBundle: async (userId) => await this.buildLocalBundle(userId),
-      applyMergedBundleToLocal: async (delta, merged) =>
-        await this.applyMergedBundleToLocal(delta, merged),
+      applyMergedBundleToLocal: async (delta, merged, localSnapshot) =>
+        await this.applyMergedBundleToLocal(delta, merged, localSnapshot),
       countBundleRows: (bundle) => this.countBundleRows(bundle),
       updateStatus: (next) => this.updateStatus(next),
       applyAuthFailureState: (message, lastRun) =>
@@ -421,14 +421,16 @@ export class SyncService {
   private async applyMergedBundleToLocal(
     bundle: SyncBundle,
     packageBundle: SyncBundle,
-  ): Promise<void> {
+    localSnapshot: SyncBundle,
+  ) {
     const applyMergedBundleToLocalFirstLuie =
       await loadApplyMergedBundleToLocalFirstLuie();
     const hydrateMissingWorldDocsFromPackage =
       await loadHydrateMissingWorldDocsFromPackage();
-    await applyMergedBundleToLocalFirstLuie({
+    return await applyMergedBundleToLocalFirstLuie({
       bundle,
       packageBundle,
+      localSnapshot,
       hydrateMissingWorldDocsFromPackage: async (worldDocs, projectPath) =>
         await hydrateMissingWorldDocsFromPackage(
           worldDocs,

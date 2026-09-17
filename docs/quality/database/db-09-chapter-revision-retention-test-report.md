@@ -1,15 +1,19 @@
 # DB-09 ChapterRevision 보관 정책 테스트 보고서
 
-## 최신 판정 — REOPEN (2026-09-13 QA 재검토)
+## 최신 판정 — PASS (2026-09-13 보정)
 
-기존 테스트의 PASS 실행 이력은 아래에 보존한다. 이후 대량 기존 이력에서 저장 transaction이 실패하는 P1 회귀를 확인했으므로 DB-09 완료 판정은 재개한다. 제품 수정은 아직 적용하지 않았다.
+대량 ID bind를 SQL subquery 삭제로 교체했다. 실제 `ChapterService.updateChapter`에 기존 revision 33,000건을 둔 상태에서 최신 본문 commit과 100건 보관, 5분 경계 전후, 강제 삭제 실패 rollback을 확인했다. 최신 구현·테스트·실행 결과는 [DB-09 보정 보고서](db-09-large-history-remediation-test-report.md)를 기준으로 한다.
+
+## 이전 재개 근거 — 2026-09-13 QA 재검토
+
+아래 내용은 보정 전 결함과 당시 실행 이력이다.
 
 - 원인: [chapterWriteOperations.ts](../../../src/main/services/core/chapter/chapterWriteOperations.ts)의 `persistChapterRevision`은 보관 상한 밖 ID를 모두 조회한 다음 `inArray(chapterRevision.id, expired.map(...))`로 한 번에 바인딩한다. 과거 무제한 누적 이력이 많으면 SQLite bind variable 상한을 넘는다.
 - 확인 환경: 현재 소스에서 해당 helper를 추출해 TypeScript로 변환하고, 설치된 native `better-sqlite3`와 Drizzle의 합성 in-memory transaction에서 실행했다. `PRAGMA compile_options`의 `MAX_VARIABLE_NUMBER=32766`을 확인했으며 사용자 DB·원고·package는 사용하지 않았다.
 - 재현: 기존 manual revision 33,000개를 준비하고 같은 transaction에서 본문을 `old → latest`로 바꾼 뒤 현재 retention helper를 호출했다. 결과는 `error="too many SQL variables"`, `bodyAfter="old"`, `revisionCountAfter=33000`이었다. 오류가 본문 변경까지 rollback하며 동일 이력을 둔 재시도도 해결하지 못한다. 실제 `ChapterService`·Electron·파일 저장의 종단 실행은 아니다.
 - 재실행: `node /private/tmp/luie-retention-review-repro.cjs`. 이 스크립트는 로컬 임시 검토 산출물이며 저장소에 포함되지 않는다.
 - 테스트 공백: [chapterRevisionRetention.test.ts](../../../tests/main/services/core/chapter/chapterRevisionRetention.test.ts)의 기존 105개 fixture는 100개 보관 정책을 검증하지만 bind variable 상한을 넘는 업그레이드 데이터를 다루지 않는다.
-- 최소 수정·후속 검증: 삭제 대상을 SQL 서브쿼리로 처리하거나 bounded batch로 제한한다. 실제 임시 DB의 `ChapterService.updateChapter`에서 33,000개 기존 이력의 저장 성공·최신 본문·100개 보관을 확인하고, 삭제 실패 주입 시 본문과 이력이 함께 rollback되는지 검증해야 한다. 수정 완료 전까지 안정화 PASS로 해석하지 않는다.
+- 당시 완료 조건은 삭제 대상을 SQL 서브쿼리 또는 bounded batch로 제한하고, 실제 임시 DB의 `ChapterService.updateChapter`에서 33,000개 기존 이력의 저장 성공·최신 본문·100개 보관·삭제 실패 rollback·5분 경계를 검증하는 것이었다. 현재 결과는 위 최신 보정 보고서에 기록했다.
 
 ## 문서 정보
 
@@ -149,6 +153,6 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 ## 판정과 잔여 범위
 
-- 최초 실행에서는 reason 분리, coalescing, 100개 경계를 확인해 PASS로 판정했다. 최신 판정은 위 대량 기존 이력 회귀에 따른 REOPEN이며 최초 통과 결과만으로 업그레이드 저장 안전성을 보장하지 않는다.
+- 최초 실행에서는 reason 분리, coalescing, 100개 경계를 확인해 PASS로 판정했다. 이후 대량 기존 이력 회귀로 한 차례 REOPEN됐고, 현재는 문서 상단 보정 보고서의 대량 bind·rollback 검증으로 해결됐다.
 - 기존 DB에서 과거 autosave가 `manual_save`로 기록된 사실은 소급 분류할 근거가 없어 그대로 둔다. 다음 content commit부터 최신 100개 보관 정책만 적용한다.
 - SQLite page 파일의 물리적 축소는 VACUUM 정책이 아니므로 보장하지 않는다. live ChapterRevision row와 새 증가량을 제한하는 정책이다.

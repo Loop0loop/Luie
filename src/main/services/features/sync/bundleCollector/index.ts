@@ -59,11 +59,8 @@ const collectProjectBundleData = async (
   );
   appendTermRecords(bundle, userId, projectId, toRecordArray(projectRow.terms));
 
-  const worldDocsByType = collectReplicaWorldDocuments(
-    projectRow,
-    projectId,
-    logger,
-  );
+  const { active: worldDocsByType, deleted: deletedWorldDocsByType } =
+    collectReplicaWorldDocuments(projectRow, projectId, logger);
 
   if (
     projectPath &&
@@ -78,6 +75,7 @@ const collectProjectBundleData = async (
         worldDocsByType,
         safeProjectPath,
         logger,
+        new Set(deletedWorldDocsByType.keys()),
       );
     } catch (error) {
       logger.warn("Skipping sync world document read for invalid projectPath", {
@@ -96,6 +94,17 @@ const collectProjectBundleData = async (
       docType,
       payload,
       projectUpdatedAt,
+    );
+  }
+  for (const [docType, deleted] of deletedWorldDocsByType.entries()) {
+    addWorldDocumentRecord(
+      bundle,
+      userId,
+      projectId,
+      docType,
+      deleted.payload,
+      deleted.updatedAt,
+      deleted.deletedAt,
     );
   }
 

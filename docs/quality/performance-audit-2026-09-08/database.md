@@ -1,65 +1,73 @@
 # Luie DB·저장·검색·동기화 심층 감사
 
-현재 판정: **Risky — 안정화 미완료** (2026-09-13 QA·코드 리뷰 반영). 기존 회귀 31 files / 154 tests는 재실행에서도 통과했으나, P1 결함 3건과 P2 기능 결함 2건 및 성능 검증 공백을 확인했다. 기존 개선 구현과 제한된 범위의 PASS를 전체 `.luie` 안정화 완료로 해석하지 않는다.
+현재 판정: **Risky — 정확성 결함 보정 진행 중** (2026-09-14). DB-11A world 삭제 부활과 DB-11B 동일 chapter 경쟁은 수정했다. DB-04·DB-06 P2 결합 전이와 DB-12 성능 근거 공백은 남았다. 2차 수정과 검증은 [`database/test2`](../database/test2/implementation-todo.md)에서 추적한다.
 
-이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다. 이번 동기화는 판정과 기록을 정정하며, 아래 잔존 결함을 수정한 작업이 아니다.
+이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다.
 
-검토한 제품 코드·테스트·migration의 누적 커밋 기준은 `ba707bf3adca4c1764b5b41a45aee5ab77eb9db5`다. 원 HEAD `0faf4fad` 위 변경을 작업별 5개 커밋으로 보존했으며, 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
+DB-04·DB-06·DB-09·DB-11·DB-12 보정의 현재 기준은 문서 커밋 `b76d6f0e` 위 작업 트리다. 나머지 제품 코드·테스트·migration의 누적 커밋 기준은 `ba707bf3adca4c1764b5b41a45aee5ab77eb9db5`다. 원 HEAD `0faf4fad` 위 변경을 작업별 5개 커밋으로 보존했으며, 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
 
 ## 현재 항목별 상태
 
-| 항목 | 상태 | 확인한 개선과 잔여 범위 |
-| --- | --- | --- |
-| DB-01·02 | 구현·범위 검증 완료 | pending 세대 보존, queue 직렬화, 저장 실패의 flush·수동 저장 전파. 실제 SQLite 실패부터 renderer 응답까지의 결합 E2E는 별도다. |
-| DB-03 | 구현·범위 검증 완료 | 동기 transaction과 명시적 tx 전달, 실제 DB rollback 격리 검증. |
-| DB-04 | **재개 / P1 잔존** | running 이후 enqueue는 분리했지만 source 선조회 후 claim 전 B 저장이 같은 pending ID에 합쳐져 B의 후속 작업이 사라진다. |
-| DB-05 | 단건 처리 구현·범위 검증 완료 | sourceId별 refresh 적용. 직접 upsert와 dirty worker의 두 write owner는 남고, worker는 직접 쓰기 성공 후에도 실행된다. |
-| DB-06 | **재개 / P2 신규 회귀** | 전체 rebuild transaction·rowid 매핑은 유효하나 동시 단건 upsert가 같은 chapter의 FTS 행을 중복 생성한다. |
-| DB-07 | 구현·mock 계약 검증 완료 | Range·종료 검증과 2,001/1,001행 경계. 실제 서버·RLS·동시 원격 변경은 미검증이다. |
-| DB-08 | 구현·범위 검증 완료 | 불변 chunk ID·embedding 보존을 실제 DB에서 확인했다. 실제 모델 비용·대용량 성능은 미측정이다. |
-| DB-09 | **재개 / P1 신규 회귀** | autosave/manual reason·5분 coalescing·최신 100개 정책은 구현됐으나 기존 대량 이력의 삭제 bind 한도로 본문 저장이 실패한다. |
-| DB-10A·B·C | 구현·범위 검증 완료 | snapshot SQL limit, entry·meta·timestamp transaction, content-only 증분 저장. full/sync export 교차 실행은 추가 검증 대상이다. |
-| DB-10D | 제한된 crash 검증 완료 | Node child writer 호출 전/정상 반환 후 SIGKILL 및 DB 재연결 recovery. commit 도중·packaged Electron 전체 재시작·전원 차단은 미검증이다. |
-| DB-10E | 확대 보류 결정 완료 | full export p95/p99·허용 한계가 없어 world/snapshot 증분 확대를 보류했다. 성능 검증 또는 확대 구현 완료가 아니다. |
-| DB-11 | **재개 / P1 경쟁 확인** | row delta·no-op sync는 유효하나 수집 중 로컬 편집을 포함하지 않은 package payload에 최신 revision을 붙일 수 있다. |
-| DB-12 | **재개 / P2 복구 공백·성능 잔존** | LIMIT 전 runnable 조건·단건 failed reset·idle wake-up은 유효하다. 전체 rebuild의 failed-only 재활성화와 전역 history scan 문제는 남는다. |
-| DB-13 | 구현·범위 검증 완료 / 초기 가정 정정 | commit 후 dispatch·bulk cache transaction 적용. 같은 이름 1,000회가 1,000 appearance가 된다는 초기 가정은 extractor의 중복 제거와 맞지 않는다. |
-| DB-14 | 정책 연결·범위 검증 완료 | low-end lexical hit 시 vector skip을 확인했다. 실제 utility process·모델·corpus ranking 검증 및 rerank cache 적용은 별도다. |
+| 항목       | 상태                                 | 확인한 개선과 잔여 범위                                                                                                                        |
+| ---------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| DB-01·02   | 구현·범위 검증 완료                  | pending 세대 보존, queue 직렬화, 저장 실패의 flush·수동 저장 전파. 실제 SQLite 실패부터 renderer 응답까지의 결합 E2E는 별도다.                 |
+| DB-03      | 구현·범위 검증 완료                  | 동기 transaction과 명시적 tx 전달, 실제 DB rollback 격리 검증.                                                                                 |
+| DB-04      | 재개 · P2                            | 일반 pending/failed generation은 보정됐으나 pause→source 변경→resume에서 stale selector가 같은 ID를 claim한다.                               |
+| DB-05      | 단건 처리 구현·범위 검증 완료        | sourceId별 refresh 적용. 직접 upsert와 dirty worker의 두 write owner는 남고, worker는 직접 쓰기 성공 후에도 실행된다.                          |
+| DB-06      | 재개 · P2                            | upsert transaction은 보정됐으나 clear의 rowid 조회·projection 삭제·FTS 삭제가 분리돼 concurrent upsert와 고아 FTS를 만들 수 있다.             |
+| DB-07      | 구현·mock 계약 검증 완료             | Range·종료 검증과 2,001/1,001행 경계. 실제 서버·RLS·동시 원격 변경은 미검증이다.                                                               |
+| DB-08      | 구현·범위 검증 완료                  | 불변 chunk ID·embedding 보존을 실제 DB에서 확인했다. 실제 모델 비용·대용량 성능은 미측정이다.                                                  |
+| DB-09      | 구현·실제 DB 경계 검증 완료          | SQL subquery retention으로 bind 수 증가를 제거했다. 33,000건 저장·100건 상한·5분 직전/정확 경계·DELETE 실패 rollback을 확인했다.              |
+| DB-10A·B·C | 구현·범위 검증 완료                  | snapshot SQL limit, entry·meta·timestamp transaction, content-only 증분 저장. full/sync export 교차 실행은 추가 검증 대상이다.                 |
+| DB-10D     | 제한된 crash 검증 완료               | Node child writer 호출 전/정상 반환 후 SIGKILL 및 DB 재연결 recovery. commit 도중·packaged Electron 전체 재시작·전원 차단은 미검증이다.        |
+| DB-10E     | 확대 보류 결정 완료                  | full export p95/p99·허용 한계가 없어 world/snapshot 증분 확대를 보류했다. 성능 검증 또는 확대 구현 완료가 아니다.                              |
+| DB-11      | 2차 정확성 보정 완료                  | world tombstone이 package fallback 부활을 막고, apply transaction의 snapshot 사전조건과 1회 재merge가 동일 chapter B/C를 conflict로 보존한다. |
+| DB-12      | 기능 보정 유지·성능 근거 재검증      | failed reset과 partial index는 유효하다. `Promise.all` 누적 시간과 복제 EXPLAIN SQL을 독립 production query p95/plan 근거로 사용할 수 없다.    |
+| DB-13      | 구현·범위 검증 완료 / 초기 가정 정정 | commit 후 dispatch·bulk cache transaction 적용. 같은 이름 1,000회가 1,000 appearance가 된다는 초기 가정은 extractor의 중복 제거와 맞지 않는다. |
+| DB-14      | 정책 연결·범위 검증 완료             | low-end lexical hit 시 vector skip을 확인했다. 실제 utility process·모델·corpus ranking 검증 및 rerank cache 적용은 별도다.                    |
 
-## 최신 QA 발견과 재개 조건
+## 최신 QA 보정 결과
 
-### P1 · DB-04 · claim 전 새 본문이 후속 작업 없이 소실
+### 해결 · DB-04 · claim 전 source generation 보존
 
-- 현재 [worker](../../../src/main/services/features/memory/memoryProjectionService.ts)는 source batch 조회 → `setImmediate` → claim 순서다. 그 사이 B가 저장되면 [enqueue](../../../src/main/services/features/memory/memoryBuildJobEnqueue.ts)가 아직 pending인 같은 ID를 갱신한다.
-- 실제 현재 함수·native SQLite 재현: `body=B`, `chunk=A`, `jobs=[completed]`, `latestSourceHasPending=false`. running을 사전 seed하고 테스트가 직접 completed로 바꾸는 기존 테스트는 이 전이를 검증하지 않는다.
-- 재개 조건: source를 claim 후 읽고 완료 시 처리한 generation/hash의 최신성을 확인하며, 선조회→claim 및 claim→완료 양쪽 창에서 새 작업이 보존되는 회귀를 추가한다. [항목 보고서](../database/db-04-derived-job-generation-test-report.md)
+- 보정 전에는 source A 선택과 claim 사이 B enqueue가 같은 pending ID를 유지해 A가 completed되고 B pending이 사라졌다.
+- pending/failed 재enqueue가 UUID를 원자적으로 교체하도록 수정했다. 이전 selector는 옛 UUID의 claim에 실패하며 다음 cycle이 B generation을 처리한다. running에는 별도 pending을 만들고 paused는 유지한다.
+- 실제 worker별 임시 SQLite에서 RED `processed=1`을 확인한 뒤, 수정 후 첫 실행 `processed=0`·새 UUID pending·chunk 0개, 다음 실행 B chunk·completed를 확인했다. [보정 보고서](../database/db-04-preclaim-generation-remediation-test-report.md)
 
-### P1 · DB-09 · 대량 기존 revision에서 본문 저장 rollback
+### 해결 · DB-09 · 대량 기존 revision retention
 
-- [retention](../../../src/main/services/core/chapter/chapterWriteOperations.ts)은 expired ID를 전부 읽어 하나의 `IN(...)`에 bind한다. 설치 SQLite의 `MAX_VARIABLE_NUMBER=32766` 환경에서 과거 revision 33,000개로 실행하면 `too many SQL variables`가 발생하고 같은 transaction의 본문 변경도 rollback된다.
-- 실제 native SQLite·Drizzle 재현: `bodyAfter=old`, `revisionCountAfter=33000`. 기존 105개 fixture는 업그레이드 데이터 경계를 놓친다.
-- 재개 조건: SQL 서브쿼리 또는 bounded batch로 삭제하고, 대량 기존 이력의 첫 저장·삭제 실패 rollback·5분 coalescing 경계 전후를 검증한다. [항목 보고서](../database/db-09-chapter-revision-retention-test-report.md)
+- 보정 전에는 expired ID 전체를 애플리케이션으로 읽어 단일 `IN(...)`에 bind해 33,000건에서 `too many SQL variables`가 발생했다.
+- [retention](../../../src/main/services/core/chapter/chapterWriteOperations.ts)을 한 `DELETE`의 SQL subquery로 바꿔 이력 크기에 따른 bind 증가를 제거했다.
+- 실제 worker별 임시 SQLite의 `ChapterService.updateChapter`에서 RED 오류를 고정한 뒤 본문 commit·100건 보관, 299,999/300,000ms 경계, 강제 DELETE 실패의 본문·revision rollback을 확인했다. [보정 보고서](../database/db-09-large-history-remediation-test-report.md)
 
-### P1 · DB-11 · 오래된 package payload에 최신 revision을 기록
+### 해결 · DB-11 · authoritative DB package, world tombstone, 동일 chapter 경쟁
 
-- local snapshot A 수집 → remote fetch 대기 중 로컬 B 저장·export flush 완료 → remote character delta 도착 순서에서 발생한다. [applier](../../../src/main/services/features/sync/syncBundleApplier.ts)는 delta만 DB에 적용한 뒤 B를 포함한 현재 revision을 캡처하지만 package는 과거 merged bundle A로 만든다.
-- 실제 delta/applier 함수와 DB·파일 경계 mock 재현: `liveBody=B`, `submittedPackageBody=A`, `liveRevision=submittedExportedRevision=12`. 이후 [package writer·checkpoint 경로](../../../src/main/services/features/sync/syncPackagePersistence.ts)를 독립 코드 리뷰로 확인했다. 실파일 종단 경쟁 재현은 수행하지 않았다.
-- DB=B/package=A인데 exported revision이 같으면 stale recovery 대상에서 빠질 수 있다. 재개 조건은 적용 전 snapshot revision 검증·재수집과, 로컬 저장/flush를 포함하는 실제 DB·파일 경쟁 회귀다. [항목 보고서](../database/db-11-sync-delta-test-report.md)
+- 보정 전에는 local snapshot A 수집 뒤 B 저장·flush와 remote character 도착 순서에서 DB=B/package=A인데 최신 revision이 완료 처리됐다.
+- [applier](../../../src/main/services/features/sync/syncBundleApplier.ts)가 remote delta를 DB에 commit한 뒤 기존 `ProjectExportQueue`를 호출하도록 바꿨다. queue는 export 시작 revision을 캡처하고 authoritative DB에서 package를 구성하며, export 중 revision이 증가하면 다시 실행한다.
+- 실제 worker별 임시 SQLite·`.luie`에 stale A, local DB/package B, remote character delta를 두고 DB/package B·revision 일치와 DB 재연결 상태를 확인했다. export 실패는 sync 실패와 `sync:retry`로 남는다. [보정 보고서](../database/db-11-authoritative-package-remediation-test-report.md)
+- DB-11A는 remote world deletion을 local `WorldDocument.deletedAt` tombstone으로 보존한다. exporter는 이를 package fallback 대상에서 제외하고 빈 canonical entry를 기록하며, collector는 tombstone을 다시 sync record로 만든다.
+- 실제 임시 DB·`.luie`에서 즉시 export, 첫 export 실패 후 실제 retry, DB 재연결·재export, 이후 local save revive를 확인했다. 구 schema column patch도 기존 payload를 보존했다. [2차 보정 보고서](../database/test2/db-11a-world-deletion-remediation-test-report.md)
+- DB-11B는 apply transaction에서 incoming chapter의 현재 canonical body·metadata와 local snapshot을 비교한다. 다르면 쓰기·export 전에 중단하고 최신 local을 한 번 재수집해 같은 remote와 재merge한다.
+- 실제 SQLite·`.luie`에서 body·metadata stale가 DB/package/revision을 바꾸지 않았고, executor는 local B/remote C conflict를 반환했다. 두 번째 stale은 remote upload 없이 명시적으로 실패한다. [DB-11B 보고서](../database/test2/db-11b-concurrent-chapter-remediation-test-report.md)
 
-### P2 · DB-06·12 · FTS 동시 갱신과 전체 rebuild 복구
+### 해결 · DB-06 · 단건 projection·FTS 원자성
 
-- [FTS upsert](../../../src/main/services/features/search/chapterSearchCacheService.ts): projection의 이전 rowid를 await 뒤 재사용한다. 동시 두 호출의 실제 함수·SQLite 재현에서 FTS 2행, projection 1행이 남았다. 다음 검색에서 전체 rebuild로 복구될 수 있지만 캐시 불일치·작업 증폭 회귀다. projection/현재 rowid 조회/FTS 교체/mapping을 한 동기 transaction에 넣고 동시 갱신을 검증해야 한다.
-- [전체 memory rebuild](../../../src/main/services/features/dbMaintenance/dbMaintenanceMemory.ts): failed-only key는 새 작업 생성과 reset 모두 생략한다. 실제 함수·SQLite에서 `failed/attempts=5`에 rebuild를 요청하면 `queued=1`이지만 해당 job은 `failed/5` 그대로다. 단건 enqueue와 같이 failed를 재활성화하고 paused를 보존하는 경계 검증이 필요하다.
-- [전역 runnable project 조회](../../../src/main/services/features/dbMaintenance/dbMaintenanceService.ts)는 새 index 적용 후에도 실제 조건의 EXPLAIN이 `SCAN MemoryBuildJob USING COVERING INDEX MemoryBuildJob_runnable_idx` + `USE TEMP B-TREE FOR ORDER BY`다. project/job/status를 고정한 다른 쿼리에서 index 이름만 검사한 테스트는 전역 완료 이력 scan 제거의 증거가 아니다. 실제 쿼리·충분한 terminal history로 plan과 latency를 측정해야 한다.
+- 보정 전에는 projection upsert 뒤 await 경계에서 같은 이전 rowid를 재사용해 동시 두 호출이 projection 1행·FTS 2행을 남겼다.
+- [FTS upsert](../../../src/main/services/features/search/chapterSearchCacheService.ts)의 projection·FTS 교체·mapping을 한 동기 cache transaction으로 묶었다. 실제 함수·SQLite에서 동시 호출 뒤 각 1행과 mapping 일치, 강제 mapping 실패의 전체 rollback을 확인했다. [보정 보고서](../database/db-06-concurrent-upsert-remediation-test-report.md)
+
+### 해결 · DB-12 · 전체 rebuild 복구와 runnable query
+
+- [전체 memory rebuild](../../../src/main/services/features/dbMaintenance/dbMaintenanceMemory.ts)가 failed-only key에 공통 enqueue generation reset을 적용한다. 실제 함수·SQLite에서 chunk는 새 ID의 `pending/0/null`, paused embedding은 기존 상태를 유지했다.
+- [전역 runnable project 조회](../../../src/main/services/features/dbMaintenance/dbMaintenanceService.ts)는 completed와 attempts 5 이상 failed를 포함하지 않는 partial index를 명시적으로 사용한다. 실제 50,000 completed + 1 pending에서 global predicate의 plan은 `MemoryBuildJob_global_runnable_idx` scan이었고 20회 p95 < 50ms를 통과했다. GROUP BY/ORDER BY TEMP B-TREE는 runnable 후보 집합에 남는다. [보정 보고서](../database/db-12-full-rebuild-global-query-remediation-test-report.md)
 
 ## 최신 검증 근거와 한계
 
-- 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 실제 DB setup 묶음 18 files/67 tests와 비DB 계약 묶음 13 files/87 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
-- `check:drizzle` main/cache 및 `git diff --check` 통과. typecheck는 기존 `Sidebar.tsx:157` TS6133으로 실패했다. source LOC gate 23건 중 7건은 이번 변경의 신규 위반이고 16건은 기존 위반이다. 이를 모두 기존 debt로 분류하지 않는다.
+- 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 이전 DB-04·DB-06·DB-09·DB-11·DB-12 통합 회귀는 33 files/178 tests다. DB-11A 추가 검증은 실제 DB·filesystem 6 files/38 tests, mock 계약 1 file/10 tests, legacy migration 1 file/5 tests가 통과했다. DB-11B는 관련 실제 DB·filesystem 6 files/22 tests와 mock 계약 4 files/30 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
+- `check:drizzle` main/cache 및 `git diff --check` 통과. typecheck는 기존 `Sidebar.tsx:157` TS6133으로 실패했다. source LOC gate 24건 중 원 HEAD `0faf4fad` 대비 database 누적 변경 파일의 위반은 8건이고 나머지 16건은 기존 위반이다. 이를 모두 기존 debt로 분류하지 않는다.
 - [derived DB benchmark](../../../scripts/benchmark-derived-db.mjs)는 `node:sqlite`·축약 schema에서 dataset당 list/open/enqueue를 각각 1회 측정한다. production autosave·FTS·export 경로와 p95/p99를 실행하지 않는다. 기존 7월 save-latency 산출물은 다른 HEAD 결과다.
 - [fullprod E2E](../../../tests/e2e/writingLoop.fullprod.spec.ts)의 p95는 chapter.update API 왕복이며 키 입력→autosave 또는 Cmd+S 완료 전체가 아니다. queue timeout 후 pending/running=0 assertion이 없고 [Electron helper](../../../tests/e2e/_helpers/electronApp.ts)는 DB URL만 격리하고 환경을 상속한다. userData/settings/sync 격리와 queue 완료 판정을 보완한 뒤 현재 코드의 성능을 측정해야 한다.
 - 실제 강제 종료 검증도 writer 시작 전 또는 정상 close 후다. commit 중 crash, authoritative DB writer 종료, packaged Electron 재시작, Windows/Linux·외장/저속 볼륨·전원 차단은 미검증이다.
-- 최신 추가 재현은 `/private/tmp/luie-db04-current-review.cjs`, `/private/tmp/luie-retention-review-repro.cjs`, `/private/tmp/luie-sync-snapshot-review.cjs`에서 수행했다. 이 경로는 임시 산출물이며 저장소에 보존된 회귀 테스트가 아니다. 핵심 조건·결과를 위에 기록했고 다음 수정 시 저장소 테스트로 고정해야 한다.
+- 최신 추가 재현은 `/private/tmp/luie-db04-current-review.cjs`, `/private/tmp/luie-retention-review-repro.cjs`, `/private/tmp/luie-sync-snapshot-review.cjs`에서 시작했다. 임시 경로 자체는 영구 증거가 아니며 DB-04·DB-06·DB-09·DB-11·DB-12 반례는 저장소 회귀 테스트로 옮겼다.
 - 초기 감사의 임시 스크립트 4개는 재검토 시 존재하지 않았다. 과거 보고서의 HEAD만으로 당시 dirty tree를 복원할 수도 없다. 과거 실행 기록을 현재 checkout의 재현 보장으로 해석하지 않는다.
 
 ## 초기 감사 기록 — 아래 경로·결함·측정은 수정 전 이력

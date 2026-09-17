@@ -10,6 +10,7 @@ import {
   like,
   sql,
 } from "drizzle-orm";
+import type BetterSqliteDatabase from "better-sqlite3";
 import { db } from "../../../infra/database/index.js";
 import { cacheDb } from "../../../infra/database/cache.js";
 import { chapterSearchDocument } from "../../../infra/database/cache.js";
@@ -88,50 +89,44 @@ class ChapterSearchCacheService {
     logger.warn(reason, { error });
   }
 
-  private async syncFtsDocument(input: {
-    chapterId: string;
-    projectId: string;
-    title: string;
-    synopsis?: string | null;
-    searchText: string;
-    ftsRowId?: number | null;
-  }): Promise<void> {
-    try {
-      cacheDb.runSqliteTransaction((sqlite) => {
-        if (input.ftsRowId === null || input.ftsRowId === undefined) {
-          sqlite
-            .prepare(
-              `DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?`,
-            )
-            .run(input.chapterId);
-        } else {
-          sqlite
-            .prepare(`DELETE FROM "ChapterSearchDocumentFts" WHERE rowid = ?`)
-            .run(input.ftsRowId);
-        }
-        const result = sqlite
-          .prepare(
-            `INSERT INTO "ChapterSearchDocumentFts" ("chapterId", "projectId", "title", "synopsis", "searchText") VALUES (?, ?, ?, ?, ?)`,
-          )
-          .run(
-            input.chapterId,
-            input.projectId,
-            input.title,
-            input.synopsis ?? "",
-            input.searchText,
-          );
-        sqlite
-          .prepare(
-            `UPDATE "ChapterSearchDocument" SET "ftsRowId" = ? WHERE "chapterId" = ?`,
-          )
-          .run(Number(result.lastInsertRowid), input.chapterId);
-      });
-    } catch (error) {
-      this.logFtsUnavailable(
-        "Chapter search FTS sync unavailable; keeping projection fallback",
-        error,
-      );
+  private syncFtsDocument(
+    sqlite: BetterSqliteDatabase.Database,
+    input: {
+      chapterId: string;
+      projectId: string;
+      title: string;
+      synopsis?: string | null;
+      searchText: string;
+      ftsRowId?: number | null;
+    },
+  ): void {
+    if (input.ftsRowId === null || input.ftsRowId === undefined) {
+      sqlite
+        .prepare(
+          `DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?`,
+        )
+        .run(input.chapterId);
+    } else {
+      sqlite
+        .prepare(`DELETE FROM "ChapterSearchDocumentFts" WHERE rowid = ?`)
+        .run(input.ftsRowId);
     }
+    const result = sqlite
+      .prepare(
+        `INSERT INTO "ChapterSearchDocumentFts" ("chapterId", "projectId", "title", "synopsis", "searchText") VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(
+        input.chapterId,
+        input.projectId,
+        input.title,
+        input.synopsis ?? "",
+        input.searchText,
+      );
+    sqlite
+      .prepare(
+        `UPDATE "ChapterSearchDocument" SET "ftsRowId" = ? WHERE "chapterId" = ?`,
+      )
+      .run(Number(result.lastInsertRowid), input.chapterId);
   }
 
   private async clearFtsByChapter(
@@ -261,38 +256,54 @@ class ChapterSearchCacheService {
   }): Promise<CachedChapterSearchDocument> {
     const searchText = buildSearchText(input);
     const client = getCacheClient();
-    const [row] = await client
-      .insert(chapterSearchDocument)
-      .values({
-        chapterId: input.chapterId,
-        projectId: input.projectId,
-        title: input.title,
-        synopsis: input.synopsis ?? null,
-        searchText,
-        wordCount: input.wordCount,
-        chapterOrder: input.order,
-      })
-      .onConflictDoUpdate({
-        target: [chapterSearchDocument.chapterId],
-        set: {
+    const writeProjection = () =>
+      client
+        .insert(chapterSearchDocument)
+        .values({
+          chapterId: input.chapterId,
           projectId: input.projectId,
           title: input.title,
           synopsis: input.synopsis ?? null,
           searchText,
           wordCount: input.wordCount,
           chapterOrder: input.order,
-        },
-      })
-      .returning();
+        })
+        .onConflictDoUpdate({
+          target: [chapterSearchDocument.chapterId],
+          set: {
+            projectId: input.projectId,
+            title: input.title,
+            synopsis: input.synopsis ?? null,
+            searchText,
+            wordCount: input.wordCount,
+            chapterOrder: input.order,
+          },
+        })
+        .returning()
+        .get();
+    let row: typeof chapterSearchDocument.$inferSelect;
+    try {
+      row = cacheDb.runSqliteTransaction((sqlite) => {
+        const document = writeProjection();
+        this.syncFtsDocument(sqlite, {
+          chapterId: input.chapterId,
+          projectId: input.projectId,
+          title: input.title,
+          synopsis: input.synopsis ?? null,
+          searchText,
+          ftsRowId: document.ftsRowId,
+        });
+        return document;
+      });
+    } catch (error) {
+      if (!isFtsUnavailableError(error)) throw error;
+      this.logFtsUnavailable(
+        "Chapter search FTS sync unavailable; keeping projection fallback",
+        error,
+      );
+      row = cacheDb.runSqliteTransaction(writeProjection);
+    }
     const document = mapChapterSearchDocumentRow(row);
-    await this.syncFtsDocument({
-      chapterId: input.chapterId,
-      projectId: input.projectId,
-      title: input.title,
-      synopsis: input.synopsis ?? null,
-      searchText,
-      ftsRowId: row.ftsRowId,
-    });
     return document;
   }
 

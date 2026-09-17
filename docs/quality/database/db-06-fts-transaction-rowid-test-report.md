@@ -1,8 +1,10 @@
 # DB-06 FTS transaction·rowid 테스트 보고서
 
-## 최신 QA 재검토 · 2026-09-13
+## 최신 보정 판정 · 2026-09-13
 
-현재 판정: **REOPEN · P2 · 동시 단건 upsert가 FTS 중복 row를 남긴다.** 전체 rebuild transaction과 순차 rowid 갱신의 기존 PASS는 유지하되 DB-06 전체 해결 판정은 보류한다. 이번 재검토에서는 제품 코드를 수정하지 않았다.
+현재 판정: **PASS · 동시 단건 upsert 보정 완료**. projection upsert와 FTS 교체·mapping을 한 동기 cache transaction에 넣었고, 실제 SQLite 동시 호출과 mapping 실패 rollback을 영구 회귀로 추가했다. 상세 RED/GREEN 및 통과 조건은 [보정 보고서](db-06-concurrent-upsert-remediation-test-report.md)를 기준으로 한다.
+
+### 보정 전 QA 재현 기록
 
 - [chapterSearchCacheService.ts](../../../src/main/services/features/search/chapterSearchCacheService.ts)의 `upsertChapter`는 projection `.returning()` 뒤 await 경계를 거쳐 이전 `ftsRowId`를 `syncFtsDocument`에 넘긴다. 같은 chapter에 두 호출이 겹치면 둘 다 같은 이전 rowid를 삭제해 첫 호출이 새로 만든 FTS row를 두 번째 호출이 제거하지 못한다.
 - 실제 service에 동일 chapter의 `upsertChapter` 두 개를 `Promise.all`로 실행한 native SQLite `:memory:` 재현에서 FTS에는 alpha/rowid3와 beta/rowid4 두 건이 남고 projection은 beta/ftsRowId4 한 건이었다. 다른 chapter 한 건을 함께 준비해 이전 rowid가 최댓값이 아닌 조건을 사용했다. 직접 cache 갱신과 dirty worker 갱신의 두 owner가 실제 호출 경로에 남아 있다.
@@ -142,6 +144,6 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 ## 판정과 잔여 범위
 
-- 기존 테스트에서는 전체 rebuild transaction, prepared INSERT, 순차 rowid 단건 경로와 migration parity가 PASS였다. 최신 재검토에서 동시 단건 갱신 회귀가 재현되어 현재 DB-06은 REOPEN이다.
+- 전체 rebuild transaction, prepared INSERT, rowid 단건 경로와 migration parity가 유지됐다. 동시 단건 갱신과 mapping 실패 rollback까지 통과해 현재 DB-06은 완료다.
 - 300장은 기능·경계 통합 검증값이다. audit의 1,200장 합성 benchmark를 다시 측정하거나 Electron main event-loop p95/p99를 측정하지 않았다.
 - FTS가 없는 환경의 projection fallback 분기는 기존 오류 처리 계약을 유지했지만 이번 실제 FTS 사용 환경에서 FTS module 부재를 재현하지 않았다.

@@ -26,6 +26,7 @@ export type ParsedWorldPayload = {
 export type ReplicaParsedWorldPayload = {
   [K in keyof ParsedWorldPayload]: {
     found: boolean;
+    deleted: boolean;
     parsed: ParsedWorldPayload[K];
   };
 };

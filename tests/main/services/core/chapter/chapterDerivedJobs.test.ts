@@ -206,7 +206,7 @@ describe("enqueueChapterDerivedJobs", () => {
     });
   });
 
-  it("updates a matching failed memory job instead of creating a duplicate retry job", async () => {
+  it("replaces a failed memory job with one pending generation", async () => {
     const projectId = crypto.randomUUID();
     const chapterId = crypto.randomUUID();
     await seedProject(projectId);
@@ -231,11 +231,11 @@ describe("enqueueChapterDerivedJobs", () => {
     });
     expect(jobs).toHaveLength(1);
     expect(jobs[0]).toMatchObject({
-      id: failedJobId,
       status: "pending",
       priority: MEMORY_JOB_PRIORITY.EMBEDDING,
       attempts: 0,
       error: null,
     });
+    expect(jobs[0].id).not.toBe(failedJobId);
   });
 });
