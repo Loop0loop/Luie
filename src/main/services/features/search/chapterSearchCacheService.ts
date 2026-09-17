@@ -129,29 +129,6 @@ class ChapterSearchCacheService {
       .run(Number(result.lastInsertRowid), input.chapterId);
   }
 
-  private async clearFtsByChapter(
-    chapterId: string,
-    ftsRowId?: number | null,
-  ): Promise<void> {
-    try {
-      const client = getCacheClient();
-      if (ftsRowId === null || ftsRowId === undefined) {
-        client.run(
-          sql`DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ${chapterId};`,
-        );
-      } else {
-        client.run(
-          sql`DELETE FROM "ChapterSearchDocumentFts" WHERE rowid = ${ftsRowId};`,
-        );
-      }
-    } catch (error) {
-      this.logFtsUnavailable(
-        "Chapter search FTS clear unavailable; keeping projection fallback",
-        error,
-      );
-    }
-  }
-
   private async clearFtsByProject(projectId: string): Promise<void> {
     try {
       const client = getCacheClient();
@@ -399,16 +376,40 @@ class ChapterSearchCacheService {
   }
 
   async clearChapter(chapterId: string): Promise<void> {
-    const client = getCacheClient();
-    const rows = await client
-      .select({ ftsRowId: chapterSearchDocument.ftsRowId })
-      .from(chapterSearchDocument)
-      .where(eq(chapterSearchDocument.chapterId, chapterId))
-      .limit(1);
-    await client
-      .delete(chapterSearchDocument)
-      .where(eq(chapterSearchDocument.chapterId, chapterId));
-    await this.clearFtsByChapter(chapterId, rows[0]?.ftsRowId);
+    const clearProjection = (sqlite: BetterSqliteDatabase.Database) =>
+      sqlite
+        .prepare(
+          `DELETE FROM "ChapterSearchDocument" WHERE "chapterId" = ?`,
+        )
+        .run(chapterId);
+    try {
+      cacheDb.runSqliteTransaction((sqlite) => {
+        const row = sqlite
+          .prepare(
+            `SELECT "ftsRowId" FROM "ChapterSearchDocument" WHERE "chapterId" = ?`,
+          )
+          .get(chapterId) as { ftsRowId: number | null } | undefined;
+        clearProjection(sqlite);
+        if (row?.ftsRowId === null || row?.ftsRowId === undefined) {
+          sqlite
+            .prepare(
+              `DELETE FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?`,
+            )
+            .run(chapterId);
+        } else {
+          sqlite
+            .prepare(`DELETE FROM "ChapterSearchDocumentFts" WHERE rowid = ?`)
+            .run(row.ftsRowId);
+        }
+      });
+    } catch (error) {
+      if (!isFtsUnavailableError(error)) throw error;
+      this.logFtsUnavailable(
+        "Chapter search FTS clear unavailable; keeping projection fallback",
+        error,
+      );
+      cacheDb.runSqliteTransaction(clearProjection);
+    }
   }
 
   async clearProject(projectId: string): Promise<void> {

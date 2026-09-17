@@ -219,6 +219,64 @@ describe("chapter search cache rebuild", () => {
     expect(after).toEqual(before);
   });
 
+  it("keeps clear and a concurrent upsert as one mapped projection/FTS state", async () => {
+    const target = await insertProjectWithChapters(1);
+    const unrelated = await insertProjectWithChapters(1);
+    await chapterSearchCacheService.rebuildProject(target.projectId);
+    await chapterSearchCacheService.rebuildProject(unrelated.projectId);
+    const chapterId = target.chapterIds[0] as string;
+
+    await Promise.all([
+      chapterSearchCacheService.clearChapter(chapterId),
+      chapterSearchCacheService.upsertChapter({
+        chapterId,
+        projectId: target.projectId,
+        title: "Restored after clear",
+        content: "latest body",
+        wordCount: 2,
+        order: 0,
+      }),
+    ]);
+
+    expect(readMappedFtsCount(target.projectId)).toBe(1);
+    expect(readMappedFtsCount(unrelated.projectId)).toBe(1);
+    expect(
+      cacheDb.runSqliteTransaction((sqlite) =>
+        sqlite
+          .prepare(
+            `SELECT COUNT(*) AS "count" FROM "ChapterSearchDocumentFts" WHERE "chapterId" = ?`,
+          )
+          .get(chapterId),
+      ),
+    ).toEqual({ count: 1 });
+  });
+
+  it("clears the projection when FTS5 is unavailable", async () => {
+    const target = await insertProjectWithChapters(1);
+    const chapterId = target.chapterIds[0] as string;
+    await chapterSearchCacheService.rebuildProject(target.projectId);
+    cacheDb.runSqliteTransaction((sqlite) => {
+      sqlite.exec(`DROP TABLE "ChapterSearchDocumentFts"`);
+    });
+    try {
+      await expect(
+        chapterSearchCacheService.clearChapter(chapterId),
+      ).resolves.toBeUndefined();
+    } finally {
+      cacheDb.runSqliteTransaction((sqlite) => {
+        sqlite.exec(CACHE_PACKAGED_SCHEMA_FTS_BOOTSTRAP_SQL);
+      });
+    }
+
+    await expect(
+      cacheDb
+        .getClient()
+        .select()
+        .from(chapterSearchDocument)
+        .where(eq(chapterSearchDocument.chapterId, chapterId)),
+    ).resolves.toHaveLength(0);
+  });
+
   it("rebuilds 300 chapters with mapped FTS rowids and preserves unrelated rows", async () => {
     const unrelated = await insertProjectWithChapters(1);
     const target = await insertProjectWithChapters(300);

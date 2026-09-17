@@ -2,7 +2,7 @@
 
 ## 최신 보정 판정 · 2026-09-13
 
-현재 판정: **PASS · 동시 단건 upsert 보정 완료**. projection upsert와 FTS 교체·mapping을 한 동기 cache transaction에 넣었고, 실제 SQLite 동시 호출과 mapping 실패 rollback을 영구 회귀로 추가했다. 상세 RED/GREEN 및 통과 조건은 [보정 보고서](db-06-concurrent-upsert-remediation-test-report.md)를 기준으로 한다.
+현재 판정: **PASS · 단건 upsert/clear 보정 완료**. projection upsert·FTS 교체·mapping과 clear의 mapping 조회·projection/FTS 삭제를 각각 한 동기 cache transaction에 넣었다. upsert는 [보정 보고서](db-06-concurrent-upsert-remediation-test-report.md), clear 결합 전이는 [DB-06B 보고서](test2/db-06b-clear-transaction-remediation-test-report.md)를 기준으로 한다.
 
 ### 보정 전 QA 재현 기록
 
@@ -30,6 +30,7 @@
 - project 전체 rebuild는 projection/FTS project clear와 모든 INSERT를 하나의 native SQLite transaction으로 실행한다.
 - 반복 INSERT statement는 transaction 전에 한 번 prepare하고 각 chapter parameter만 bind한다.
 - FTS5 자체가 없는 환경에서는 transaction rollback 뒤 projection-only fallback을 유지한다.
+- 단건 clear는 현재 mapping 조회·projection 삭제·FTS 삭제를 한 transaction에서 실행하며 FTS5 부재 시 projection만 삭제한다.
 - 기존 cache DB는 생성된 Drizzle migration과 packaged bootstrap column patch로 `ftsRowId`를 받는다.
 
 ## 상태 모델

@@ -2,7 +2,7 @@
 
 기준 문서: [`../performance-audit-2026-09-08/database.md`](../performance-audit-2026-09-08/database.md)
 
-최신 판정: **2026-09-18 정확성 결함 보정 진행 중**. DB-11A·DB-11B와 DB-04B를 수정했고, DB-06B 결합 전이 및 DB-12B 성능 근거가 남았다. 2차 순서와 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)에 기록한다.
+최신 판정: **2026-09-18 성능 근거 보정 진행 중**. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례를 수정했고 DB-12B 성능 근거가 남았다. 2차 순서와 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)에 기록한다.
 
 표시 규칙:
 
@@ -45,10 +45,10 @@
 
 - [X] **DB-05** chapter dirty 처리에서 `sourceId` 단건 upsert를 사용하고 전체 rebuild를 명시적 작업으로 제한한다.
   - 테스트: [`db-05-scoped-search-dirty-test-report.md`](db-05-scoped-search-dirty-test-report.md)
-- [ ] **DB-06** 전체 rebuild와 단건 projection/FTS 갱신을 transaction으로 처리하고 rowid mapping을 사용한다. clear/upsert 경쟁을 재개한다.
-  - 구현: 전체 rebuild prepared INSERT, 단건 projection·FTS 교체·mapping의 한 동기 transaction, FTS 부재 projection fallback.
-  - 완료 조건: 동일 chapter 동시 upsert 뒤 projection/FTS 각 1건과 mapping 일치, 다른 project 보존, mapping 실패 시 전체 단건 갱신 rollback.
-  - 테스트: [`db-06-concurrent-upsert-remediation-test-report.md`](db-06-concurrent-upsert-remediation-test-report.md)
+- [X] **DB-06** 전체 rebuild·단건 upsert·단건 clear를 transaction으로 처리하고 rowid mapping을 사용한다.
+  - 구현: 전체 rebuild prepared INSERT, 단건 projection·FTS 교체·mapping과 clear의 mapping 조회·projection·FTS 삭제를 각각 한 동기 transaction으로 처리, FTS 부재 projection fallback.
+  - 완료 조건: 동일 chapter 동시 upsert와 clear/upsert 결합 뒤 projection/FTS 각 1건과 mapping 일치, 다른 project 보존, mapping 실패 시 전체 단건 갱신 rollback.
+  - 테스트: [`db-06-concurrent-upsert-remediation-test-report.md`](db-06-concurrent-upsert-remediation-test-report.md), [`test2/db-06b-clear-transaction-remediation-test-report.md`](test2/db-06b-clear-transaction-remediation-test-report.md)
 - [X] **DB-08** 변하지 않은 memory chunk와 embedding을 보존한다.
   - 테스트: [`db-08-memory-chunk-reuse-test-report.md`](db-08-memory-chunk-reuse-test-report.md)
 - [X] **DB-09** autosave/manual revision reason을 구분한 뒤 ChapterRevision 보관 정책과 상한을 확정한다.

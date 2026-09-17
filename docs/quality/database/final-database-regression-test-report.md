@@ -1,6 +1,6 @@
 # Database TODO 최종 회귀 테스트 보고서
 
-현재 판정: **Risky — 2차 정확성 보정 진행 중**. 2026-09-18 현재 R1/R2 통합 회귀는 180건이 통과했다. DB-11A·DB-11B와 DB-04B를 수정했으며 DB-06B, DB-12B가 남았다. 항목의 현행 상태는 [기준 SSoT](../performance-audit-2026-09-08/database.md)와 [`test2/implementation-todo.md`](test2/implementation-todo.md)를 따른다.
+현재 판정: **Risky — 성능 근거 보정 진행 중**. 2026-09-18 현재 R1/R2 통합 회귀는 180건이 통과했다. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례를 수정했으며 DB-12B가 남았다. 항목의 현행 상태는 [기준 SSoT](../performance-audit-2026-09-08/database.md)와 [`test2/implementation-todo.md`](test2/implementation-todo.md)를 따른다.
 
 ## 문서 정보
 
@@ -220,7 +220,7 @@ LOC는 `scripts/check-source-loc.mjs`와 같은 줄 계산법을 사용했다. d
 
 ## 최신 최종 판정
 
-- 기존 DB-01~14 보고 범위와 DB-11A·DB-11B·DB-04B 후속 반례는 완료했다. DB-06B 결합 전이와 DB-12B 측정 보정이 남았다.
-- 현재 R1/R2 회귀 180건과 DB-04B 관련 실제 DB 4 files/31 tests는 검증한 입력·상태에서 통과했다. 실제 SQLite·임시 파일 사용은 유효한 통합 증거지만, mock 경계·제한된 crash 위치·미측정 실환경 성능까지 보장하지 않는다.
+- 기존 DB-01~14 보고 범위와 DB-11A·DB-11B·DB-04B·DB-06B 후속 정확성 반례는 완료했다. DB-12B 측정 보정이 남았다.
+- 현재 R1/R2 회귀 180건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests는 검증한 입력·상태에서 통과했다. 실제 SQLite·임시 파일 사용은 유효한 통합 증거지만, mock 경계·제한된 crash 위치·미측정 실환경 성능까지 보장하지 않는다.
 - TypeScript 기존 renderer 오류 1건, source LOC database 누적 변경 파일 8건·기존 16건, 기존 persist/main-service boundary gate 실패를 각각 남긴다. 이전의 “남은 실패는 기존 debt뿐”이라는 판정을 철회한다.
 - DB-10D는 명시한 Node writer 전후·DB 재연결 복구 범위만 완료이며, DB-10E는 조건부 확대 보류다. 후속 수정·반례 회귀와 현재 revision의 실제 Electron/사용자 규모 검증 후 안정화 여부를 다시 판정한다.

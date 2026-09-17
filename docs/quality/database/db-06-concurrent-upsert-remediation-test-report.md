@@ -170,7 +170,7 @@ DB-12와 FTS 부재 fallback까지 포함한 최종 통합 회귀에서 실제 D
 
 - 진입 기준: 실제 service/SQLite에서 FTS 2건 반례가 재현되고, 기존 rebuild 테스트가 기준선으로 실행 가능할 것.
 - 종료 기준: 동시성·실패 rollback·300장 rebuild·schema parity가 모두 통과하고 TODO/SSoT/최종 보고서가 같은 상태를 가리킬 것.
-- 현재 결과: 기능·회귀·문서 동기화 기준을 충족해 DB-06을 `[X]`로 전환한다.
+- 현재 결과: upsert 범위는 이 보고서에서 완료했고, clear 결합 전이는 [DB-06B 보고서](test2/db-06b-clear-transaction-remediation-test-report.md)에서 완료했다.
 
 ## 검증 한계
 

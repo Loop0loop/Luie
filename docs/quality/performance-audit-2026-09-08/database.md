@@ -1,10 +1,10 @@
 # Luie DB·저장·검색·동기화 심층 감사
 
-현재 판정: **Risky — 정확성 결함 보정 진행 중** (2026-09-18). DB-11A·DB-11B와 DB-04B pause generation은 수정했다. DB-06B clear/upsert 결합 전이와 DB-12B 성능 근거 공백은 남았다. 2차 수정과 검증은 [`database/test2`](../database/test2/implementation-todo.md)에서 추적한다.
+현재 판정: **Risky — 성능 근거 보정 진행 중** (2026-09-18). DB-11A·DB-11B, DB-04B, DB-06B 정확성 반례는 수정했다. DB-12B production query 성능 근거 공백이 남았다. 2차 수정과 검증은 [`database/test2`](../database/test2/implementation-todo.md)에서 추적한다.
 
 이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다.
 
-DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 커밋 `21448949`에 고정했다. DB-04B는 그 커밋 이후 작업 트리에서 검증했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
+DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 커밋 `21448949`, DB-04B는 `b7e7f957`에 고정했다. DB-06B는 그 커밋 이후 작업 트리에서 검증했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
 
 ## 현재 항목별 상태
 
@@ -14,7 +14,7 @@ DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 커밋 `21448949`에 고정�
 | DB-03      | 구현·범위 검증 완료                  | 동기 transaction과 명시적 tx 전달, 실제 DB rollback 격리 검증.                                                                                 |
 | DB-04      | 2차 정확성 보정 완료                  | pending/failed와 paused source 재enqueue가 UUID generation을 교체한다. pause→변경→resume 뒤 stale selector claim 실패를 확인했다.             |
 | DB-05      | 단건 처리 구현·범위 검증 완료        | sourceId별 refresh 적용. 직접 upsert와 dirty worker의 두 write owner는 남고, worker는 직접 쓰기 성공 후에도 실행된다.                          |
-| DB-06      | 재개 · P2                            | upsert transaction은 보정됐으나 clear의 rowid 조회·projection 삭제·FTS 삭제가 분리돼 concurrent upsert와 고아 FTS를 만들 수 있다.             |
+| DB-06      | 2차 정확성 보정 완료                  | upsert와 clear가 각각 projection·FTS·mapping을 한 동기 transaction으로 처리하며 FTS 부재 projection fallback을 유지한다.                      |
 | DB-07      | 구현·mock 계약 검증 완료             | Range·종료 검증과 2,001/1,001행 경계. 실제 서버·RLS·동시 원격 변경은 미검증이다.                                                               |
 | DB-08      | 구현·범위 검증 완료                  | 불변 chunk ID·embedding 보존을 실제 DB에서 확인했다. 실제 모델 비용·대용량 성능은 미측정이다.                                                  |
 | DB-09      | 구현·실제 DB 경계 검증 완료          | SQL subquery retention으로 bind 수 증가를 제거했다. 33,000건 저장·100건 상한·5분 직전/정확 경계·DELETE 실패 rollback을 확인했다.              |
@@ -55,6 +55,7 @@ DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 커밋 `21448949`에 고정�
 
 - 보정 전에는 projection upsert 뒤 await 경계에서 같은 이전 rowid를 재사용해 동시 두 호출이 projection 1행·FTS 2행을 남겼다.
 - [FTS upsert](../../../src/main/services/features/search/chapterSearchCacheService.ts)의 projection·FTS 교체·mapping을 한 동기 cache transaction으로 묶었다. 실제 함수·SQLite에서 동시 호출 뒤 각 1행과 mapping 일치, 강제 mapping 실패의 전체 rollback을 확인했다. [보정 보고서](../database/db-06-concurrent-upsert-remediation-test-report.md)
+- DB-06B는 `clearChapter`의 mapping 조회·projection 삭제·FTS 삭제를 같은 동기 transaction으로 묶었다. clear/upsert 결합 뒤 projection/FTS 각 1행과 mapping 일치, FTS5 부재 시 projection 삭제 fallback을 확인했다. [2차 보정 보고서](../database/test2/db-06b-clear-transaction-remediation-test-report.md)
 
 ### 해결 · DB-12 · 전체 rebuild 복구와 runnable query
 
