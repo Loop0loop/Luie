@@ -24,3 +24,7 @@
 - [X] **DB-12B** production runnable query의 순차 latency와 실제 SQL plan을 측정한다.
   - 완료 조건: 독립 warm-up·순차 표본의 p50/p95/p99를 기록하고, production이 실행하는 SQL과 같은 query object 또는 캡처 SQL로 plan을 검사한다.
   - 테스트 보고서: [`db-12b-production-query-evidence-test-report.md`](db-12b-production-query-evidence-test-report.md)
+- [X] **Electron release validation** 현재 source의 로컬 macOS production bundle에서 사용자 규모 저장과 crash/restart를 검증한다.
+  - 완료 조건: DB/userData/package 격리, queue terminal 상태, 실제 `Cmd+S` 3회 지연·실패율·DB/package 일치, package 교체 중 Electron 강제 종료와 동일 상태 재실행을 기록한다.
+  - 남은 범위: 설치·서명된 packaged app, Windows/Linux, 저속·외장 볼륨, 실제 embedding model.
+  - 테스트 보고서: [`electron-database-release-validation-report.md`](electron-database-release-validation-report.md)

@@ -1,6 +1,6 @@
 # Database TODO 최종 회귀 테스트 보고서
 
-현재 판정: **Risky — 코드 보정 완료, 실환경 검증 미완료**. 2026-09-18 현재 R1/R2 통합 회귀 182건과 DB-04B·DB-06B·DB-12B 후속 회귀가 통과했고, database 누적 변경의 source LOC 위반 8건을 해소했다. 기존 LOC gate 16건과 실제 Electron·사용자 규모 성능/crash 검증 전에는 release 안정화 완료로 올리지 않는다.
+현재 판정: **Conditionally Stable — 코드와 로컬 Electron 검증 완료, 배포판 검증 미완료**. 2026-09-18 현재 R1/R2 통합 회귀 182건과 DB-04B·DB-06B·DB-12B 후속 회귀가 통과했고, database 누적 변경의 source LOC 위반 8건을 해소했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했다. 기존 LOC gate 16건과 packaged app·다중 OS·저속 볼륨·실제 embedding model 검증은 남는다.
 
 ## 문서 정보
 
@@ -8,10 +8,10 @@
 | ---------------- | ---------------------------------------------------------------------------------------------- |
 | 테스트 기준      | `implementation-todo.md` DB-01~DB-14                                                           |
 | 테스트 설계 기법 | ISTQB 명세 기반 테스트, 상태 전이, 경곗값 분석, 오류 추정, 회귀 테스트                         |
-| 테스트 레벨      | Unit / Component Integration / Real DB·Filesystem·Process Integration / Build                  |
-| 실행일           | 2026-09-13 KST                                                                                 |
-| 기준             | `b76d6f0e` 작업 트리; 기존 154건 실행 기준은 `0faf4fad` 위 변경                               |
-| 환경             | Darwin 25.6.0 arm64, Node.js v22.23.0, pnpm 12.3.4, Vitest 5.0.0, worker별 임시 SQLite·`.luie` |
+| 테스트 레벨      | Unit / Component Integration / Real DB·Filesystem·Process / Actual Electron / Build            |
+| 실행일           | 2026-09-13 KST; 후속 보정·Electron 검증 2026-09-18 KST                                        |
+| 기준             | Electron 검증 `a693ecdc`; 기존 154건 실행 기준은 `0faf4fad` 위 변경                            |
+| 환경             | Darwin 25.6.0 arm64, Node.js v22.23.0, Electron 44.2.0, pnpm 12.3.4, worker별 임시 DB·`.luie`   |
 
 ## QA 검토 소스의 커밋 기준
 
@@ -38,6 +38,7 @@
 | R5   | Electron main/preload/renderer production bundle                                               | PASS                    |
 | R6   | 변경 source와 신규 테스트 ESLint, whitespace diff                                              | PASS                    |
 | R7   | TypeScript 전체                                                                                | 기존 renderer 오류 1건  |
+| R8   | 실제 Electron 사용자 규모·저장 지연·package crash/restart                                      | 로컬 macOS 범위 PASS    |
 
 총 회귀 결과는 **36 files, 182 tests passed**다. LOC 보정으로 3개 test file을 분리해 file 수만 늘었고 assertion 수는 같다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
 
@@ -169,7 +170,7 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 ## 2026-09-13 최신 QA 검증 결과
 
-검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 변경분이다. 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`, source LOC 보정은 `dadea8af`·`d9480be4`·`e8900ce4`에 고정했다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존한다. 그보다 앞선 개별 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
+검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 변경분이다. 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`, source LOC 보정은 `dadea8af`·`d9480be4`·`e8900ce4`, Electron harness는 `a693ecdc`에 고정했다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존한다. 그보다 앞선 개별 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
 
 - R1의 갱신된 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **22 files, 79 tests PASS**. DB-06 upsert/clear 경쟁·mapping 실패 rollback·FTS 부재 fallback, DB-09 33,000건 retention·5분 경계·DELETE 실패 rollback, DB-11 stale package/revision, DB-12 failed/paused 전체 rebuild와 50,000건 global query를 포함한다.
 - R2의 동일 명령을 `SKIP_DB_TEST_SETUP=1`인 mock 계약 환경에서 재실행: **14 files, 103 tests PASS**. DB-11이 재사용하는 export queue와 world tombstone read/revive 회귀를 포함한다.
@@ -201,15 +202,27 @@ LOC 2차 보정은 `syncLocalApply`의 chapter upsert와 `memoryProjectionServic
 
 LOC 3차 보정은 `.luie` entry rollback 회귀를 별도 파일로 옮기고, project export DB mock과 sync apply mock을 fixture로 분리했다. 비DB·실제 filesystem **4 files/36 tests**, 변경 테스트 ESLint가 통과했다. `check:source-loc`는 **기존 범위 16건만 실패**하며 database 누적 변경 8건은 모두 해소됐다. typecheck는 기존 `Sidebar.tsx:157` 오류 1건만 남았다.
 
+### R8: 실제 Electron 사용자 규모·저장·복구
+
+`a693ecdc5e5df4401447926d34c01806fd0853d5`에서 production bundle을 실제 Electron 44.2.0/macOS arm64로 실행했다. DB, `userData`, package를 `tests/.tmp`에 격리하고 sync를 비활성화했다.
+
+- 300장×5,000자, 600 burst writes: `chapter.update` 900회 p95/p99 **24.635/62.332ms**, manual save **75.842ms**, queue drain **36.535s**, 저장·queue 실패 0건.
+- queue 종료 상태: search/memory/summary/embedding pending/running/failed 모두 0. embedding은 model unavailable로 626건 skipped, 1,800 chunk unembedded라 모델 성능 근거에서 제외했다.
+- main event-loop p95/p99 **27.705/47.809ms**, RSS **244,629,504 bytes**, main/cache DB·WAL과 package 합계 **141,059,736 bytes**.
+- 실제 `Cmd+S` 3회×200표본: p95 **15.8/18.1/14.8ms**, p99 **19.1/29.4/16.4ms**, 실패 0건. 매 run의 DB·package 최종 본문 일치.
+- 손상 package recovery와 package 교체 중 Electron `SIGKILL` 후 동일 DB/userData 재실행·manual save 복구: **2 tests PASS**.
+
+명령, source hash, 상세 수치와 한계는 [Electron DB 실환경 검증 보고서](test2/electron-database-release-validation-report.md)에 고정했다.
+
 ### 환경과 성능 증거의 범위
 
 - R1은 실제 SQLite·filesystem 통합이지만 `tests/setup.ts`의 Electron mock을 사용한다. R2의 DB/IPC/HTTP mock 통과를 실서버·실제 IPC 저장 성공으로 확대하지 않는다. DB-14도 utility 환경 변수와 vector guard spy를 사용한 실행기 테스트이며 실제 utility process 통합은 아니다.
 - R4 `scripts/benchmark-derived-db.mjs`는 production `better-sqlite3`·Drizzle 경로가 아닌 `node:sqlite`와 직접 작성한 축약 schema를 사용한다. dataset마다 list/open/enqueue를 한 번씩 측정하며 `.luie` export, autosave, FTS rebuild, 변경된 runnable index와 worker는 실행하지 않는다. 기존 threshold PASS는 이번 변경의 p95/p99 또는 성능 개선 증거가 아니다.
 - `tests/.tmp/derived-db-bench.json`의 2026-09-13 결과는 위 R4 수치와 일치한다. 기존 `save-latency-*.json`은 2026-07-20 생성 결과이며 확인 가능한 source HEAD는 `c7ddf4b…`다. 이번 변경의 측정값으로 재사용하지 않는다.
-- 실제 사용자 규모에서 같은 corpus로 측정한 저장·전체 export p95/p99, main event-loop delay, 실패율, SQL/commit 수, heap/RSS, DB/WAL/package write bytes가 없다. cold/warm, 저사양, 배터리/AC, 저속·외장 볼륨, Windows/Linux 검증도 없다.
-- DB-10D는 별도 Node child에서 writer 호출 전 또는 writer 반환 후 `SIGKILL`을 발생시키고, 부모의 DB 연결 재생성과 recovery API로 복구를 확인했다. writer 반환 시에는 정상 `database.close()`까지 끝난다. commit 내부 강제 종료, authoritative DB writer 강제 종료, packaged Electron 전체 종료·재실행, 전원 차단은 검증하지 않았다.
+- 현재 source의 로컬 macOS Electron에서 사용자 규모 저장 p95/p99, event-loop delay, 실패율, RSS, DB/WAL/package bytes를 측정했다. SQL/commit 수, cold/warm 분리, 저사양, 배터리/AC, 저속·외장 볼륨, Windows/Linux는 미검증이다.
+- DB-10D는 기존 Node child 경계에 더해 package 교체 중 Electron `SIGKILL`과 동일 DB/userData 재실행을 확인했다. commit 내부 정확한 instruction 시점, 설치·서명된 packaged app, 전원 차단은 검증하지 않았다.
 - DB-10E는 성능 근거와 허용 한계가 없어 **확대 보류를 결정한 것**이다. 측정이나 world·snapshot 증분 구현을 완료한 상태가 아니다.
-- 기존 `writingLoop.fullprod.spec.ts`는 이번 실행 기록에 포함되지 않는다. 현재 harness는 `api.chapter.update` 왕복을 측정하고 queue timeout 뒤 pending/running 0을 단언하지 않는다. Electron helper도 DB URL 외 userData·sync 격리를 보장하지 않으므로 수정·격리 확인 없이 안정화 인증에 사용하지 않는다.
+- `writingLoop.fullprod.spec.ts`는 userData·sync 격리와 queue terminal assertion을 보강한 뒤 실행했다. 여기의 save latency는 `api.chapter.update` 왕복이며 renderer 입력/단축키 전체가 아니므로, 별도 `saveLatencyCertification.spec.ts`의 실제 `Cmd+S` 측정과 구분한다.
 
 원 감사 `database.md`의 `/private/tmp/luie-*.cjs` 재현 스크립트 4개는 현재 존재하지 않는다. 과거 원인 분석 기록은 보존하되, 해당 명령을 현재 재실행 가능한 증거로 분류하지 않는다.
 
@@ -230,6 +243,6 @@ LOC 3차 보정은 `.luie` entry rollback 회귀를 별도 파일로 옮기고, 
 ## 최신 최종 판정
 
 - 기존 DB-01~14 보고 범위와 DB-11A·DB-11B·DB-04B·DB-06B 후속 정확성 반례, DB-12B production query 근거 보정을 완료했다.
-- 현재 R1/R2 회귀 182건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests, DB-12 관련 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 실제 SQLite·임시 파일 사용은 유효한 통합 증거지만, 제한된 crash 위치와 미측정 실환경 성능까지 보장하지 않는다.
+- 현재 R1/R2 회귀 182건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests, DB-12 관련 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 현재 source의 로컬 macOS Electron 사용자 규모·실제 `Cmd+S`·package crash/restart 검증도 통과했다.
 - database 누적 변경의 source LOC 위반 8건은 모두 해소했다. TypeScript 기존 renderer 오류 1건, 기존 source LOC 16건, 기존 persist/main-service boundary gate 실패는 남는다.
-- DB-10D는 명시한 Node writer 전후·DB 재연결 복구 범위만 완료이며, DB-10E는 조건부 확대 보류다. 후속 수정·반례 회귀와 현재 revision의 실제 Electron/사용자 규모 검증 후 안정화 여부를 다시 판정한다.
+- DB-10D는 로컬 Electron package 교체 중 강제 종료와 재실행까지 확대 완료했고 DB-10E는 조건부 확대 보류다. 설치·서명된 packaged app, 다중 OS·저속 볼륨·실제 embedding model 검증 전까지 판정은 **Conditionally Stable**이다.

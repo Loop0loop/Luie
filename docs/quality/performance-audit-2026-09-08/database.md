@@ -1,10 +1,10 @@
 # Luie DB·저장·검색·동기화 심층 감사
 
-현재 판정: **Risky — 코드 보정 완료, 실환경 검증 미완료** (2026-09-18). DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례, DB-12B production query 근거, database 누적 변경의 source LOC 위반 8건을 보정했다. 남은 release 판단 범위는 기존 source LOC gate 16건과 실제 Electron·사용자 규모 성능/crash 검증이다.
+현재 판정: **Conditionally Stable — 코드와 로컬 Electron 검증 완료, 배포판 검증 미완료** (2026-09-18). DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례, DB-12B production query 근거, database 누적 변경의 source LOC 위반 8건을 보정했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했다. 남은 release 판단 범위는 기존 source LOC gate 16건과 설치·서명된 packaged app, 다중 OS·저속 볼륨·실제 embedding model 검증이다.
 
 이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다.
 
-DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. source LOC 보정은 production `dadea8af`, 테스트 `d9480be4`·`e8900ce4`에 고정했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
+DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. source LOC 보정은 production `dadea8af`, 테스트 `d9480be4`·`e8900ce4`에, Electron 검증 harness는 `a693ecdc`에 고정했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
 
 ## 현재 항목별 상태
 
@@ -19,7 +19,7 @@ DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f9
 | DB-08      | 구현·범위 검증 완료                  | 불변 chunk ID·embedding 보존을 실제 DB에서 확인했다. 실제 모델 비용·대용량 성능은 미측정이다.                                                  |
 | DB-09      | 구현·실제 DB 경계 검증 완료          | SQL subquery retention으로 bind 수 증가를 제거했다. 33,000건 저장·100건 상한·5분 직전/정확 경계·DELETE 실패 rollback을 확인했다.              |
 | DB-10A·B·C | 구현·범위 검증 완료                  | snapshot SQL limit, entry·meta·timestamp transaction, content-only 증분 저장. full/sync export 교차 실행은 추가 검증 대상이다.                 |
-| DB-10D     | 제한된 crash 검증 완료               | Node child writer 호출 전/정상 반환 후 SIGKILL 및 DB 재연결 recovery. commit 도중·packaged Electron 전체 재시작·전원 차단은 미검증이다.        |
+| DB-10D     | 로컬 Electron crash 검증 완료         | Node child 경계와 package 교체 중 Electron SIGKILL, 동일 DB/userData 재실행·manual save 복구를 확인했다. commit 내부·packaged app·전원 차단은 미검증이다. |
 | DB-10E     | 확대 보류 결정 완료                  | full export p95/p99·허용 한계가 없어 world/snapshot 증분 확대를 보류했다. 성능 검증 또는 확대 구현 완료가 아니다.                              |
 | DB-11      | 2차 정확성 보정 완료                  | world tombstone이 package fallback 부활을 막고, apply transaction의 snapshot 사전조건과 1회 재merge가 동일 chapter B/C를 conflict로 보존한다. |
 | DB-12      | 2차 근거 보정 완료                    | production과 공유하는 query builder로 plan을 검사하고 5회 warm-up 뒤 50회 순차 표본의 p50/p95/p99를 기록했다.                               |
@@ -67,8 +67,10 @@ DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f9
 - 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 2026-09-18 현재 R1/R2 통합 회귀는 36 files/182 tests다. 테스트 분리로 file 수만 3개 늘었고 assertion 수는 같다. DB-11A 추가 검증은 실제 DB·filesystem 6 files/38 tests, mock 계약 1 file/10 tests, legacy migration 1 file/5 tests가 통과했다. DB-11B는 관련 실제 DB·filesystem 6 files/22 tests와 mock 계약 4 files/30 tests, DB-04B는 관련 실제 DB 4 files/31 tests, DB-06B는 관련 실제 DB 4 files/20 tests, DB-12는 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
 - `check:drizzle` main/cache 및 `git diff --check` 통과. typecheck는 기존 `Sidebar.tsx:157` TS6133으로 실패했다. database 누적 변경의 source LOC 위반 8건은 production 3건과 테스트 5건을 책임별 파일로 분리해 모두 해소했다. 전체 gate에는 기존 범위 16건이 남았다.
 - [derived DB benchmark](../../../scripts/benchmark-derived-db.mjs)는 `node:sqlite`·축약 schema에서 dataset당 list/open/enqueue를 각각 1회 측정한다. production autosave·FTS·export 경로와 p95/p99를 실행하지 않는다. 기존 7월 save-latency 산출물은 다른 HEAD 결과다.
-- [fullprod E2E](../../../tests/e2e/writingLoop.fullprod.spec.ts)의 p95는 chapter.update API 왕복이며 키 입력→autosave 또는 Cmd+S 완료 전체가 아니다. queue timeout 후 pending/running=0 assertion이 없고 [Electron helper](../../../tests/e2e/_helpers/electronApp.ts)는 DB URL만 격리하고 환경을 상속한다. userData/settings/sync 격리와 queue 완료 판정을 보완한 뒤 현재 코드의 성능을 측정해야 한다.
-- 실제 강제 종료 검증도 writer 시작 전 또는 정상 close 후다. commit 중 crash, authoritative DB writer 종료, packaged Electron 재시작, Windows/Linux·외장/저속 볼륨·전원 차단은 미검증이다.
+- [fullprod E2E](../../../tests/e2e/writingLoop.fullprod.spec.ts)를 DB·userData·package 격리와 sync 비활성화 상태에서 실행했다. 300장×5,000자, 600 burst writes에서 `chapter.update` 900회 p95/p99 **24.635/62.332ms**, manual save **75.842ms**, queue drain **36.535s**, 저장·queue 실패 0건이었다. 종료 시 모든 queue의 pending/running/failed가 0이었고 main event-loop p95/p99는 **27.705/47.809ms**, RSS는 **244,629,504 bytes**, DB/WAL/cache/package 합계는 **141,059,736 bytes**였다. embedding model은 준비되지 않아 626건이 skipped됐으므로 모델 처리 성능 근거가 아니다.
+- 실제 `Cmd+S` 저장은 현재 source와 harness hash를 고정해 3회×200표본을 실행했다. 각 run의 p95는 **15.8/18.1/14.8ms**, p99는 **19.1/29.4/16.4ms**, 실패는 모두 0건이며 DB와 `.luie` 최종 본문이 일치했다.
+- package 교체 중 Electron `SIGKILL` 뒤 이전 package 보존, 같은 DB/userData 재실행, manual save로 원래·중단 chapter를 모두 복구하는 E2E와 손상 package recovery banner E2E가 통과했다. 상세 수치와 source fingerprint는 [Electron DB 실환경 검증 보고서](../database/test2/electron-database-release-validation-report.md)에 기록했다.
+- 위 결과는 production bundle을 실제 Electron으로 실행한 로컬 macOS 근거다. 설치·서명된 packaged app, commit 내부 정확한 시점, Windows/Linux·외장/저속 볼륨·전원 차단은 미검증이다.
 - 최신 추가 재현은 `/private/tmp/luie-db04-current-review.cjs`, `/private/tmp/luie-retention-review-repro.cjs`, `/private/tmp/luie-sync-snapshot-review.cjs`에서 시작했다. 임시 경로 자체는 영구 증거가 아니며 DB-04·DB-06·DB-09·DB-11·DB-12 반례는 저장소 회귀 테스트로 옮겼다.
 - 초기 감사의 임시 스크립트 4개는 재검토 시 존재하지 않았다. 과거 보고서의 HEAD만으로 당시 dirty tree를 복원할 수도 없다. 과거 실행 기록을 현재 checkout의 재현 보장으로 해석하지 않는다.
 
