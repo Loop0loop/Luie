@@ -2,11 +2,11 @@
 
 ## 판정
 
-**PASS — 현재 source의 로컬 macOS Electron production bundle 범위**
+**PASS — 현재 source의 로컬 macOS Electron production bundle과 ad-hoc packaged startup 범위**
 
-검증 기준은 `a693ecdc5e5df4401447926d34c01806fd0853d5`다. 테스트 DB, Electron `userData`, `.luie`는 모두 `tests/.tmp` 아래에 격리했고 sync를 비활성화했다. 사용자 DB와 사용자 프로젝트 파일은 사용하지 않았다.
+Electron 저장·crash 검증 기준은 `a693ecdc5e5df4401447926d34c01806fd0853d5`, packaged DB 자원 계약은 `cda19209`, startup smoke는 `0f24aa0a`다. 테스트 DB, Electron `userData`, `.luie`는 격리 경로에 두고 sync를 비활성화했다. 사용자 DB와 사용자 프로젝트 파일은 사용하지 않았다.
 
-이 결과는 설치·서명된 packaged app, Windows/Linux, 실제 embedding model, 저속·외장 볼륨, 전원 차단을 검증한 결과가 아니다.
+이 결과는 Developer ID 서명·공증·설치본, Windows/Linux, 실제 embedding model, 저속·외장 볼륨, 전원 차단을 검증한 결과가 아니다.
 
 ## 환경과 실행
 
@@ -65,9 +65,34 @@ search, memory, summary, embedding queue는 종료 시 pending/running/failed가
 - package 교체 중 Electron을 `SIGKILL`해도 이전 package가 온전하게 남는다.
 - 같은 DB와 `userData`로 Electron을 다시 실행한 뒤 manual save가 원래 chapter와 중단 시점 chapter를 모두 package에 기록한다.
 
+### 로컬 packaged DB startup
+
+`build:mac`의 GitHub 업로드 경로를 사용하지 않고 arm64 `.app` 디렉터리만 생성했다. Developer ID 서명·공증은 하지 않았고, Electron fuse 적용 뒤 로컬 실행을 위해 ad-hoc 서명했다.
+
+```sh
+env CSC_IDENTITY_AUTO_DISCOVERY=false \
+  LUIE_NOTARY_KEYCHAIN_PROFILE=luie-codex-no-profile \
+  ELECTRON_BUILDER_CACHE=.cache/electron-builder \
+  pnpm exec electron-builder --mac --arm64 --dir \
+  --config electron-builder.json --publish never
+codesign --force --deep --sign - dist/mac-arm64/Luie.app
+codesign --verify --deep --strict --verbose=2 dist/mac-arm64/Luie.app
+node scripts/verify-packaged-drizzle.mjs \
+  dist/mac-arm64/Luie.app/Contents/Resources
+node scripts/smoke-packaged-database.mjs \
+  dist/mac-arm64/Luie.app/Contents/MacOS/Luie
+```
+
+- packaged main/cache migration journal과 main SQL 4개를 확인했다.
+- 새 격리 DB 기동 결과 main DB 954,368 bytes/57 tables, cache DB 98,304 bytes/10 tables였다.
+- `Chapter`, `ChapterBody`, `Project`, `__drizzle_migrations`, cache projection/appearance tables와 `ChapterSearchDocumentFts` 생성을 확인했다.
+- 서명을 완전히 끈 첫 로컬 실행은 fuse 적용 뒤 남은 서명이 무효여서 macOS가 `SIGKILL (Code Signature Invalid)`로 차단했다. ad-hoc 재서명과 `codesign --verify --deep --strict` 후 startup smoke가 통과했으며 DB 결함으로 분류하지 않는다.
+- 현재 `better-sqlite3@13`이 사용하지 않고 설치에도 없는 `bindings`·`file-uri-to-path` extra resource와, 2026-05-13 삭제된 `drizzle/cache/fts5.sql` 검증 요구를 제거했다.
+
 ## 남은 범위
 
-- 현재 검증은 `electron.launch({ args: [projectRoot] })`로 production bundle을 실행했다. 설치·서명된 `.app`과 packaged resources/migration은 별도 release 검증이 필요하다.
+- 사용자 규모 저장·crash 검증은 `electron.launch({ args: [projectRoot] })` production bundle 범위다. 로컬 ad-hoc `.app`은 packaged resources와 DB startup까지만 검증했고 저장·crash 시나리오를 반복하지 않았다.
+- Developer ID 서명·공증·설치본과 실제 release artifact는 별도 release 검증이 필요하다.
 - commit 내부의 정확한 instruction 시점, OS 전원 차단, Windows/Linux, 저속·외장 볼륨은 미검증이다.
 - 실제 embedding model이 준비된 상태의 처리량·비용·event-loop 영향은 미검증이다.
 - 대규모 writing loop는 단일 run이다. 장기 분포나 저사양 SLA를 확정하려면 반복 실행과 허용 기준이 필요하다.

@@ -2,7 +2,7 @@
 
 기준 문서: [`../performance-audit-2026-09-08/database.md`](../performance-audit-2026-09-08/database.md)
 
-최신 판정: **2026-09-18 Conditionally Stable — 코드와 로컬 Electron 검증 완료, 배포판 검증 미완료**. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례, DB-12B production query 근거, database 누적 변경의 source LOC 위반 8건을 보정했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했다. 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md), [`test2/electron-database-release-validation-report.md`](test2/electron-database-release-validation-report.md), 최종 회귀 보고서에 기록한다.
+최신 판정: **2026-09-18 Conditionally Stable — 코드·로컬 Electron·packaged startup 검증 완료, 배포 서명판 검증 미완료**. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례, DB-12B production query 근거, database 누적 변경의 source LOC 위반 8건을 보정했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했고, 로컬 arm64 `.app`의 packaged resources와 main/cache DB startup도 확인했다. 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md), [`test2/electron-database-release-validation-report.md`](test2/electron-database-release-validation-report.md), 최종 회귀 보고서에 기록한다.
 
 표시 규칙:
 
@@ -79,7 +79,8 @@
 
 1. [X] database 누적 변경의 source LOC 실패 8건을 책임별 파일로 분리했다. `check:source-loc`에는 기존 범위 16건만 남는다.
 2. [X] 현재 source의 macOS Electron production bundle에서 사용자 규모 package p95/p99·실패율·event-loop·write bytes와 실제 `Cmd+S`, package 교체 중 crash/restart를 검증했다.
-3. [ ] 설치·서명된 packaged app의 resources/migration과 Windows/Linux·저속/외장 볼륨·실제 embedding model을 release matrix에서 검증한다.
+3. [X] 업로드·공증 없는 로컬 arm64 `.app`의 packaged Drizzle 자원, code-sign 무결성, 새 main/cache migration과 FTS startup을 검증했다.
+4. [ ] Developer ID 서명·공증·설치본과 Windows/Linux·저속/외장 볼륨·실제 embedding model을 release matrix에서 검증한다.
 
 DB-10E는 DB-10D 측정으로 전체 export가 여전히 병목일 때만 구현한다. 현재는 측정 gate 미충족으로 확대 보류 판정을 완료했다.
 

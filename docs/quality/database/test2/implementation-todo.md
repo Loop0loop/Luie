@@ -26,5 +26,6 @@
   - 테스트 보고서: [`db-12b-production-query-evidence-test-report.md`](db-12b-production-query-evidence-test-report.md)
 - [X] **Electron release validation** 현재 source의 로컬 macOS production bundle에서 사용자 규모 저장과 crash/restart를 검증한다.
   - 완료 조건: DB/userData/package 격리, queue terminal 상태, 실제 `Cmd+S` 3회 지연·실패율·DB/package 일치, package 교체 중 Electron 강제 종료와 동일 상태 재실행을 기록한다.
-  - 남은 범위: 설치·서명된 packaged app, Windows/Linux, 저속·외장 볼륨, 실제 embedding model.
+  - 추가 완료: 로컬 arm64 `.app`의 packaged Drizzle 자원, ad-hoc code-sign 무결성, 새 main/cache migration과 FTS startup.
+  - 남은 범위: Developer ID 서명·공증·설치본과 packaged crash/restart, Windows/Linux, 저속·외장 볼륨, 실제 embedding model.
   - 테스트 보고서: [`electron-database-release-validation-report.md`](electron-database-release-validation-report.md)

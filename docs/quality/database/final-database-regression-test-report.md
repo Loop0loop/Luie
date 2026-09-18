@@ -1,6 +1,6 @@
 # Database TODO 최종 회귀 테스트 보고서
 
-현재 판정: **Conditionally Stable — 코드와 로컬 Electron 검증 완료, 배포판 검증 미완료**. 2026-09-18 현재 R1/R2 통합 회귀 182건과 DB-04B·DB-06B·DB-12B 후속 회귀가 통과했고, database 누적 변경의 source LOC 위반 8건을 해소했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했다. 기존 LOC gate 16건과 packaged app·다중 OS·저속 볼륨·실제 embedding model 검증은 남는다.
+현재 판정: **Conditionally Stable — 코드·로컬 Electron·packaged startup 검증 완료, 배포 서명판 검증 미완료**. 2026-09-18 현재 R1/R2 통합 회귀 182건과 DB-04B·DB-06B·DB-12B 후속 회귀가 통과했고, database 누적 변경의 source LOC 위반 8건을 해소했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했고, 로컬 arm64 `.app`의 packaged resources와 main/cache DB startup도 확인했다. 기존 LOC gate 16건과 Developer ID 서명·공증·설치본, 다중 OS·저속 볼륨·실제 embedding model 검증은 남는다.
 
 ## 문서 정보
 
@@ -39,6 +39,7 @@
 | R6   | 변경 source와 신규 테스트 ESLint, whitespace diff                                              | PASS                    |
 | R7   | TypeScript 전체                                                                                | 기존 renderer 오류 1건  |
 | R8   | 실제 Electron 사용자 규모·저장 지연·package crash/restart                                      | 로컬 macOS 범위 PASS    |
+| R9   | 로컬 arm64 `.app` packaged resources·main/cache DB·FTS startup                                 | ad-hoc 서명 범위 PASS   |
 
 총 회귀 결과는 **36 files, 182 tests passed**다. LOC 보정으로 3개 test file을 분리해 file 수만 늘었고 assertion 수는 같다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
 
@@ -180,7 +181,7 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 - 변경된 database source·회귀 테스트 ESLint: PASS. `check:core-complexity`는 renderer 기존 advisory 2건을 출력하고 PASS했다.
 - `pnpm run typecheck` 재실행: 기존 `Sidebar.tsx`의 `TS6133` 1건을 재현했다. 기존 renderer 오류와 아래 database 잔존 결함을 구분한다.
 - `check:persist-contracts`: 기존 `graphStore.ts` persist option 누락 1건으로 실패. `check:main-service-boundaries`: 기존 `autoSaveMirrorStore.ts` legacy import 1건으로 실패. `check:target-file-drift`는 task packet 부재로 enforcement를 건너뛰었다.
-- `verify:packaged-drizzle`은 `<resourcesPath>` 인수 없이 실행해 usage exit 1이었다. migration/schema 검증은 `check:drizzle`과 실제 worker DB bootstrap으로 수행했으며 packaged app resources 검증으로 확대하지 않는다.
+- 기존 실행에서 `verify:packaged-drizzle`은 `<resourcesPath>` 인수 없이 usage exit 1이었다. R9에서 stale `fts5.sql` 요구를 제거하고 실제 `.app/Contents/Resources`와 새 packaged DB startup까지 검증했다.
 - `node scripts/check-source-loc.mjs` 재실행: **24건 실패**. 원 HEAD `0faf4fad` 대비 database 누적 변경 파일 8건과 기존 범위 16건으로 분류했다.
 
 | 이번 변경으로 새로 실패한 파일                                     | 원 HEAD LOC → 검토 시 LOC | 실패 원인               |
@@ -214,13 +215,24 @@ LOC 3차 보정은 `.luie` entry rollback 회귀를 별도 파일로 옮기고, 
 
 명령, source hash, 상세 수치와 한계는 [Electron DB 실환경 검증 보고서](test2/electron-database-release-validation-report.md)에 고정했다.
 
+### R9: 로컬 packaged DB startup
+
+`cda19209`에서 삭제된 `drizzle/cache/fts5.sql`을 요구하던 verifier와 이미 설치되지 않은 `bindings`·`file-uri-to-path` extra resource를 현재 runtime에 맞췄다. `0f24aa0a`에는 실행 파일을 직접 기동해 새 격리 main/cache DB의 필수 tables와 FTS를 검사하는 smoke를 고정했다.
+
+- 업로드·Developer ID 서명·공증 없이 arm64 `.app` 디렉터리 패키징: PASS.
+- ad-hoc 재서명 뒤 `codesign --verify --deep --strict`: PASS.
+- packaged Drizzle main/cache journal과 main SQL 4개: PASS.
+- 새 packaged DB startup: main 954,368 bytes/57 tables, cache 98,304 bytes/10 tables, `ChapterSearchDocumentFts` 생성 PASS.
+
+서명을 완전히 끈 첫 로컬 실행은 fuse 적용 뒤 code signature가 무효가 되어 macOS가 차단했다. ad-hoc 재서명 후 통과했으므로 제품 DB startup 실패로 분류하지 않는다. Developer ID 서명·공증·설치본은 검증하지 않았다.
+
 ### 환경과 성능 증거의 범위
 
 - R1은 실제 SQLite·filesystem 통합이지만 `tests/setup.ts`의 Electron mock을 사용한다. R2의 DB/IPC/HTTP mock 통과를 실서버·실제 IPC 저장 성공으로 확대하지 않는다. DB-14도 utility 환경 변수와 vector guard spy를 사용한 실행기 테스트이며 실제 utility process 통합은 아니다.
 - R4 `scripts/benchmark-derived-db.mjs`는 production `better-sqlite3`·Drizzle 경로가 아닌 `node:sqlite`와 직접 작성한 축약 schema를 사용한다. dataset마다 list/open/enqueue를 한 번씩 측정하며 `.luie` export, autosave, FTS rebuild, 변경된 runnable index와 worker는 실행하지 않는다. 기존 threshold PASS는 이번 변경의 p95/p99 또는 성능 개선 증거가 아니다.
 - `tests/.tmp/derived-db-bench.json`의 2026-09-13 결과는 위 R4 수치와 일치한다. 기존 `save-latency-*.json`은 2026-07-20 생성 결과이며 확인 가능한 source HEAD는 `c7ddf4b…`다. 이번 변경의 측정값으로 재사용하지 않는다.
 - 현재 source의 로컬 macOS Electron에서 사용자 규모 저장 p95/p99, event-loop delay, 실패율, RSS, DB/WAL/package bytes를 측정했다. SQL/commit 수, cold/warm 분리, 저사양, 배터리/AC, 저속·외장 볼륨, Windows/Linux는 미검증이다.
-- DB-10D는 기존 Node child 경계에 더해 package 교체 중 Electron `SIGKILL`과 동일 DB/userData 재실행을 확인했다. commit 내부 정확한 instruction 시점, 설치·서명된 packaged app, 전원 차단은 검증하지 않았다.
+- DB-10D는 기존 Node child 경계에 더해 production bundle의 package 교체 중 Electron `SIGKILL`과 동일 DB/userData 재실행을 확인했다. 로컬 packaged app은 startup만 검증했으며 packaged crash/restart, commit 내부 정확한 instruction 시점, Developer ID 서명·공증·설치본, 전원 차단은 미검증이다.
 - DB-10E는 성능 근거와 허용 한계가 없어 **확대 보류를 결정한 것**이다. 측정이나 world·snapshot 증분 구현을 완료한 상태가 아니다.
 - `writingLoop.fullprod.spec.ts`는 userData·sync 격리와 queue terminal assertion을 보강한 뒤 실행했다. 여기의 save latency는 `api.chapter.update` 왕복이며 renderer 입력/단축키 전체가 아니므로, 별도 `saveLatencyCertification.spec.ts`의 실제 `Cmd+S` 측정과 구분한다.
 
@@ -245,4 +257,4 @@ LOC 3차 보정은 `.luie` entry rollback 회귀를 별도 파일로 옮기고, 
 - 기존 DB-01~14 보고 범위와 DB-11A·DB-11B·DB-04B·DB-06B 후속 정확성 반례, DB-12B production query 근거 보정을 완료했다.
 - 현재 R1/R2 회귀 182건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests, DB-12 관련 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 현재 source의 로컬 macOS Electron 사용자 규모·실제 `Cmd+S`·package crash/restart 검증도 통과했다.
 - database 누적 변경의 source LOC 위반 8건은 모두 해소했다. TypeScript 기존 renderer 오류 1건, 기존 source LOC 16건, 기존 persist/main-service boundary gate 실패는 남는다.
-- DB-10D는 로컬 Electron package 교체 중 강제 종료와 재실행까지 확대 완료했고 DB-10E는 조건부 확대 보류다. 설치·서명된 packaged app, 다중 OS·저속 볼륨·실제 embedding model 검증 전까지 판정은 **Conditionally Stable**이다.
+- DB-10D는 로컬 Electron package 교체 중 강제 종료와 재실행까지 확대 완료했고 DB-10E는 조건부 확대 보류다. 로컬 ad-hoc packaged resources·DB startup도 통과했다. Developer ID 서명·공증·설치본과 packaged crash/restart, 다중 OS·저속 볼륨·실제 embedding model 검증 전까지 판정은 **Conditionally Stable**이다.

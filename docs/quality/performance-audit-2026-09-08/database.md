@@ -1,10 +1,10 @@
 # Luie DB·저장·검색·동기화 심층 감사
 
-현재 판정: **Conditionally Stable — 코드와 로컬 Electron 검증 완료, 배포판 검증 미완료** (2026-09-18). DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례, DB-12B production query 근거, database 누적 변경의 source LOC 위반 8건을 보정했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했다. 남은 release 판단 범위는 기존 source LOC gate 16건과 설치·서명된 packaged app, 다중 OS·저속 볼륨·실제 embedding model 검증이다.
+현재 판정: **Conditionally Stable — 코드·로컬 Electron·packaged startup 검증 완료, 배포 서명판 검증 미완료** (2026-09-18). DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례, DB-12B production query 근거, database 누적 변경의 source LOC 위반 8건을 보정했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했고, 로컬 arm64 `.app`의 packaged Drizzle 자원·main/cache migration·FTS startup을 확인했다. 남은 release 판단 범위는 기존 source LOC gate 16건과 Developer ID 서명·공증·설치본, 다중 OS·저속 볼륨·실제 embedding model 검증이다.
 
 이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다.
 
-DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. source LOC 보정은 production `dadea8af`, 테스트 `d9480be4`·`e8900ce4`에, Electron 검증 harness는 `a693ecdc`에 고정했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
+DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. source LOC 보정은 production `dadea8af`, 테스트 `d9480be4`·`e8900ce4`에, Electron 검증 harness는 `a693ecdc`, packaged DB 자원 계약은 `cda19209`, startup smoke는 `0f24aa0a`에 고정했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
 
 ## 현재 항목별 상태
 
@@ -70,7 +70,8 @@ DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f9
 - [fullprod E2E](../../../tests/e2e/writingLoop.fullprod.spec.ts)를 DB·userData·package 격리와 sync 비활성화 상태에서 실행했다. 300장×5,000자, 600 burst writes에서 `chapter.update` 900회 p95/p99 **24.635/62.332ms**, manual save **75.842ms**, queue drain **36.535s**, 저장·queue 실패 0건이었다. 종료 시 모든 queue의 pending/running/failed가 0이었고 main event-loop p95/p99는 **27.705/47.809ms**, RSS는 **244,629,504 bytes**, DB/WAL/cache/package 합계는 **141,059,736 bytes**였다. embedding model은 준비되지 않아 626건이 skipped됐으므로 모델 처리 성능 근거가 아니다.
 - 실제 `Cmd+S` 저장은 현재 source와 harness hash를 고정해 3회×200표본을 실행했다. 각 run의 p95는 **15.8/18.1/14.8ms**, p99는 **19.1/29.4/16.4ms**, 실패는 모두 0건이며 DB와 `.luie` 최종 본문이 일치했다.
 - package 교체 중 Electron `SIGKILL` 뒤 이전 package 보존, 같은 DB/userData 재실행, manual save로 원래·중단 chapter를 모두 복구하는 E2E와 손상 package recovery banner E2E가 통과했다. 상세 수치와 source fingerprint는 [Electron DB 실환경 검증 보고서](../database/test2/electron-database-release-validation-report.md)에 기록했다.
-- 위 결과는 production bundle을 실제 Electron으로 실행한 로컬 macOS 근거다. 설치·서명된 packaged app, commit 내부 정확한 시점, Windows/Linux·외장/저속 볼륨·전원 차단은 미검증이다.
+- 업로드·Developer ID 서명·공증 없이 만든 로컬 arm64 `.app`을 ad-hoc 서명한 뒤 packaged Drizzle 자원과 새 main/cache DB startup을 확인했다. main 57 tables, cache 10 tables와 `ChapterSearchDocumentFts`가 생성됐다. 재실행 명령은 [Electron DB 실환경 검증 보고서](../database/test2/electron-database-release-validation-report.md)에 고정했다.
+- 위 결과는 로컬 macOS 근거다. Developer ID 서명·공증·설치본, packaged app의 crash/restart, commit 내부 정확한 시점, Windows/Linux·외장/저속 볼륨·전원 차단은 미검증이다.
 - 최신 추가 재현은 `/private/tmp/luie-db04-current-review.cjs`, `/private/tmp/luie-retention-review-repro.cjs`, `/private/tmp/luie-sync-snapshot-review.cjs`에서 시작했다. 임시 경로 자체는 영구 증거가 아니며 DB-04·DB-06·DB-09·DB-11·DB-12 반례는 저장소 회귀 테스트로 옮겼다.
 - 초기 감사의 임시 스크립트 4개는 재검토 시 존재하지 않았다. 과거 보고서의 HEAD만으로 당시 dirty tree를 복원할 수도 없다. 과거 실행 기록을 현재 checkout의 재현 보장으로 해석하지 않는다.
 
