@@ -4,10 +4,18 @@ import type {
   WorldScrapMemosData,
 } from "@shared/types";
 
+export type ReplicaDocumentLoadResult =
+  | { state: "found"; payload: unknown }
+  | { state: "missing" | "deleted"; payload: null };
+
+export type ReplicaScrapMemosLoadResult =
+  | { state: "found"; data: WorldScrapMemosData }
+  | { state: "missing" | "deleted"; data: null };
+
 export const loadReplicaDocument = async (
   projectId: string,
   docType: Exclude<ReplicaWorldDocumentType, "graph" | "scrap">,
-): Promise<unknown | null> => {
+): Promise<ReplicaDocumentLoadResult> => {
   const response = await api.worldStorage.getDocument({ projectId, docType });
   if (!response.success) {
     await api.logger.warn("Failed to load world replica document", {
@@ -15,12 +23,15 @@ export const loadReplicaDocument = async (
       docType,
       error: response.error,
     });
-    return null;
+    return { state: "missing", payload: null };
+  }
+  if (response.data?.deletedAt) {
+    return { state: "deleted", payload: null };
   }
   if (!response.data?.found) {
-    return null;
+    return { state: "missing", payload: null };
   }
-  return response.data.payload ?? null;
+  return { state: "found", payload: response.data.payload };
 };
 
 export const saveReplicaDocument = async (
@@ -57,16 +68,22 @@ export const ensureReplicaDocumentSaved = async (
 
 export const loadReplicaScrapMemos = async (
   projectId: string,
-): Promise<WorldScrapMemosData | null> => {
+): Promise<ReplicaScrapMemosLoadResult> => {
   const response = await api.worldStorage.getScrapMemos(projectId);
   if (!response.success) {
     await api.logger.warn("Failed to load world replica scrap memos", {
       projectId,
       error: response.error,
     });
-    return null;
+    return { state: "missing", data: null };
   }
-  return response.data?.found ? response.data.data ?? null : null;
+  if (response.data?.deletedAt) {
+    return { state: "deleted", data: null };
+  }
+  if (!response.data?.found || !response.data.data) {
+    return { state: "missing", data: null };
+  }
+  return { state: "found", data: response.data.data };
 };
 
 export const saveReplicaScrapMemos = async (
