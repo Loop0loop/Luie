@@ -6,7 +6,6 @@ import * as path from "node:path";
 const REQUIRED_RESOURCE_PATHS = [
   "drizzle/main/meta/_journal.json",
   "drizzle/cache/meta/_journal.json",
-  "drizzle/cache/fts5.sql",
 ];
 
 const resourcePath = process.argv[2] || process.env.APP_RESOURCES_PATH;
