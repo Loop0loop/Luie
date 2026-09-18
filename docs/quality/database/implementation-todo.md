@@ -78,7 +78,7 @@
 ## 후속 진행 순서
 
 1. [X] database 누적 변경의 source LOC 실패 8건을 책임별 파일로 분리했다. `check:source-loc`에는 기존 범위 16건만 남는다.
-2. [X] 현재 source의 macOS Electron production bundle에서 사용자 규모 package p95/p99·실패율·event-loop·write bytes와 실제 `Cmd+S`, package 교체 중 crash/restart를 검증했다.
+2. [X] 현재 source의 macOS Electron production bundle에서 사용자 규모 package p95/p99·실패율·event-loop·종료 시점 저장 공간 점유량과 실제 `Cmd+S`, package 교체 중 crash/restart를 검증했다.
 3. [X] 업로드·공증 없는 로컬 arm64 `.app`의 packaged Drizzle 자원, code-sign 무결성, 새 main/cache migration과 FTS startup을 검증했다.
 4. [ ] Developer ID 서명·공증·설치본과 Windows/Linux·저속/외장 볼륨·실제 embedding model을 release matrix에서 검증한다.
 

@@ -91,6 +91,7 @@ test("phase6 forced shutdown during package export keeps previous .luie intact @
   const { app, page, testDbDir } = await launchApp({ waitForRender: true });
   let restartedApp: Awaited<ReturnType<typeof launchApp>>["app"] | null = null;
   const projectPath = path.join(testDbDir, "phase6-forced-shutdown.luie");
+  const baselineCopyPath = path.join(testDbDir, "phase6-baseline.luie");
   const markerPath = path.join(testDbDir, "export-before-replace.marker");
 
   try {
@@ -107,19 +108,38 @@ test("phase6 forced shutdown during package export keeps previous .luie intact @
       const chapter = await api.chapter.create({
         projectId: project.data.id,
         title: "Original Chapter",
-        content: "Original package content",
-        order: 1,
       });
       if (!chapter.success) return chapter;
+      const updated = await api.chapter.update({
+        id: chapter.data.id,
+        content: "Original package content",
+      });
+      if (!updated.success) return updated;
       const approval = await api.fs.approveProjectPath(packagePath);
       if (!approval.success) return approval;
-      return await api.project.materializeLuie(project.data.id, packagePath);
+      const materialized = await api.project.materializeLuie(
+        project.data.id,
+        packagePath,
+      );
+      return {
+        ...materialized,
+        projectId: project.data.id,
+        originalChapterId: chapter.data?.id,
+      };
     }, projectPath);
     expect(created.success, JSON.stringify(created.error)).toBe(true);
+    expect(created.originalChapterId).toBeTruthy();
 
     const baselineMeta = await readLuieContainerEntry(projectPath, "meta.json");
     expect(baselineMeta).toContain("Original Chapter");
     expect(baselineMeta).not.toContain("Interrupted Chapter");
+    expect(
+      await readLuieContainerEntry(
+        projectPath,
+        `manuscript/${created.originalChapterId}.md`,
+      ),
+    ).toBe("Original package content");
+    fs.copyFileSync(projectPath, baselineCopyPath);
 
     const prepared = await page.evaluate(async () => {
       const api = (window as Window & { api?: Window["api"] }).api;
@@ -136,13 +156,22 @@ test("phase6 forced shutdown during package export keeps previous .luie intact @
       const chapter = await api.chapter.create({
         projectId: project.id,
         title: "Interrupted Chapter",
-        content: "Interrupted package content",
-        order: 2,
       });
       if (!chapter.success) return chapter;
-      return { success: true, projectId: project.id };
+      const updated = await api.chapter.update({
+        id: chapter.data.id,
+        content: "Interrupted package content",
+      });
+      if (!updated.success) return updated;
+      return {
+        success: true,
+        projectId: project.id,
+        interruptedChapterId: chapter.data?.id,
+      };
     });
     expect(prepared.success).toBe(true);
+    expect(prepared.interruptedChapterId).toBeTruthy();
+    fs.copyFileSync(baselineCopyPath, projectPath);
 
     await app.evaluate(async (_electronApp, marker) => {
       process.env.LUIE_E2E_PAUSE_PACKAGE_WRITE_BEFORE_REPLACE = marker;
@@ -176,6 +205,18 @@ test("phase6 forced shutdown during package export keeps previous .luie intact @
     );
     expect(metaAfterKill).toContain("Original Chapter");
     expect(metaAfterKill).not.toContain("Interrupted Chapter");
+    expect(
+      await readLuieContainerEntry(
+        projectPath,
+        `manuscript/${created.originalChapterId}.md`,
+      ),
+    ).toBe("Original package content");
+    expect(
+      await readLuieContainerEntry(
+        projectPath,
+        `manuscript/${prepared.interruptedChapterId}.md`,
+      ),
+    ).toBeNull();
     const debris = fs
       .readdirSync(testDbDir)
       .filter((entry) => entry.startsWith("phase6-forced-shutdown.luie.bak-"));
@@ -202,6 +243,18 @@ test("phase6 forced shutdown during package export keeps previous .luie intact @
     );
     expect(metaAfterRestart).toContain("Original Chapter");
     expect(metaAfterRestart).toContain("Interrupted Chapter");
+    expect(
+      await readLuieContainerEntry(
+        projectPath,
+        `manuscript/${created.originalChapterId}.md`,
+      ),
+    ).toBe("Original package content");
+    expect(
+      await readLuieContainerEntry(
+        projectPath,
+        `manuscript/${prepared.interruptedChapterId}.md`,
+      ),
+    ).toBe("Interrupted package content");
   } finally {
     await app.close().catch(() => undefined);
     await restartedApp?.close().catch(() => undefined);

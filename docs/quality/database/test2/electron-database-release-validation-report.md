@@ -41,9 +41,11 @@ pnpm exec playwright test --project=e2e tests/e2e/packageDurability.phase6.spec.
 | main DB + WAL | 57,949,464 bytes |
 | cache DB + WAL | 78,084,480 bytes |
 | `.luie` package | 5,025,792 bytes |
-| 전체 측정 저장량 | 141,059,736 bytes |
+| 종료 시점 저장 공간 점유량 | 141,059,736 bytes |
 
 search, memory, summary, embedding queue는 종료 시 pending/running/failed가 모두 0이었다. summary completed는 1,200건이다. embedding은 모델이 준비되지 않아 626건이 skipped됐고 1,800 chunk가 unembedded 상태이므로 실제 모델 처리 성능 근거로 사용하지 않는다.
+
+저장 공간 수치는 run 종료 뒤 main/cache DB·WAL과 `.luie`에 `fs.statSync().size`를 적용한 합계다. 반복 export·WAL checkpoint·임시 파일 교체를 포함한 누적 write bytes나 write amplification 측정값이 아니다.
 
 이 시나리오의 save latency는 renderer 입력이나 `Cmd+S`가 아니라 preload를 통한 `chapter.update` API 왕복이다. 실제 단축키 지연은 아래 별도 인증 결과를 따른다.
 
@@ -59,11 +61,11 @@ search, memory, summary, embedding queue는 종료 시 pending/running/failed가
 
 ### 강제 종료와 재시작
 
-`packageDurability.phase6.spec.ts`의 2개 테스트가 11.3초에 통과했다.
+`packageDurability.phase6.spec.ts`의 강화된 2개 테스트가 22.1초에 통과했다.
 
 - 손상된 `.luie`를 열면 recovery banner가 표시된다.
-- package 교체 중 Electron을 `SIGKILL`해도 이전 package가 온전하게 남는다.
-- 같은 DB와 `userData`로 Electron을 다시 실행한 뒤 manual save가 원래 chapter와 중단 시점 chapter를 모두 package에 기록한다.
+- package 교체 중 Electron을 `SIGKILL`해도 이전 package의 metadata와 원래 chapter 본문이 온전하고, 중단 시점 chapter entry는 노출되지 않는다.
+- 같은 DB와 `userData`로 Electron을 다시 실행한 뒤 manual save가 원래 chapter와 중단 시점 chapter의 metadata·본문을 모두 package에 기록한다.
 
 ### 로컬 packaged DB startup
 

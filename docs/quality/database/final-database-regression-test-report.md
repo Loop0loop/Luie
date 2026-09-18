@@ -209,9 +209,9 @@ LOC 3차 보정은 `.luie` entry rollback 회귀를 별도 파일로 옮기고, 
 
 - 300장×5,000자, 600 burst writes: `chapter.update` 900회 p95/p99 **24.635/62.332ms**, manual save **75.842ms**, queue drain **36.535s**, 저장·queue 실패 0건.
 - queue 종료 상태: search/memory/summary/embedding pending/running/failed 모두 0. embedding은 model unavailable로 626건 skipped, 1,800 chunk unembedded라 모델 성능 근거에서 제외했다.
-- main event-loop p95/p99 **27.705/47.809ms**, RSS **244,629,504 bytes**, main/cache DB·WAL과 package 합계 **141,059,736 bytes**.
+- main event-loop p95/p99 **27.705/47.809ms**, RSS **244,629,504 bytes**, 종료 시점 main/cache DB·WAL과 package 점유량 합계 **141,059,736 bytes**. 누적 write bytes나 write amplification 측정값은 아니다.
 - 실제 `Cmd+S` 3회×200표본: p95 **15.8/18.1/14.8ms**, p99 **19.1/29.4/16.4ms**, 실패 0건. 매 run의 DB·package 최종 본문 일치.
-- 손상 package recovery와 package 교체 중 Electron `SIGKILL` 후 동일 DB/userData 재실행·manual save 복구: **2 tests PASS**.
+- 손상 package recovery와 package 교체 중 Electron `SIGKILL` 후 이전 본문 보존, 동일 DB/userData 재실행·manual save 뒤 두 chapter 본문 복구: **2 tests PASS**.
 
 명령, source hash, 상세 수치와 한계는 [Electron DB 실환경 검증 보고서](test2/electron-database-release-validation-report.md)에 고정했다.
 
