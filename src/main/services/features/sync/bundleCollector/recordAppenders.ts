@@ -22,6 +22,9 @@ export const appendProjectRecord = (
     description: toNullableString(projectRow.description),
     createdAt: toIsoString(projectRow.createdAt),
     updatedAt: projectUpdatedAt,
+    ...(typeof projectRow.revision === "number"
+      ? { localRevision: projectRow.revision }
+      : {}),
   });
 
   return {

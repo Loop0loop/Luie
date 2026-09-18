@@ -63,6 +63,15 @@ describe("sync delta selection", () => {
     expect(delta.chapters.map((row) => row.id)).toEqual(["chapter-1"]);
   });
 
+  it("ignores local-only project revision changes", () => {
+    const baseline = createBundle();
+    const target = structuredClone(baseline);
+    baseline.projects[0]!.localRevision = 1;
+    target.projects[0]!.localRevision = 2;
+
+    expect(buildSyncDeltaBundle(baseline, target).projects).toEqual([]);
+  });
+
   it("uses the canonical hash when content changed at the same updatedAt", () => {
     const baseline = createBundle();
     const target = structuredClone(baseline);

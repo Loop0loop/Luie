@@ -39,7 +39,12 @@ export const buildSyncDeltaBundle = (
   baseline: SyncBundle,
   target: SyncBundle,
 ): SyncBundle => ({
-  projects: changedRecords(baseline.projects, target.projects),
+  projects: changedRecords(
+    baseline.projects,
+    target.projects,
+    (row) => row.id,
+    (row) => ({ ...row, localRevision: undefined }),
+  ),
   chapters: changedRecords(baseline.chapters, target.chapters),
   characters: changedRecords(baseline.characters, target.characters),
   events: changedRecords(baseline.events, target.events),

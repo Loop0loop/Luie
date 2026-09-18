@@ -152,58 +152,32 @@ const findChangedWorldDocumentsSinceSnapshot = (
   return changed;
 };
 
-const collectDeleteGuardKeys = (
+const findChangedDeletedProjectsSinceSnapshot = (
   tx: DbLike,
-  bundle: SyncBundle,
+  projectIds: Set<string>,
   snapshot: SyncBundle,
-  deletedProjectIds: Set<string>,
-): {
-  chapterIds: string[];
-  worldKeys: Array<{
-    projectId: string;
-    docType: SyncBundle["worldDocuments"][number]["docType"];
-  }>;
-} => {
-  const chapterIds = new Set(bundle.chapters.map((row) => row.id));
-  const worldKeys = new Map(
-    bundle.worldDocuments.map((row) => [
-      `${row.projectId}:${row.docType}`,
-      { projectId: row.projectId, docType: row.docType },
-    ]),
-  );
-
-  for (const projectId of deletedProjectIds) {
-    for (const row of snapshot.chapters) {
-      if (row.projectId === projectId) chapterIds.add(row.id);
-    }
-    for (const row of snapshot.worldDocuments) {
-      if (row.projectId === projectId) {
-        worldKeys.set(`${projectId}:${row.docType}`, {
-          projectId,
-          docType: row.docType,
-        });
-      }
-    }
-    for (const row of tx
-      .select({ id: chapter.id })
-      .from(chapter)
-      .where(eq(chapter.projectId, projectId))
-      .all()) {
-      chapterIds.add(row.id);
-    }
-    for (const row of tx
-      .select({ docType: worldDocument.docType })
-      .from(worldDocument)
-      .where(eq(worldDocument.projectId, projectId))
-      .all()) {
-      worldKeys.set(`${projectId}:${row.docType}`, {
-        projectId,
-        docType: row.docType as SyncBundle["worldDocuments"][number]["docType"],
-      });
+): string[] => {
+  const snapshotById = new Map(snapshot.projects.map((row) => [row.id, row]));
+  const changed: string[] = [];
+  for (const projectId of projectIds) {
+    const before = snapshotById.get(projectId);
+    const current = tx
+      .select({ revision: project.revision })
+      .from(project)
+      .where(eq(project.id, projectId))
+      .limit(1)
+      .get();
+    if (
+      (!before && current) ||
+      (before &&
+        (!current ||
+          (before.localRevision !== undefined &&
+            current.revision !== before.localRevision)))
+    ) {
+      changed.push(`project:${projectId}`);
     }
   }
-
-  return { chapterIds: [...chapterIds], worldKeys: [...worldKeys.values()] };
+  return changed;
 };
 
 export const buildSyncProjectPackagePayload = async (input: {
@@ -279,28 +253,31 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
   try {
     const transactionResult = client.transaction((tx) => {
       if (input.localSnapshot) {
-        const guardKeys = collectDeleteGuardKeys(
+        const changedProjectKeys = findChangedDeletedProjectsSinceSnapshot(
           tx,
-          input.bundle,
-          input.localSnapshot,
           deletedProjectIds,
+          input.localSnapshot,
         );
         const changedChapterIds = findChangedChaptersSinceSnapshot(
           tx,
-          guardKeys.chapterIds,
+          input.bundle.chapters.map((row) => row.id),
           input.localSnapshot.chapters,
         );
         const changedWorldKeys = findChangedWorldDocumentsSinceSnapshot(
           tx,
-          guardKeys.worldKeys,
+          input.bundle.worldDocuments,
           input.localSnapshot.worldDocuments,
         );
-        if (changedChapterIds.length > 0 || changedWorldKeys.length > 0) {
+        const changedEntityKeys = [
+          ...changedProjectKeys,
+          ...changedWorldKeys,
+        ];
+        if (changedChapterIds.length > 0 || changedEntityKeys.length > 0) {
           return {
             status: "local-changed" as const,
             chapterIds: changedChapterIds,
-            ...(changedWorldKeys.length > 0
-              ? { entityKeys: changedWorldKeys }
+            ...(changedEntityKeys.length > 0
+              ? { entityKeys: changedEntityKeys }
               : {}),
           };
         }

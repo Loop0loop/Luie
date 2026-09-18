@@ -357,19 +357,33 @@ describe("sync stale package revision", () => {
       id: deleteChapterId,
       projectId: deleteProjectId,
       title: "Chapter",
-      content: "B",
+      content: "A",
       order: 0,
       wordCount: 1,
       createdAt: now,
-      updatedAt: localEditAt,
+      updatedAt: now,
     });
     await db.getClient().insert(chapterBody).values({
       chapterId: deleteChapterId,
-      content: "B",
-      contentHash: "body-b-hash",
-      updatedAt: localEditAt,
+      content: "A",
+      contentHash: "body-a-hash",
+      updatedAt: now,
     });
+    const deleteSnapshotRevision = db
+      .getClient()
+      .select({ revision: project.revision })
+      .from(project)
+      .where(eq(project.id, deleteProjectId))
+      .get()!.revision;
     const deleteSnapshot = createEmptySyncBundle();
+    deleteSnapshot.projects.push({
+      id: deleteProjectId,
+      userId: "user-1",
+      title: "Delete Race",
+      createdAt: now,
+      updatedAt: now,
+      localRevision: deleteSnapshotRevision,
+    });
     deleteSnapshot.chapters.push({
       id: deleteChapterId,
       userId: "user-1",
@@ -381,6 +395,20 @@ describe("sync stale package revision", () => {
       createdAt: now,
       updatedAt: now,
     });
+    db.getClient()
+      .update(chapter)
+      .set({ content: "B", updatedAt: localEditAt })
+      .where(eq(chapter.id, deleteChapterId))
+      .run();
+    db.getClient()
+      .update(chapterBody)
+      .set({
+        content: "B",
+        contentHash: "body-b-hash",
+        updatedAt: localEditAt,
+      })
+      .where(eq(chapterBody.chapterId, deleteChapterId))
+      .run();
     const deleteDelta = createEmptySyncBundle();
     deleteDelta.tombstones.push({
       id: `${deleteProjectId}:project:${deleteProjectId}`,
@@ -402,7 +430,8 @@ describe("sync stale package revision", () => {
       }),
     ).resolves.toEqual({
       status: "local-changed",
-      chapterIds: [deleteChapterId],
+      chapterIds: [],
+      entityKeys: [`project:${deleteProjectId}`],
     });
     expect(
       db
