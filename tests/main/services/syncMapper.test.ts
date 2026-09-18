@@ -81,6 +81,44 @@ describe("syncMapper project tombstones", () => {
     expect(merged.memos).toEqual([]);
   });
 
+  it("keeps project data edited after an older project tombstone", () => {
+    const local = createEmptySyncBundle();
+    local.projects.push({
+      id: "project-1",
+      userId: "user-1",
+      title: "Project",
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:00:00.000Z",
+    });
+    local.chapters.push({
+      id: "chapter-1",
+      userId: "user-1",
+      projectId: "project-1",
+      title: "Chapter",
+      content: "newer local edit",
+      order: 0,
+      wordCount: 3,
+      createdAt: "2026-02-22T00:00:00.000Z",
+      updatedAt: "2026-02-22T00:06:00.000Z",
+    });
+    const remote = createEmptySyncBundle();
+    remote.tombstones.push({
+      id: "project-1:project:project-1",
+      userId: "user-1",
+      projectId: "project-1",
+      entityType: "project",
+      entityId: "project-1",
+      deletedAt: "2026-02-22T00:05:00.000Z",
+      updatedAt: "2026-02-22T00:05:00.000Z",
+    });
+
+    const { merged } = mergeSyncBundles(local, remote);
+
+    expect(merged.projects).toEqual(local.projects);
+    expect(merged.chapters).toEqual(local.chapters);
+    expect(merged.tombstones).toEqual([]);
+  });
+
   it("does not create conflict copy when chapter is deleted", () => {
     const local = createEmptySyncBundle();
     local.chapters.push({

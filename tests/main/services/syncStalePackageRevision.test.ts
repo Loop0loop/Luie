@@ -14,6 +14,7 @@ import {
   db,
   project,
   projectAttachment,
+  worldDocument,
 } from "../../../src/main/infra/database/index.js";
 import {
   getProjectRevisionState,
@@ -284,5 +285,132 @@ describe("sync stale package revision", () => {
       ),
     ).toBe("B");
     expect(await getProjectRevisionState(projectId)).toEqual(afterSync);
+  });
+
+  it("rejects stale world apply and project delete targets", async () => {
+    const now = "2026-09-13T00:00:00.000Z";
+    const localEditAt = "2026-09-13T00:02:00.000Z";
+    const worldProjectId = crypto.randomUUID();
+    await db.getClient().insert(project).values({
+      id: worldProjectId,
+      title: "World Race",
+      createdAt: now,
+      updatedAt: localEditAt,
+    });
+    await db.getClient().insert(worldDocument).values({
+      id: `${worldProjectId}:plot`,
+      projectId: worldProjectId,
+      docType: "plot",
+      payload: JSON.stringify({ value: "B" }),
+      createdAt: now,
+      updatedAt: localEditAt,
+    });
+    const worldSnapshot = createEmptySyncBundle();
+    worldSnapshot.worldDocuments.push({
+      id: `${worldProjectId}:plot`,
+      userId: "user-1",
+      projectId: worldProjectId,
+      docType: "plot",
+      payload: { value: "A" },
+      updatedAt: now,
+    });
+    const worldDelta = createEmptySyncBundle();
+    worldDelta.worldDocuments.push({
+      ...worldSnapshot.worldDocuments[0]!,
+      payload: { value: "C" },
+      updatedAt: "2026-09-13T00:01:00.000Z",
+    });
+
+    await expect(
+      applyMergedBundleToLocalFirstLuie({
+        bundle: worldDelta,
+        localSnapshot: worldSnapshot,
+        hydrateMissingWorldDocsFromPackage: async () => undefined,
+        buildProjectPackagePayload: async () => null,
+        logger,
+      }),
+    ).resolves.toEqual({
+      status: "local-changed",
+      chapterIds: [],
+      entityKeys: [`world:${worldProjectId}:plot`],
+    });
+    expect(
+      JSON.parse(
+        db
+          .getClient()
+          .select({ payload: worldDocument.payload })
+          .from(worldDocument)
+          .where(eq(worldDocument.projectId, worldProjectId))
+          .get()!.payload,
+      ),
+    ).toEqual({ value: "B" });
+
+    const deleteProjectId = crypto.randomUUID();
+    const deleteChapterId = crypto.randomUUID();
+    await db.getClient().insert(project).values({
+      id: deleteProjectId,
+      title: "Delete Race",
+      createdAt: now,
+      updatedAt: now,
+    });
+    await db.getClient().insert(chapter).values({
+      id: deleteChapterId,
+      projectId: deleteProjectId,
+      title: "Chapter",
+      content: "B",
+      order: 0,
+      wordCount: 1,
+      createdAt: now,
+      updatedAt: localEditAt,
+    });
+    await db.getClient().insert(chapterBody).values({
+      chapterId: deleteChapterId,
+      content: "B",
+      contentHash: "body-b-hash",
+      updatedAt: localEditAt,
+    });
+    const deleteSnapshot = createEmptySyncBundle();
+    deleteSnapshot.chapters.push({
+      id: deleteChapterId,
+      userId: "user-1",
+      projectId: deleteProjectId,
+      title: "Chapter",
+      content: "A",
+      order: 0,
+      wordCount: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const deleteDelta = createEmptySyncBundle();
+    deleteDelta.tombstones.push({
+      id: `${deleteProjectId}:project:${deleteProjectId}`,
+      userId: "user-1",
+      projectId: deleteProjectId,
+      entityType: "project",
+      entityId: deleteProjectId,
+      deletedAt: "2026-09-13T00:01:00.000Z",
+      updatedAt: "2026-09-13T00:01:00.000Z",
+    });
+
+    await expect(
+      applyMergedBundleToLocalFirstLuie({
+        bundle: deleteDelta,
+        localSnapshot: deleteSnapshot,
+        hydrateMissingWorldDocsFromPackage: async () => undefined,
+        buildProjectPackagePayload: async () => null,
+        logger,
+      }),
+    ).resolves.toEqual({
+      status: "local-changed",
+      chapterIds: [deleteChapterId],
+    });
+    expect(
+      db
+        .getClient()
+        .select({ id: project.id })
+        .from(project)
+        .where(eq(project.id, deleteProjectId))
+        .get()?.id,
+    ).toBe(deleteProjectId);
   });
 });

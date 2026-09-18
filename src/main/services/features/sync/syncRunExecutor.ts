@@ -36,7 +36,12 @@ type RunExecutorDeps = {
     merged: SyncBundle,
     localSnapshot: SyncBundle,
   ) => Promise<
-    { status: "applied" } | { status: "local-changed"; chapterIds: string[] }
+    | { status: "applied" }
+    | {
+        status: "local-changed";
+        chapterIds: string[];
+        entityKeys?: string[];
+      }
   >;
   countBundleRows: (bundle: SyncBundle) => number;
   updateStatus: (next: Partial<SyncStatus>) => void;
@@ -148,8 +153,12 @@ export const executeSyncRun = async (
         );
         if (applyResult.status === "local-changed") {
           if (staleRetries >= 1) {
+            const changedKeys = [
+              ...applyResult.chapterIds,
+              ...(applyResult.entityKeys ?? []),
+            ];
             throw new Error(
-              `SYNC_LOCAL_SNAPSHOT_STALE:${applyResult.chapterIds.join(",")}`,
+              `SYNC_LOCAL_SNAPSHOT_STALE:${changedKeys.join(",")}`,
             );
           }
           staleRetries += 1;

@@ -18,14 +18,39 @@ export const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
     latestTombstoneByEntity.set(key, winner);
   }
 
+  const hasNewerProjectData = (projectId: string, deletedAt: string): boolean => {
+    const deletionTime = toTimestamp(deletedAt);
+    const rows = [
+      ...bundle.projects.filter((row) => row.id === projectId),
+      ...bundle.chapters.filter((row) => row.projectId === projectId),
+      ...bundle.characters.filter((row) => row.projectId === projectId),
+      ...bundle.events.filter((row) => row.projectId === projectId),
+      ...bundle.factions.filter((row) => row.projectId === projectId),
+      ...bundle.terms.filter((row) => row.projectId === projectId),
+      ...bundle.worldDocuments.filter((row) => row.projectId === projectId),
+      ...bundle.memos.filter((row) => row.projectId === projectId),
+      ...bundle.snapshots.filter((row) => row.projectId === projectId),
+      ...(bundle.memoryCanonicalRows ?? []).filter(
+        (row) => row.projectId === projectId,
+      ),
+    ];
+    return rows.some(
+      (row) => !row.deletedAt && toTimestamp(row.updatedAt) > deletionTime,
+    );
+  };
+
   const deletedProjectIds = new Set<string>();
   for (const project of bundle.projects) {
-    if (project.deletedAt) {
+    if (
+      project.deletedAt &&
+      !hasNewerProjectData(project.id, project.deletedAt)
+    ) {
       deletedProjectIds.add(project.id);
     }
   }
   for (const tombstone of latestTombstoneByEntity.values()) {
     if (tombstone.entityType !== "project") continue;
+    if (hasNewerProjectData(tombstone.projectId, tombstone.deletedAt)) continue;
     deletedProjectIds.add(tombstone.entityId);
     deletedProjectIds.add(tombstone.projectId);
   }
@@ -60,9 +85,8 @@ export const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
 
   return {
     ...bundle,
-    projects: filterByTombstone(
-      "project",
-      bundle.projects.filter((project) => !isProjectDeleted(project.id)),
+    projects: bundle.projects.filter(
+      (project) => !isProjectDeleted(project.id),
     ),
     chapters: bundle.chapters
       .filter((chapter) => !isProjectDeleted(chapter.projectId))
@@ -100,6 +124,10 @@ export const applyTombstonesToBundle = (bundle: SyncBundle): SyncBundle => {
     ),
     memoryCanonicalRows: (bundle.memoryCanonicalRows ?? []).filter(
       (row) => !isProjectDeleted(row.projectId),
+    ),
+    tombstones: bundle.tombstones.filter(
+      (row) =>
+        row.entityType !== "project" || isProjectDeleted(row.projectId),
     ),
   };
 };
