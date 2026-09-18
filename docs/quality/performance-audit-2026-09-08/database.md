@@ -65,7 +65,7 @@ DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f9
 ## 최신 검증 근거와 한계
 
 - 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 2026-09-18 현재 R1/R2 통합 회귀는 33 files/182 tests다. DB-11A 추가 검증은 실제 DB·filesystem 6 files/38 tests, mock 계약 1 file/10 tests, legacy migration 1 file/5 tests가 통과했다. DB-11B는 관련 실제 DB·filesystem 6 files/22 tests와 mock 계약 4 files/30 tests, DB-04B는 관련 실제 DB 4 files/31 tests, DB-06B는 관련 실제 DB 4 files/20 tests, DB-12는 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
-- `check:drizzle` main/cache 및 `git diff --check` 통과. typecheck는 기존 `Sidebar.tsx:157` TS6133으로 실패했다. source LOC gate 24건 중 원 HEAD `0faf4fad` 대비 database 누적 변경 파일의 위반은 8건이고 나머지 16건은 기존 위반이다. 이를 모두 기존 debt로 분류하지 않는다.
+- `check:drizzle` main/cache 및 `git diff --check` 통과. typecheck는 기존 `Sidebar.tsx:157` TS6133으로 실패했다. source LOC gate는 24건에서 21건으로 줄었다. database 누적 변경 파일 8건 중 production 3건을 기존 모듈로 분리해 500줄 이하로 복구했고, 테스트 5건과 기존 범위 16건이 남았다.
 - [derived DB benchmark](../../../scripts/benchmark-derived-db.mjs)는 `node:sqlite`·축약 schema에서 dataset당 list/open/enqueue를 각각 1회 측정한다. production autosave·FTS·export 경로와 p95/p99를 실행하지 않는다. 기존 7월 save-latency 산출물은 다른 HEAD 결과다.
 - [fullprod E2E](../../../tests/e2e/writingLoop.fullprod.spec.ts)의 p95는 chapter.update API 왕복이며 키 입력→autosave 또는 Cmd+S 완료 전체가 아니다. queue timeout 후 pending/running=0 assertion이 없고 [Electron helper](../../../tests/e2e/_helpers/electronApp.ts)는 DB URL만 격리하고 환경을 상속한다. userData/settings/sync 격리와 queue 완료 판정을 보완한 뒤 현재 코드의 성능을 측정해야 한다.
 - 실제 강제 종료 검증도 writer 시작 전 또는 정상 close 후다. commit 중 crash, authoritative DB writer 종료, packaged Electron 재시작, Windows/Linux·외장/저속 볼륨·전원 차단은 미검증이다.

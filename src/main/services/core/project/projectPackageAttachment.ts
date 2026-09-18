@@ -3,9 +3,11 @@ import { db } from "../../../infra/database/index.js";
 import { project } from "../../../infra/database/index.js";
 import {
   ErrorCode,
+  LUIE_PACKAGE_EXTENSION,
   LUIE_PACKAGE_META_FILENAME,
 } from "../../../../shared/constants/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
+import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
 import {
   getProjectAttachmentPath,
   setProjectAttachmentPath,
@@ -38,10 +40,26 @@ type AttachmentHooks<TProject> = {
   logger: LoggerLike;
 };
 
-const ensureExistingProject = async (
+export const getCanonicalProjectAttachmentPath = async (
   projectId: string,
-): Promise<void> => {
-  const rows = await db.getClient()
+): Promise<string | null> => {
+  const projectPath = await getProjectAttachmentPath(projectId);
+  if (
+    !projectPath ||
+    !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
+  ) {
+    return null;
+  }
+  try {
+    return ensureSafeAbsolutePath(projectPath, "projectPath");
+  } catch {
+    return null;
+  }
+};
+
+const ensureExistingProject = async (projectId: string): Promise<void> => {
+  const rows = await db
+    .getClient()
     .select({ id: project.id })
     .from(project)
     .where(eq(project.id, projectId))
@@ -49,11 +67,9 @@ const ensureExistingProject = async (
   const existing = rows.length > 0 ? rows[0] : null;
 
   if (!existing?.id) {
-    throw new ServiceError(
-      ErrorCode.PROJECT_NOT_FOUND,
-      "Project not found",
-      { id: projectId },
-    );
+    throw new ServiceError(ErrorCode.PROJECT_NOT_FOUND, "Project not found", {
+      id: projectId,
+    });
   }
 };
 
@@ -144,10 +160,7 @@ export const attachProjectPackageFile = async <TProject>(
   hooks: AttachmentHooks<TProject>,
 ): Promise<TProject> => {
   try {
-    const normalizedPath = normalizeLuiePackagePath(
-      packagePath,
-      "packagePath",
-    );
+    const normalizedPath = normalizeLuiePackagePath(packagePath, "packagePath");
     const [conflict, meta] = await Promise.all([
       findProjectPathConflict(normalizedPath, projectId),
       readLuieMetaForAttachment(normalizedPath, hooks.logger),

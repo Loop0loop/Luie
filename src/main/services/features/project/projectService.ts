@@ -4,7 +4,6 @@ import * as schema from "../../../infra/database/index.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import {
   ErrorCode,
-  LUIE_PACKAGE_EXTENSION,
   LUIE_MANUSCRIPT_DIR,
   MARKDOWN_EXTENSION,
   PACKAGE_EXPORT_DEBOUNCE_MS,
@@ -15,15 +14,14 @@ import type {
   ProjectUpdateInput,
 } from "../../../../shared/types/index.js";
 import { ServiceError } from "../../../utils/error/index.js";
-import { ensureSafeAbsolutePath } from "../../../utils/fs/index.js";
-import { ProjectExportQueue } from "../../core/project/projectExportQueue.js";
+import {
+  ProjectExportQueue,
+  shouldDebounceProjectPackageExport,
+} from "../../core/project/projectExportQueue.js";
 import { withProjectPathStatus } from "../../core/project/projectListStatus.js";
 import {
   getProjectAttachmentPath,
   hydrateProjectsWithAttachmentPaths,
-  listProjectAttachmentEntries,
-  migrateLegacyProjectAttachments,
-  setProjectAttachmentPath,
 } from "../../core/project/projectAttachmentStore.js";
 import {
   getProjectLastOpenedAt,
@@ -31,9 +29,10 @@ import {
   markProjectOpened as markProjectOpenedLocalState,
   sortProjectsByRecentLocalState,
 } from "../../core/project/projectLocalStateStore.js";
-import { collectDuplicateProjectPathGroups } from "../../core/project/projectPathReconciliation.js";
+import { reconcileProjectPathDuplicates } from "../../core/project/projectPathReconciliation.js";
 import {
   attachProjectPackageFile,
+  getCanonicalProjectAttachmentPath,
   materializeProjectPackageFile,
 } from "../../core/project/projectPackageAttachment.js";
 import {
@@ -48,24 +47,6 @@ import { listProjectsNeedingExport } from "../../core/project/projectRevisionSto
 import { writeLuieSqliteEntry } from "../../io/luieSqliteContainer.js";
 const logger = createLogger("ProjectService");
 
-const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
-  "chapter:create",
-  "chapter:update",
-  "character:create",
-  "character:update",
-  "character:delete",
-  "event:create",
-  "event:update",
-  "event:delete",
-  "faction:create",
-  "faction:update",
-  "faction:delete",
-  "term:create",
-  "term:update",
-  "term:delete",
-  "world-document:graph",
-  "snapshot:create",
-]);
 const isPackageExportDisabledForRuntime =
   process.env.LUIE_DISABLE_PACKAGE_EXPORT === "1" ||
   process.env.LUIE_E2E_STRESS_MODE === "1";
@@ -81,24 +62,8 @@ const loadProjectExportEngine = async () =>
     .exportProjectPackageWithOptions;
 
 const loadProjectImportOpen = async () =>
-  (await import("../../core/project/projectImportOpen.js")).openLuieProjectPackage;
-
-const getCanonicalProjectAttachmentPath = async (
-  projectId: string,
-): Promise<string | null> => {
-  const projectPath = await getProjectAttachmentPath(projectId);
-  if (
-    !projectPath ||
-    !projectPath.toLowerCase().endsWith(LUIE_PACKAGE_EXTENSION)
-  ) {
-    return null;
-  }
-  try {
-    return ensureSafeAbsolutePath(projectPath, "projectPath");
-  } catch {
-    return null;
-  }
-};
+  (await import("../../core/project/projectImportOpen.js"))
+    .openLuieProjectPackage;
 
 export class ProjectService {
   private exportQueue = new ProjectExportQueue(
@@ -123,65 +88,7 @@ export class ProjectService {
     migratedRecords: number;
     skippedInvalidRecords: number;
   }> {
-    const migration = await migrateLegacyProjectAttachments();
-    const projects = (await listProjectAttachmentEntries()).filter(
-      (project) => project.projectPath !== null,
-    );
-
-    const duplicateGroupsToReconcile = collectDuplicateProjectPathGroups(
-      projects.map((project) => ({
-        id: String(project.id),
-        projectPath: project.projectPath,
-        updatedAt: project.updatedAt,
-      })),
-    );
-
-    const reconciliationResults = await Promise.all(
-      duplicateGroupsToReconcile.map(async (entries) => {
-        const sorted = [...entries].sort(
-          (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
-        );
-        const keep = sorted[0];
-        const stale = sorted.slice(1);
-
-        await Promise.all(
-          stale.map(async (item) => {
-            await setProjectAttachmentPath(item.id, null);
-            logger.warn("Cleared duplicate projectPath from stale record", {
-              keepProjectId: keep.id,
-              staleProjectId: item.id,
-              projectPath: item.projectPath,
-            });
-          }),
-        );
-
-        return stale.length;
-      }),
-    );
-
-    const duplicateGroups = duplicateGroupsToReconcile.length;
-    const clearedRecords = reconciliationResults.reduce(
-      (total, count) => total + count,
-      0,
-    );
-
-    if (duplicateGroups > 0) {
-      logger.info("Project path duplicate reconciliation completed", {
-        duplicateGroups,
-        clearedRecords,
-      });
-    }
-
-    if (migration.migratedRecords > 0 || migration.clearedLegacyRecords > 0) {
-      logger.info("Legacy project attachment migration completed", migration);
-    }
-
-    return {
-      duplicateGroups,
-      clearedRecords,
-      migratedRecords: migration.migratedRecords,
-      skippedInvalidRecords: migration.skippedInvalidRecords,
-    };
+    return await reconcileProjectPathDuplicates();
   }
 
   async createProject(input: ProjectCreateInput) {
@@ -251,11 +158,37 @@ export class ProjectService {
   async getProject(id: string) {
     try {
       const store = db.getClient();
-      const [projectRows, settingsRows, chaptersRows, charactersRows, termsRows] = await Promise.all([
-        store.select().from(schema.project).where(eq(schema.project.id, id)).limit(1),
-        store.select().from(schema.projectSettings).where(eq(schema.projectSettings.projectId, id)).limit(1),
-        store.select().from(schema.chapter).where(and(eq(schema.chapter.projectId, id), isNull(schema.chapter.deletedAt))).orderBy(asc(schema.chapter.order)),
-        store.select().from(schema.character).where(eq(schema.character.projectId, id)),
+      const [
+        projectRows,
+        settingsRows,
+        chaptersRows,
+        charactersRows,
+        termsRows,
+      ] = await Promise.all([
+        store
+          .select()
+          .from(schema.project)
+          .where(eq(schema.project.id, id))
+          .limit(1),
+        store
+          .select()
+          .from(schema.projectSettings)
+          .where(eq(schema.projectSettings.projectId, id))
+          .limit(1),
+        store
+          .select()
+          .from(schema.chapter)
+          .where(
+            and(
+              eq(schema.chapter.projectId, id),
+              isNull(schema.chapter.deletedAt),
+            ),
+          )
+          .orderBy(asc(schema.chapter.order)),
+        store
+          .select()
+          .from(schema.character)
+          .where(eq(schema.character.projectId, id)),
         store.select().from(schema.term).where(eq(schema.term.projectId, id)),
       ]);
 
@@ -290,7 +223,8 @@ export class ProjectService {
 
   async getAllProjects() {
     try {
-      const projects = await db.getClient()
+      const projects = await db
+        .getClient()
         .select({
           id: schema.project.id,
           title: schema.project.title,
@@ -300,18 +234,14 @@ export class ProjectService {
         })
         .from(schema.project);
 
-      const normalizedProjects = projects.map(
-        (project) => ({
-          ...project,
-          id: String(project.id),
-          description:
-            typeof project.description === "string"
-              ? project.description
-              : null,
-          createdAt: new Date(project.createdAt),
-          updatedAt: new Date(project.updatedAt),
-        }),
-      );
+      const normalizedProjects = projects.map((project) => ({
+        ...project,
+        id: String(project.id),
+        description:
+          typeof project.description === "string" ? project.description : null,
+        createdAt: new Date(project.createdAt),
+        updatedAt: new Date(project.updatedAt),
+      }));
 
       const projectsWithAttachments =
         await hydrateProjectsWithAttachmentPaths(normalizedProjects);
@@ -362,7 +292,8 @@ export class ProjectService {
   }
 
   async touchProject(projectId: string): Promise<void> {
-    await db.getClient()
+    await db
+      .getClient()
       .update(schema.project)
       .set({ updatedAt: new Date().toISOString() })
       .where(eq(schema.project.id, projectId));
@@ -443,10 +374,6 @@ export class ProjectService {
     }
   }
 
-  private shouldDebouncePackageExport(reason: string): boolean {
-    return DEBOUNCED_PACKAGE_EXPORT_REASONS.has(reason);
-  }
-
   async persistPackageAfterMutation(
     projectId: string,
     reason: string,
@@ -501,7 +428,7 @@ export class ProjectService {
         );
       }
     }
-    if (this.shouldDebouncePackageExport(reason)) {
+    if (shouldDebounceProjectPackageExport(reason)) {
       this.schedulePackageExport(projectId, `${reason}:debounced`);
       return;
     }

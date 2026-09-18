@@ -3,6 +3,28 @@ import {
   markProjectExported,
 } from "./projectRevisionStore.js";
 
+const DEBOUNCED_PACKAGE_EXPORT_REASONS = new Set<string>([
+  "chapter:create",
+  "chapter:update",
+  "character:create",
+  "character:update",
+  "character:delete",
+  "event:create",
+  "event:update",
+  "event:delete",
+  "faction:create",
+  "faction:update",
+  "faction:delete",
+  "term:create",
+  "term:update",
+  "term:delete",
+  "world-document:graph",
+  "snapshot:create",
+]);
+
+export const shouldDebounceProjectPackageExport = (reason: string): boolean =>
+  DEBOUNCED_PACKAGE_EXPORT_REASONS.has(reason);
+
 export type ProjectExportRunResult = boolean | "skipped";
 
 export type ProjectExportRun = (
@@ -10,9 +32,7 @@ export type ProjectExportRun = (
   revision: number,
 ) => Promise<ProjectExportRunResult>;
 
-export type ProjectExportSkipResolver = (
-  projectId: string,
-) => Promise<boolean>;
+export type ProjectExportSkipResolver = (projectId: string) => Promise<boolean>;
 
 export type ProjectExportQueueFlushResult = {
   total: number;

@@ -77,7 +77,7 @@
 
 ## 후속 진행 순서
 
-1. 원 HEAD 대비 database 누적 변경 파일의 source LOC 게이트 실패 8건을 기존 실패 16건과 분리해 처리한다.
+1. **진행 3/8** — database 누적 변경 파일의 source LOC 실패 중 `dbMaintenanceService.ts`, `chapterSearchCacheService.ts`, `projectService.ts`를 500줄 이하로 복구했다. 테스트 파일 5건을 기존 실패 16건과 분리해 처리한다.
 2. 현재 소스의 실제 Electron·사용자 규모 package에서 p95/p99·실패율·event-loop·write bytes와 crash/restart 범위를 확장 검증한다.
 
 DB-10E는 DB-10D 측정으로 전체 export가 여전히 병목일 때만 구현한다. 현재는 측정 gate 미충족으로 확대 보류 판정을 완료했다.
