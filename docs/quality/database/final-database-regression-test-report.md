@@ -31,7 +31,7 @@
 
 | 묶음 | 실행 상태                                                                                      | 결과                    |
 | ---- | ---------------------------------------------------------------------------------------------- | ----------------------- |
-| R1   | 실제 main/cache DB, FTS/vector, transaction rollback, 300장/1,000 appearance, `.luie`, SIGKILL | 19 files, 79 tests PASS |
+| R1   | 실제 main/cache DB, FTS/vector, transaction rollback, 300장/1,000 appearance, `.luie`, SIGKILL | 22 files, 79 tests PASS |
 | R2   | DB setup 생략, mock IPC/service/HTTP, autosave 경쟁, export queue, sync pagination/delta        | 14 files, 103 tests PASS |
 | R3   | main/cache Drizzle migration journal·schema                                                    | PASS                    |
 | R4   | 1K/3K chapter derived DB benchmark threshold                                                   | PASS                    |
@@ -39,7 +39,7 @@
 | R6   | 변경 source와 신규 테스트 ESLint, whitespace diff                                              | PASS                    |
 | R7   | TypeScript 전체                                                                                | 기존 renderer 오류 1건  |
 
-총 회귀 결과는 **33 files, 182 tests passed**다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
+총 회귀 결과는 **36 files, 182 tests passed**다. LOC 보정으로 3개 test file을 분리해 file 수만 늘었고 assertion 수는 같다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
 
 ## 기존 실행 기록
 
@@ -60,17 +60,20 @@ pnpm exec vitest run \
   tests/main/services/dbMaintenanceService.test.ts \
   tests/main/services/derivedJobRunnableSelection.test.ts \
   tests/main/services/luieContainer.test.ts \
+  tests/main/services/luieContainer.entryRollback.test.ts \
   tests/main/services/memoryProjectionService.test.ts \
+  tests/main/services/memoryProjectionService.generation.test.ts \
   tests/main/services/projectSaveRecovery.integration.test.ts \
   tests/main/services/rag/contextAssemblerSearch.test.ts \
   tests/main/services/searchService.test.ts \
   tests/main/services/syncLocalApply.test.ts \
+  tests/main/services/syncLocalApply.upsertChapter.test.ts \
   tests/main/services/syncStalePackageRevision.test.ts
 ```
 
 상태: `SKIP_DB_TEST_SETUP`을 사용하지 않았다. worker별 임시 main/cache SQLite를 초기화하고 FTS5/sqlite-vec, transaction failure trigger, 300장 FTS, 1,000 appearance bulk, revision retention, `.luie` entry transaction, child `SIGKILL` 후 startup recovery를 실행했다. sync world/memo delta에는 미변경 sibling UPDATE/DELETE를 `RAISE(ABORT)` 하는 TEMP trigger 3개를 설치했다.
 
-2026-09-18 재실행 결과: **19 files passed, 79 tests passed**. DB-06B clear/upsert·FTS 부재 회귀 2건이 추가됐다.
+2026-09-18 LOC 보정 후 재실행 결과: **22 files passed, 79 tests passed**. 분리된 3개 file의 assertion을 포함한다.
 
 초기 분류 실행에서 이 묶음 중 `chapterService`, `chapterDerivedJobs`, `chapterKeywordDispatchAfterCommit`을 비DB 묶음에 잘못 넣어 DB 초기화 전 8건이 실패했다. 실제 DB setup으로 옮긴 뒤 `chapterDerivedJobs`의 paused 보존/failed 재활성화 모순 2건을 발견했고 공통 enqueue helper를 수정했다. 최종 동일 실제 DB 범위는 모두 통과했다.
 
@@ -166,11 +169,11 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 ## 2026-09-13 최신 QA 검증 결과
 
-검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 변경분이다. 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존한다. 그보다 앞선 개별 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
+검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 변경분이다. 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`, source LOC 보정은 `dadea8af`·`d9480be4`·`e8900ce4`에 고정했다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존한다. 그보다 앞선 개별 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
 
-- R1의 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **19 files, 79 tests PASS**. DB-06 upsert/clear 경쟁·mapping 실패 rollback·FTS 부재 fallback, DB-09 33,000건 retention·5분 경계·DELETE 실패 rollback, DB-11 stale package/revision, DB-12 failed/paused 전체 rebuild와 50,000건 global query를 포함한다.
+- R1의 갱신된 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **22 files, 79 tests PASS**. DB-06 upsert/clear 경쟁·mapping 실패 rollback·FTS 부재 fallback, DB-09 33,000건 retention·5분 경계·DELETE 실패 rollback, DB-11 stale package/revision, DB-12 failed/paused 전체 rebuild와 50,000건 global query를 포함한다.
 - R2의 동일 명령을 `SKIP_DB_TEST_SETUP=1`인 mock 계약 환경에서 재실행: **14 files, 103 tests PASS**. DB-11이 재사용하는 export queue와 world tombstone read/revive 회귀를 포함한다.
-- 합계 **33 files, 182 tests PASS**. DB-04 claim 전 경쟁, DB-06 upsert/clear 동시성, DB-09 대량 이력, DB-11 stale package/world tombstone, DB-12 전체 rebuild/global query를 영구 회귀에 포함했다.
+- 합계 **36 files, 182 tests PASS**. DB-04 claim 전 경쟁, DB-06 upsert/clear 동시성, DB-09 대량 이력, DB-11 stale package/world tombstone, DB-12 전체 rebuild/global query를 영구 회귀에 포함했다.
 - `pnpm run check:drizzle` main/cache와 `git diff --check` 재실행: PASS. packaged Electron에서의 기존 DB 업그레이드 실행을 뜻하지 않는다.
 - `pnpm run build` 재실행: PASS — main 938, preload 31, renderer 2,952 modules transformed.
 - 변경된 database source·회귀 테스트 ESLint: PASS. `check:core-complexity`는 renderer 기존 advisory 2건을 출력하고 PASS했다.

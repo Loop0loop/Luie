@@ -4,7 +4,7 @@
 
 이 문서는 DB·저장·검색·동기화 문제의 SSoT다. 아래 최신 상태가 뒤의 초기 감사 기록 및 개별 보고서의 과거 PASS보다 우선한다. 구현 추적은 [TODO](../database/implementation-todo.md), 실행 기록·커밋 기준·환경 구분은 [최종 회귀 보고서](../database/final-database-regression-test-report.md)에 연결한다.
 
-DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
+DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`에 고정했다. source LOC 보정은 production `dadea8af`, 테스트 `d9480be4`·`e8900ce4`에 고정했다. 이전 개별 테스트의 dirty tree 식별 한계는 그대로 남긴다.
 
 ## 현재 항목별 상태
 
@@ -64,7 +64,7 @@ DB-04·DB-06·DB-09·DB-11·DB-12 누적 보정은 `21448949`, DB-04B는 `b7e7f9
 
 ## 최신 검증 근거와 한계
 
-- 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 2026-09-18 현재 R1/R2 통합 회귀는 33 files/182 tests다. DB-11A 추가 검증은 실제 DB·filesystem 6 files/38 tests, mock 계약 1 file/10 tests, legacy migration 1 file/5 tests가 통과했다. DB-11B는 관련 실제 DB·filesystem 6 files/22 tests와 mock 계약 4 files/30 tests, DB-04B는 관련 실제 DB 4 files/31 tests, DB-06B는 관련 실제 DB 4 files/20 tests, DB-12는 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
+- 재실행 환경: macOS arm64, Node v22.23.0, better-sqlite3의 SQLite 3.53.4, worker별 임시 DB·합성 `.luie`. 2026-09-18 현재 R1/R2 통합 회귀는 36 files/182 tests다. 테스트 분리로 file 수만 3개 늘었고 assertion 수는 같다. DB-11A 추가 검증은 실제 DB·filesystem 6 files/38 tests, mock 계약 1 file/10 tests, legacy migration 1 file/5 tests가 통과했다. DB-11B는 관련 실제 DB·filesystem 6 files/22 tests와 mock 계약 4 files/30 tests, DB-04B는 관련 실제 DB 4 files/31 tests, DB-06B는 관련 실제 DB 4 files/20 tests, DB-12는 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 사용자 데이터·native ABI는 변경하지 않았다.
 - `check:drizzle` main/cache 및 `git diff --check` 통과. typecheck는 기존 `Sidebar.tsx:157` TS6133으로 실패했다. database 누적 변경의 source LOC 위반 8건은 production 3건과 테스트 5건을 책임별 파일로 분리해 모두 해소했다. 전체 gate에는 기존 범위 16건이 남았다.
 - [derived DB benchmark](../../../scripts/benchmark-derived-db.mjs)는 `node:sqlite`·축약 schema에서 dataset당 list/open/enqueue를 각각 1회 측정한다. production autosave·FTS·export 경로와 p95/p99를 실행하지 않는다. 기존 7월 save-latency 산출물은 다른 HEAD 결과다.
 - [fullprod E2E](../../../tests/e2e/writingLoop.fullprod.spec.ts)의 p95는 chapter.update API 왕복이며 키 입력→autosave 또는 Cmd+S 완료 전체가 아니다. queue timeout 후 pending/running=0 assertion이 없고 [Electron helper](../../../tests/e2e/_helpers/electronApp.ts)는 DB URL만 격리하고 환경을 상속한다. userData/settings/sync 격리와 queue 완료 판정을 보완한 뒤 현재 코드의 성능을 측정해야 한다.
