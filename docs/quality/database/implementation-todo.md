@@ -2,7 +2,7 @@
 
 기준 문서: [`../performance-audit-2026-09-08/database.md`](../performance-audit-2026-09-08/database.md)
 
-최신 판정: **2026-09-18 2차 보정 완료, 실환경 검증 미완료**. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례와 DB-12B production query 근거를 보정했다. 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)에 기록한다.
+최신 판정: **2026-09-18 코드 보정 완료, 실환경 검증 미완료**. DB-11A·DB-11B·DB-04B·DB-06B 정확성 반례, DB-12B production query 근거, database 누적 변경의 source LOC 위반 8건을 보정했다. 완료 근거는 [`test2/implementation-todo.md`](test2/implementation-todo.md)와 최종 회귀 보고서에 기록한다.
 
 표시 규칙:
 
@@ -77,7 +77,7 @@
 
 ## 후속 진행 순서
 
-1. **진행 5/8** — production 3건과 `syncLocalApply.test.ts`, `memoryProjectionService.test.ts`를 책임별 파일로 분리했다. 테스트 파일 3건을 기존 실패 16건과 분리해 처리한다.
+1. [X] database 누적 변경의 source LOC 실패 8건을 책임별 파일로 분리했다. `check:source-loc`에는 기존 범위 16건만 남는다.
 2. 현재 소스의 실제 Electron·사용자 규모 package에서 p95/p99·실패율·event-loop·write bytes와 crash/restart 범위를 확장 검증한다.
 
 DB-10E는 DB-10D 측정으로 전체 export가 여전히 병목일 때만 구현한다. 현재는 측정 gate 미충족으로 확대 보류 판정을 완료했다.

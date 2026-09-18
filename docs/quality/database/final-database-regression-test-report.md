@@ -1,6 +1,6 @@
 # Database TODO 최종 회귀 테스트 보고서
 
-현재 판정: **Risky — 2차 보정 완료, 실환경 검증 미완료**. 2026-09-18 현재 R1/R2 통합 회귀 182건과 DB-04B·DB-06B·DB-12B 후속 회귀가 통과했다. source LOC gate와 실제 Electron·사용자 규모 성능/crash 검증 전에는 release 안정화 완료로 올리지 않는다.
+현재 판정: **Risky — 코드 보정 완료, 실환경 검증 미완료**. 2026-09-18 현재 R1/R2 통합 회귀 182건과 DB-04B·DB-06B·DB-12B 후속 회귀가 통과했고, database 누적 변경의 source LOC 위반 8건을 해소했다. 기존 LOC gate 16건과 실제 Electron·사용자 규모 성능/crash 검증 전에는 release 안정화 완료로 올리지 않는다.
 
 ## 문서 정보
 
@@ -196,6 +196,8 @@ LOC는 `scripts/check-source-loc.mjs`와 같은 줄 계산법을 사용했다. d
 
 LOC 2차 보정은 `syncLocalApply`의 chapter upsert와 `memoryProjectionService`의 pre-claim generation 회귀를 별도 파일로 이동했다. 원 assertion은 유지했고 실제 DB **4 files/18 tests**와 ESLint가 통과했다. `check:source-loc`는 **19건 실패(database 테스트 3건 + 기존 범위 16건)**다.
 
+LOC 3차 보정은 `.luie` entry rollback 회귀를 별도 파일로 옮기고, project export DB mock과 sync apply mock을 fixture로 분리했다. 비DB·실제 filesystem **4 files/36 tests**, 변경 테스트 ESLint가 통과했다. `check:source-loc`는 **기존 범위 16건만 실패**하며 database 누적 변경 8건은 모두 해소됐다. typecheck는 기존 `Sidebar.tsx:157` 오류 1건만 남았다.
+
 ### 환경과 성능 증거의 범위
 
 - R1은 실제 SQLite·filesystem 통합이지만 `tests/setup.ts`의 Electron mock을 사용한다. R2의 DB/IPC/HTTP mock 통과를 실서버·실제 IPC 저장 성공으로 확대하지 않는다. DB-14도 utility 환경 변수와 vector guard spy를 사용한 실행기 테스트이며 실제 utility process 통합은 아니다.
@@ -226,5 +228,5 @@ LOC 2차 보정은 `syncLocalApply`의 chapter upsert와 `memoryProjectionServic
 
 - 기존 DB-01~14 보고 범위와 DB-11A·DB-11B·DB-04B·DB-06B 후속 정확성 반례, DB-12B production query 근거 보정을 완료했다.
 - 현재 R1/R2 회귀 182건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests, DB-12 관련 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 실제 SQLite·임시 파일 사용은 유효한 통합 증거지만, 제한된 crash 위치와 미측정 실환경 성능까지 보장하지 않는다.
-- TypeScript 기존 renderer 오류 1건, source LOC database 테스트 3건·기존 범위 16건, 기존 persist/main-service boundary gate 실패를 각각 남긴다. 이전의 “남은 실패는 기존 debt뿐”이라는 판정을 철회한다.
+- database 누적 변경의 source LOC 위반 8건은 모두 해소했다. TypeScript 기존 renderer 오류 1건, 기존 source LOC 16건, 기존 persist/main-service boundary gate 실패는 남는다.
 - DB-10D는 명시한 Node writer 전후·DB 재연결 복구 범위만 완료이며, DB-10E는 조건부 확대 보류다. 후속 수정·반례 회귀와 현재 revision의 실제 Electron/사용자 규모 검증 후 안정화 여부를 다시 판정한다.
