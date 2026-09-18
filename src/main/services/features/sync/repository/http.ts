@@ -3,6 +3,8 @@ import type { DbRow } from "./rowUtils.js";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
+const FETCH_PAGE_SIZE = 1_000;
+const MAX_FETCH_PAGES = 10_000;
 
 async function fetchWithRetry(
   url: string,
@@ -64,20 +66,65 @@ export async function fetchTableRaw(
   const query = new URLSearchParams();
   query.set("select", "*");
   query.set("user_id", `eq.${userId}`);
+  query.set("order", "id.asc");
 
-  const response = await fetchWithRetry(
-    `${config.url}/rest/v1/${table}?${query.toString()}`,
-    {
-      method: "GET",
-      headers: {
-        apikey: config.anonKey,
-        Authorization: `Bearer ${accessToken}`,
+  const rows: DbRow[] = [];
+  let expectedTotal: number | null = null;
+  for (let page = 0; page < MAX_FETCH_PAGES; page += 1) {
+    const start = rows.length;
+    const response = await fetchWithRetry(
+      `${config.url}/rest/v1/${table}?${query.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          apikey: config.anonKey,
+          Authorization: `Bearer ${accessToken}`,
+          Prefer: "count=exact",
+          Range: `${start}-${start + FETCH_PAGE_SIZE - 1}`,
+          "Range-Unit": "items",
+        },
       },
-    },
-  );
-
-  const payload = (await response.json()) as unknown;
-  return Array.isArray(payload) ? (payload as DbRow[]) : [];
+    );
+    const payload = (await response.json()) as unknown;
+    const pageRows = Array.isArray(payload) ? (payload as DbRow[]) : [];
+    const contentRange = response.headers.get("content-range");
+    const match = contentRange?.match(/^(?:(\d+)-(\d+)|\*)\/(\d+|\*)$/);
+    if (contentRange && !match) {
+      throw new Error(`SYNC_PAGINATION_INVALID_CONTENT_RANGE:${table}`);
+    }
+    if (!contentRange && pageRows.length > 0) {
+      throw new Error(`SYNC_PAGINATION_MISSING_CONTENT_RANGE:${table}`);
+    }
+    if (match) {
+      const rangeStart = match[1] === undefined ? null : Number(match[1]);
+      const rangeEnd = match[2] === undefined ? null : Number(match[2]);
+      const total = match[3] === "*" ? null : Number(match[3]);
+      if (
+        pageRows.length > 0 &&
+        (rangeStart !== start ||
+          rangeEnd === null ||
+          rangeEnd - rangeStart + 1 !== pageRows.length)
+      ) {
+        throw new Error(`SYNC_PAGINATION_RANGE_MISMATCH:${table}`);
+      }
+      if (total !== null) {
+        if (expectedTotal !== null && expectedTotal !== total) {
+          throw new Error(`SYNC_PAGINATION_TOTAL_CHANGED:${table}`);
+        }
+        expectedTotal = total;
+      }
+    }
+    rows.push(...pageRows);
+    if (expectedTotal !== null) {
+      if (rows.length === expectedTotal) return rows;
+      if (rows.length > expectedTotal || pageRows.length === 0) {
+        throw new Error(`SYNC_PAGINATION_INCOMPLETE:${table}`);
+      }
+    } else if (pageRows.length === 0) {
+      return rows;
+    }
+  }
+  throw new Error(`SYNC_PAGINATION_PAGE_LIMIT:${table}`);
 }
 
 export async function fetchOptionalTableRaw(

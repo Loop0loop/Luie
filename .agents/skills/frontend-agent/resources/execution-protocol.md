@@ -1,49 +1,7 @@
-# Frontend Agent - Execution Protocol
+# 여러 renderer 계층을 바꿀 때
 
-## Step 0: Prepare
-1. **Assess difficulty** — see `../_shared/difficulty-guide.md`
-   - **Simple**: Skip to Step 3 | **Medium**: All 4 steps | **Complex**: All steps + checkpoints
-2. **Check lessons** — read your domain section in `../_shared/lessons-learned.md`
-3. **Clarify requirements** — follow `../_shared/clarification-protocol.md`
-   - Check **Uncertainty Triggers**: business logic, security/auth, existing code conflicts?
-   - Determine level: LOW → proceed | MEDIUM → present options | HIGH → ask immediately
-4. **Budget context** — follow `../_shared/context-budget.md` (read symbols, not whole files)
+현재 화면과 인접 패턴에서 component → hook/store → preload 흐름을 확인한다. project/chapter 전환·pending 작업·persist 소비자를 함께 본다.
 
-**⚠️ Intelligent Escalation**: When uncertain, escalate early. Don't blindly proceed.
+기존 UI·토큰·Zustand action을 활용해 요청된 동작을 구현한다. 구조가 필요한 경우 기존 feature 안에서 역할을 나눈다. 기술 선택이나 참조 문서 수를 형식적으로 늘리지 않는다.
 
-Follow these steps in order (adjust depth by difficulty).
-
-## Step 1: Analyze
-- Read the task requirements carefully
-- Identify which components, pages, and hooks are needed
-- Check existing code with Serena: `get_symbols_overview("src/components")`, `find_symbol("ComponentName")`
-- Review existing patterns: `find_referencing_symbols("Button")` to understand usage conventions
-- List assumptions; ask if unclear
-
-## Step 2: Plan
-- Decide on component structure (which are new, which extend existing)
-- Define props interfaces with TypeScript
-- Plan state management approach (local state, Context, Zustand)
-- Identify API integration points (TanStack Query hooks)
-- Plan responsive breakpoints and accessibility requirements
-
-## Step 3: Implement
-- Create/modify files in this order:
-  1. TypeScript types/interfaces
-  2. API client hooks (TanStack Query)
-  3. Reusable UI components (shadcn/ui based)
-  4. Feature components (compose UI + logic)
-  5. Page components (route-level)
-  6. Tests (unit + integration)
-- Use `resources/component-template.tsx` as reference
-- Follow `resources/tailwind-rules.md` for styling
-
-## Step 4: Verify
-- Run `resources/checklist.md` items
-- Run `../_shared/common-checklist.md` items
-- Check TypeScript strict mode: no errors
-- Verify responsive design at 320px, 768px, 1024px, 1440px
-- Test keyboard navigation and screen reader compatibility
-
-## On Error
-See `resources/error-playbook.md` for recovery steps.
+변경한 상호작용·오류/저장 상태·키보드 흐름을 검증한다. 시각 변경은 관련 테마·창/패널 크기로 확인한다. 관련 테스트·정책 검사 통과 후 새 근거 없이 전체 검증을 반복하지 않는다.

@@ -1,46 +1,14 @@
 ---
-applyTo: '**'
-description: >-
-  Use code-review-graph MCP tools for token-efficient
-  codebase exploration and code review.
+applyTo: "**/*.{ts,tsx,js,mjs,cjs}"
+description: "코드 그래프로 관계와 변경 영향을 찾고 현재 소스로 확인한다."
 ---
 
-<!-- code-review-graph MCP tools -->
-## MCP Tools: code-review-graph
+# Code review graph
 
-**IMPORTANT: This project has a knowledge graph. ALWAYS use the
-code-review-graph MCP tools BEFORE using file/search tools to
-explore the codebase.** The graph is faster, cheaper (fewer
-tokens), and gives you structural context (callers, dependents,
-test coverage) that file scanning cannot.
+탐색·검증 기준은 저장소 `AGENTS.md`를 따른다. 그래프가 제공되면 질문에 맞는 도구를 선택한다.
 
-### When to use graph tools FIRST
+- 심볼·호출자·소비자: `semantic_search_nodes`, `query_graph`.
+- diff 문맥·영향: `detect_changes`, `get_review_context`, `get_impact_radius`.
+- 여러 실행 경로의 영향: `get_affected_flows`.
 
-- **Exploring code**: `semantic_search_nodes` or `query_graph`
-- **Understanding impact**: `get_impact_radius`
-- **Code review**: `detect_changes` + `get_review_context`
-- **Finding relationships**: `query_graph` callers_of/callees_of
-- **Architecture questions**: `get_architecture_overview`
-
-Fall back to file/search tools **only** when the graph doesn't
-cover what you need.
-
-### Key Tools
-
-| Tool | Use when |
-| ------ | ---------- |
-| `detect_changes` | Risk-scored change analysis |
-| `get_review_context` | Token-efficient source snippets |
-| `get_impact_radius` | Blast radius of a change |
-| `get_affected_flows` | Impacted execution paths |
-| `query_graph` | Trace callers, callees, imports, tests |
-| `semantic_search_nodes` | Find functions/classes by keyword |
-| `get_architecture_overview` | High-level structure |
-| `refactor_tool` | Rename planning, dead code |
-
-### Workflow
-
-1. The graph auto-updates on file changes (via hooks).
-2. Use `detect_changes` for code review.
-3. Use `get_affected_flows` to understand impact.
-4. Use `query_graph` pattern="tests_for" to check coverage.
+모든 도구를 순서대로 실행할 필요는 없다. 미지원·누락·오래된 결과는 소스·git diff·범위를 좁힌 검색으로 보완한다. 그래프의 자동 갱신·테스트 커버리지를 완전하다고 단정하지 않는다.

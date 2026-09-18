@@ -5,10 +5,11 @@ const mocked = vi.hoisted(() => ({
   transaction: vi.fn((callback: (tx: unknown) => unknown) => {
     return callback({});
   }),
-  persistBundleToLuiePackages: vi.fn(async () => {
+  exportProjectPackageNow: vi.fn(async () => {
     mocked.calls.push("package");
-    return [];
+    return true;
   }),
+  schedulePackageExport: vi.fn(),
 }));
 
 vi.mock("../../../src/main/infra/database/index.js", () => ({
@@ -24,13 +25,22 @@ vi.mock(
   "../../../src/main/services/features/sync/syncPackagePersistence.js",
   () => ({
     buildProjectPackagePayload: vi.fn(),
-    persistBundleToLuiePackages: mocked.persistBundleToLuiePackages,
+  }),
+);
+
+vi.mock(
+  "../../../src/main/services/features/project/projectService.js",
+  () => ({
+    projectService: {
+      exportProjectPackageNow: mocked.exportProjectPackageNow,
+      schedulePackageExport: mocked.schedulePackageExport,
+    },
   }),
 );
 
 vi.mock("../../../src/main/services/features/sync/syncLocalApply.js", () => ({
   applyChapterTombstones: vi.fn(),
-  applyReplicaWorldState: vi.fn(() => mocked.calls.push("world apply")),
+  applyReplicaWorldDelta: vi.fn(() => mocked.calls.push("world apply")),
   applyProjectDeletes: vi.fn(),
   collectDeletedProjectIds: vi.fn(() => new Set<string>()),
   upsertChapter: vi.fn(),
@@ -81,9 +91,13 @@ const createBundle = (): SyncBundle => ({
   tombstones: [],
 });
 
-const applyBundle = async (bundle = createBundle()) => {
+const applyBundle = async (
+  bundle = createBundle(),
+  packageBundle?: SyncBundle,
+) => {
   await applyMergedBundleToLocalFirstLuie({
     bundle,
+    packageBundle,
     hydrateMissingWorldDocsFromPackage: vi.fn(),
     buildProjectPackagePayload: vi.fn(async () => null),
     logger: {
@@ -97,24 +111,26 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
   beforeEach(() => {
     mocked.calls.length = 0;
     vi.clearAllMocks();
-    mocked.transaction.mockImplementation((callback: (tx: unknown) => unknown) => {
-      const tx = {
-        select: vi.fn(() => ({
-          from: vi.fn(() => ({
-            where: vi.fn(() => ({
-              all: vi.fn(() => {
-                mocked.calls.push("revision capture");
-                return [{ id: "project-1", revision: 7 }];
-              }),
+    mocked.transaction.mockImplementation(
+      (callback: (tx: unknown) => unknown) => {
+        const tx = {
+          select: vi.fn(() => ({
+            from: vi.fn(() => ({
+              where: vi.fn(() => ({
+                all: vi.fn(() => {
+                  mocked.calls.push("revision capture");
+                  return [{ id: "project-1", revision: 7 }];
+                }),
+              })),
             })),
           })),
-        })),
-      };
-      return callback(tx);
-    });
-    mocked.persistBundleToLuiePackages.mockImplementation(async () => {
+        };
+        return callback(tx);
+      },
+    );
+    mocked.exportProjectPackageNow.mockImplementation(async () => {
       mocked.calls.push("package");
-      return [];
+      return true;
     });
   });
 
@@ -128,11 +144,9 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
       "revision capture",
       "package",
     ]);
-    expect(mocked.persistBundleToLuiePackages).toHaveBeenCalledTimes(1);
-    expect(mocked.persistBundleToLuiePackages).toHaveBeenCalledWith(
-      expect.objectContaining({
-        capturedRevisions: new Map([["project-1", 7]]),
-      }),
+    expect(mocked.exportProjectPackageNow).toHaveBeenCalledWith(
+      "project-1",
+      "sync",
     );
   });
 
@@ -146,6 +160,58 @@ describe("applyMergedBundleToLocalFirstLuie", () => {
       "SYNC_DB_CACHE_APPLY_FAILED:project-1",
     );
     expect(mocked.calls).toEqual(["db apply"]);
-    expect(mocked.persistBundleToLuiePackages).not.toHaveBeenCalled();
+    expect(mocked.exportProjectPackageNow).not.toHaveBeenCalled();
+  });
+
+  it("queues a retry when the authoritative package export fails", async () => {
+    mocked.exportProjectPackageNow.mockResolvedValueOnce(false);
+
+    await expect(applyBundle()).rejects.toThrow(
+      "SYNC_LUIE_PERSIST_FAILED:project-1",
+    );
+    expect(mocked.schedulePackageExport).toHaveBeenCalledWith(
+      "project-1",
+      "sync:retry",
+    );
+  });
+
+  it("applies only the delta and exports the affected project from DB", async () => {
+    const packageBundle = createBundle();
+    packageBundle.chapters = [
+      {
+        id: "chapter-1",
+        userId: "user-1",
+        projectId: "project-1",
+        title: "Changed",
+        content: "changed",
+        order: 0,
+        wordCount: 1,
+        createdAt: "2026-06-30T00:00:00.000Z",
+        updatedAt: "2026-06-30T00:01:00.000Z",
+      },
+      {
+        id: "chapter-2",
+        userId: "user-1",
+        projectId: "project-1",
+        title: "Unchanged",
+        content: "must remain in the package",
+        order: 1,
+        wordCount: 5,
+        createdAt: "2026-06-30T00:00:00.000Z",
+        updatedAt: "2026-06-30T00:00:00.000Z",
+      },
+    ];
+    const delta = {
+      ...createBundle(),
+      projects: [],
+      chapters: [packageBundle.chapters[0]!],
+    };
+
+    await applyBundle(delta, packageBundle);
+
+    expect(mocked.exportProjectPackageNow).toHaveBeenCalledWith(
+      "project-1",
+      "sync",
+    );
   });
 });

@@ -4,6 +4,7 @@ import { db } from "../../../database/main/databaseService.js";
 import { memoryChunk } from "../../../database/schema/index.js";
 import { escapeLike } from "../../../utils/query/index.js";
 import { normalizeSearchTokens } from "./tokenNormalization.js";
+import type { SearchVectorMode } from "./searchOptimizationPolicy.js";
 
 type LoggerLike = {
   warn: (message: string, details?: unknown) => void;
@@ -23,6 +24,7 @@ type HybridChunkRankInput = {
   normalizedQuery: string;
   resultLimit: number;
   candidateCap: number;
+  vectorSearchMode: SearchVectorMode;
   logger: LoggerLike;
   embedQuery?: (
     projectId: string,
@@ -153,7 +155,14 @@ export async function searchHybridChunkRanks(
 
   let denseRanks: ChunkRank[] = [];
   const vectorStartedAt = performance.now();
-  const vectorSkipped = !input.embedQuery || !shouldRunVectorSearch();
+  const hasLexicalHits =
+    ftsRows.length > 0 ||
+    lexicalRanks.length > 0 ||
+    (input.additionalRankSources ?? []).some((source) => source.length > 0);
+  const vectorSkipped =
+    !input.embedQuery ||
+    !shouldRunVectorSearch() ||
+    (input.vectorSearchMode === "skip-when-lexical-hits" && hasLexicalHits);
   if (!vectorSkipped) {
     try {
       const vecs = await input.embedQuery?.(input.projectId, [input.normalizedQuery]);

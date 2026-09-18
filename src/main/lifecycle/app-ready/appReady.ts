@@ -1,7 +1,7 @@
 import { app, BrowserWindow, session } from "electron";
 import { windowManager } from "../../app/windows/index.js";
 import { settingsManager } from "../../domains/settings/index.js";
-import { isDevEnv } from "../../utils/env/index.js";
+import { isDevEnv, isStartupWizardForced } from "../../utils/env/index.js";
 import type { createLogger } from "../../../shared/logger/index.js";
 import { applyApplicationMenu } from "../menu/index.js";
 import { ensureBootstrapReady } from "../bootstrap/index.js";
@@ -70,22 +70,45 @@ export const registerAppReady = (
     logger.info("App is ready", {
       startupElapsedMs: Date.now() - startupStartedAtMs,
     });
-    const bootstrapStatus = await ensureBootstrapReady();
-    if (!bootstrapStatus.isReady) {
-      logger.error("App bootstrap did not complete", bootstrapStatus);
-    }
+
+    // 첫-창-우선(P0): bootstrap(DB 마이그레이션·integrity 스캔·세션 네트워크 최대 5초)을
+    // 기다리지 않고 창을 띄우는 게 목표다. 위저드 필요 여부는 completedAt/강제 플래그만으로
+    // 1차 판정한다 — blocking 검사 실패는 이 판정에 위저드를 추가할 뿐 반대로 만들지는
+    // 않으므로, 놓친 실패는 뒤의 전체 평가와 위저드 완료 게이트가 보정한다.
+    // docs/architecture/startup-pipeline-dissection.md §4 진단 1번.
+    const cheapNeedsWizard =
+      isStartupWizardForced() ||
+      !settingsManager.getStartupSettings().completedAt;
+
+    void ensureBootstrapReady()
+      .then((status) => {
+        if (!status.isReady) {
+          logger.error("App bootstrap did not complete", status);
+        }
+      })
+      .catch((error) => {
+        logger.error("App bootstrap did not complete", error);
+      });
 
     const isDev = isDevEnv();
     const cspPolicy = resolveCspPolicy(isDev);
 
     let rendererReadyForCurrentMainWindow = false;
     let firstRendererStartupHookTriggered = false;
+    // 위자드 완료 후 메인 창의 렌더러가 준비될 때까지 위자드를 화면에 남기기 위한
+    // 플래그 — "닫고 생성"의 창 0개 빈 화면 구간(non-darwin quit 위험 + 콜드 부트
+    // 동안 공백)을 "교체" 전환으로 바꾼다.
+    let wizardClosePending = false;
     let fallbackTimer: NodeJS.Timeout | null = null;
 
     const triggerFirstRendererReady = (reason: string): void => {
       if (!rendererReadyForCurrentMainWindow) {
         rendererReadyForCurrentMainWindow = true;
         windowManager.showMainWindow();
+        if (wizardClosePending) {
+          wizardClosePending = false;
+          windowManager.closeStartupWizardWindow();
+        }
         logger.info("Startup checkpoint: renderer ready", {
           reason,
           startupElapsedMs: Date.now() - startupStartedAtMs,
@@ -94,13 +117,19 @@ export const registerAppReady = (
           reason,
           startupElapsedMs: Date.now() - startupStartedAtMs,
         });
-        if (bootstrapStatus.isReady) {
-          void loadDerivedJobWorker()
-            .then((derivedJobWorker) => derivedJobWorker.start())
-            .catch((error) => {
-              logger.warn("Failed to start derived job worker", error);
-            });
-        }
+        // bootstrapStatus 캡처 대신 캐시된 bootstrap promise를 다시 읽는다 — 위자드
+        // 경로에서는 창 표시가 bootstrap 완료보다 빠를 수 있어 mutable 값만으로는
+        // derived job worker 시작이 유실될 수 있다.
+        void ensureBootstrapReady()
+          .then((status) => {
+            if (!status.isReady) return;
+            void loadDerivedJobWorker()
+              .then((derivedJobWorker) => derivedJobWorker.start())
+              .catch((error) => {
+                logger.warn("Failed to start derived job worker", error);
+              });
+          })
+          .catch(() => undefined);
       }
 
       if (firstRendererStartupHookTriggered || !options.onFirstRendererReady) {
@@ -290,20 +319,41 @@ export const registerAppReady = (
 
     applyApplicationMenu(settingsManager.getMenuBarMode());
 
-    const readiness = await startupReadinessService.getReadiness();
-    logger.info("Startup readiness evaluated", {
-      mustRunWizard: readiness.mustRunWizard,
-      reasons: readiness.reasons,
-      completedAt: readiness.completedAt,
-    });
-
-    if (readiness.mustRunWizard) {
+    if (cheapNeedsWizard) {
+      // 위저드가 필요한 부팅이다. 무거운 readiness 평가를 기다리지 않고 위저드 창을
+      // 먼저 띄운다 — bootstrap/readiness는 백그라운드로 계속 진행되고, 위저드 UI는
+      // startup.getReadiness IPC(캐시 병합)로 결과를 받아 단계를 연다.
       windowManager.createStartupWizardWindow();
-      logger.info("Startup wizard requested before main window", {
-        reasons: readiness.reasons,
+      logger.info("Startup wizard requested before readiness evaluation", {
+        startupElapsedMs: Date.now() - startupStartedAtMs,
       });
+      void startupReadinessService
+        .getReadiness()
+        .then((readiness) => {
+          logger.info("Startup readiness evaluated (wizard-first)", {
+            mustRunWizard: readiness.mustRunWizard,
+            reasons: readiness.reasons,
+          });
+        })
+        .catch((error) => {
+          logger.error("Startup readiness evaluation failed", error);
+        });
     } else {
-      startMainWindowFlow("readiness-pass");
+      const readiness = await startupReadinessService.getReadiness();
+      logger.info("Startup readiness evaluated", {
+        mustRunWizard: readiness.mustRunWizard,
+        reasons: readiness.reasons,
+        completedAt: readiness.completedAt,
+      });
+
+      if (readiness.mustRunWizard) {
+        windowManager.createStartupWizardWindow();
+        logger.info("Startup wizard requested before main window", {
+          reasons: readiness.reasons,
+        });
+      } else {
+        startMainWindowFlow("readiness-pass");
+      }
     }
 
     startupReadinessService.onWizardCompleted((nextReadiness) => {
@@ -314,7 +364,10 @@ export const registerAppReady = (
       if (nextReadiness.mustRunWizard) {
         return;
       }
-      windowManager.closeStartupWizardWindow();
+      // NOTE: 위자드를 먼저 닫지 않는다 — startMainWindowFlow가 deferShow로 메인
+      // 창을 만들고, 렌더러 준비(did-finish-load 또는 폴백 타이머) 시점의
+      // triggerFirstRendererReady에서 show와 함께 위자드를 닫는다(교체 전환).
+      wizardClosePending = true;
       startMainWindowFlow("wizard-complete", { fitWorkArea: true });
     });
 

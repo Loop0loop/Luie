@@ -4,7 +4,9 @@
 import type { BrowserWindow, BrowserWindowConstructorOptions } from "electron"
 import {
   applyWindowMenuBarMode,
+  attachMaximizedStateEvents,
   getTitleBarOptions,
+  getWindowsFramelessTitleBarOptions,
   resolveWindowIconPath,
   shouldShowMenuBar,
   resolveWindowBackgroundColor,
@@ -83,9 +85,13 @@ export const createExportBrowserWindow = (
     backgroundColor: resolveWindowBackgroundColor(),
     ...withWindowIcon(resolveWindowIconPath()),
     ...getTitleBarOptions(),
+    // NOTE: 내보내기 창의 렌더러도 인앱 창 버튼(WindowsWindowControls)을 그린다.
+    ...getWindowsFramelessTitleBarOptions(),
     ...secondaryWindowMenuOptions(menuBarMode),
   })
 
+  // Windows frameless 창 버튼의 최대화/복원 전환용 상태 이벤트를 공급한다.
+  attachMaximizedStateEvents(window)
   applyWindowMenuBarMode(window, menuBarMode)
   const route = { hash: "export", search: `?chapterId=${chapterId}` }
   void loadSecondaryWindowRoute({

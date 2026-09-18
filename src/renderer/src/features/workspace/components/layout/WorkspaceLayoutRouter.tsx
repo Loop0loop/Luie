@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode } from "react";
+import { memo, Suspense, type ReactNode } from "react";
 import type { Editor } from "@tiptap/react";
 import type { EditorUiMode } from "@shared/types";
 import type { MainView, ResearchTab } from "@renderer/features/workspace/stores/uiStore";
@@ -41,7 +41,7 @@ type WorkspaceLayoutRouterProps = {
 };
 
 /** 모드별 화면 조립만 담당한다. 프로젝트·단축키·저장 상태는 EditorRoot에 남긴다. */
-export function WorkspaceLayoutRouter({
+export const WorkspaceLayoutRouter = memo(function WorkspaceLayoutRouter({
   uiMode,
   mainViewType,
   editor,
@@ -155,4 +155,4 @@ export function WorkspaceLayoutRouter({
       )}
     </MainLayout>
   );
-}
+});

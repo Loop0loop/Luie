@@ -1,15 +1,14 @@
+import { eq, sql } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
-import { createHash } from "node:crypto";
+import { db } from "../../../src/main/database/index.js";
 import {
-  chapter,
-  chapterBody,
   project,
   scrapMemo,
   worldDocument,
 } from "../../../src/main/database/schema/index.js";
 import {
+  applyReplicaWorldDelta,
   applyReplicaWorldState,
-  upsertChapter,
 } from "../../../src/main/services/features/sync/syncLocalApply.js";
 import { createEmptySyncBundle } from "../../../src/main/services/features/sync/syncMapper.js";
 
@@ -82,13 +81,17 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
   it("applies the latest world document tombstone", () => {
     const run = vi.fn();
     const where = vi.fn(() => ({ run }));
+    const worldDocumentValues: unknown[] = [];
     const tx = {
       delete: vi.fn(() => ({ where })),
       insert: vi.fn(() => ({
-        values: vi.fn(() => ({
-          onConflictDoUpdate: vi.fn(() => ({ run })),
-          run,
-        })),
+        values: vi.fn((value) => {
+          worldDocumentValues.push(value);
+          return {
+            onConflictDoUpdate: vi.fn(() => ({ run })),
+            run,
+          };
+        }),
       })),
       update: vi.fn(() => ({
         set: vi.fn(() => ({ where })),
@@ -126,8 +129,15 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
 
     applyReplicaWorldState(tx, bundle, new Set());
 
-    expect(tx.delete).toHaveBeenCalledWith(worldDocument);
-    expect(tx.insert).not.toHaveBeenCalledWith(worldDocument);
+    expect(tx.delete).not.toHaveBeenCalledWith(worldDocument);
+    expect(tx.insert).toHaveBeenCalledWith(worldDocument);
+    expect(worldDocumentValues).toContainEqual(
+      expect.objectContaining({
+        projectId: "project-1",
+        docType: "synopsis",
+        deletedAt: "2026-03-04T00:00:00.000Z",
+      }),
+    );
     expect(tx.update).toHaveBeenCalledWith(project);
   });
 
@@ -234,116 +244,190 @@ describe("syncLocalApply.applyReplicaWorldState", () => {
   });
 });
 
-describe("syncLocalApply.upsertChapter", () => {
-  it("runs existing update, new insert, and ChapterBody upserts", () => {
-    const chapterValues: Array<Record<string, unknown>> = [];
-    const chapterInsertValues: Array<Record<string, unknown>> = [];
-    const bodyValues: Array<Record<string, unknown>> = [];
-    const bodyConflictValues: Array<Record<string, unknown>> = [];
-    const get = vi
-      .fn()
-      .mockReturnValueOnce({ id: "chapter-1" })
-      .mockReturnValueOnce(undefined);
-    const chapterUpdateRun = vi.fn();
-    const chapterInsertRun = vi.fn();
-    const otherRun = vi.fn();
-    const bodyConflictRun = vi.fn();
-    const tx = {
-      select: vi.fn(() => ({
-        from: vi.fn(() => ({
-          where: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              get,
-            })),
-          })),
-        })),
-      })),
-      update: vi.fn((table: unknown) => ({
-        set: vi.fn((values: Record<string, unknown>) => {
-          if (table === chapter) chapterValues.push(values);
-          return {
-            where: vi.fn(() => ({
-              run: table === chapter ? chapterUpdateRun : otherRun,
-            })),
-          };
-        }),
-      })),
-      insert: vi.fn((table: unknown) => ({
-        values: vi.fn((values: Record<string, unknown>) => {
-          if (table === chapter) chapterInsertValues.push(values);
-          if (table === chapterBody) bodyValues.push(values);
-          return {
-            run: table === chapter ? chapterInsertRun : otherRun,
-            onConflictDoUpdate: vi.fn(
-              (config: {
-                set: Record<string, unknown>;
-                target: unknown[];
-              }) => {
-                if (table === chapterBody) {
-                  expect(config.target).toEqual([chapterBody.chapterId]);
-                  bodyConflictValues.push(config.set);
-                  return { run: bodyConflictRun };
-                }
-                return { run: otherRun };
-              },
-            ),
-          };
-        }),
-      })),
-    } as never;
+describe("syncLocalApply.applyReplicaWorldDelta", () => {
+  it("updates changed world and memo rows without writing unchanged siblings", async () => {
+    const now = "2026-09-13T00:00:00.000Z";
+    const changedAt = "2026-09-13T00:01:00.000Z";
+    const client = db.getClient();
+    await client.insert(project).values({
+      id: "project-delta",
+      title: "Delta",
+      updatedAt: now,
+    });
+    await client.insert(worldDocument).values([
+      {
+        id: "project-delta:synopsis",
+        projectId: "project-delta",
+        docType: "synopsis",
+        payload: JSON.stringify({ synopsis: "old" }),
+        updatedAt: now,
+      },
+      {
+        id: "project-delta:plot",
+        projectId: "project-delta",
+        docType: "plot",
+        payload: JSON.stringify({ acts: [] }),
+        updatedAt: now,
+      },
+      {
+        id: "project-delta:scrap",
+        projectId: "project-delta",
+        docType: "scrap",
+        payload: JSON.stringify({ memos: [], updatedAt: now }),
+        updatedAt: now,
+      },
+    ]);
+    await client.insert(scrapMemo).values([
+      {
+        id: "memo-changed",
+        projectId: "project-delta",
+        title: "Old",
+        content: "old",
+        tags: "[]",
+        sortOrder: 0,
+        updatedAt: now,
+      },
+      {
+        id: "memo-unchanged",
+        projectId: "project-delta",
+        title: "Keep",
+        content: "keep",
+        tags: "[]",
+        sortOrder: 1,
+        updatedAt: now,
+      },
+    ]);
 
-    upsertChapter(tx, {
-      id: "chapter-1",
-      userId: "user-1",
-      projectId: "project-1",
-      title: "Chapter 1",
-      content: "remote-body",
-      synopsis: null,
-      order: 0,
-      wordCount: 11,
-      createdAt: "2026-03-01T00:00:00.000Z",
-      updatedAt: "2026-03-02T00:00:00.000Z",
-      deletedAt: null,
-    });
-    upsertChapter(tx, {
-      id: "chapter-2",
-      userId: "user-1",
-      projectId: "project-1",
-      title: "Chapter 2",
-      content: "new-body",
-      synopsis: null,
-      order: 1,
-      wordCount: 8,
-      createdAt: "2026-03-01T00:00:00.000Z",
-      updatedAt: "2026-03-03T00:00:00.000Z",
-      deletedAt: null,
-    });
+    client.run(
+      sql.raw(`
+      CREATE TEMP TRIGGER "db11_reject_unchanged_world_update"
+      BEFORE UPDATE ON "WorldDocument"
+      WHEN OLD."projectId" = 'project-delta' AND OLD."docType" = 'plot'
+      BEGIN
+        SELECT RAISE(ABORT, 'unchanged world row was written');
+      END;
+    `),
+    );
+    client.run(
+      sql.raw(`
+      CREATE TEMP TRIGGER "db11_reject_unchanged_memo_delete"
+      BEFORE DELETE ON "ScrapMemo"
+      WHEN OLD."id" = 'memo-unchanged'
+      BEGIN
+        SELECT RAISE(ABORT, 'unchanged memo row was deleted');
+      END;
+    `),
+    );
+    client.run(
+      sql.raw(`
+      CREATE TEMP TRIGGER "db11_reject_unchanged_memo_update"
+      BEFORE UPDATE ON "ScrapMemo"
+      WHEN OLD."id" = 'memo-unchanged'
+      BEGIN
+        SELECT RAISE(ABORT, 'unchanged memo row was updated');
+      END;
+    `),
+    );
 
-    expect(chapterValues[0]?.content).toBe("remote-body");
-    expect(chapterUpdateRun).toHaveBeenCalledTimes(1);
-    expect(chapterInsertValues[0]).toMatchObject({
-      id: "chapter-2",
-      content: "new-body",
+    const merged = createEmptySyncBundle();
+    merged.projects.push({
+      id: "project-delta",
+      userId: "user-1",
+      title: "Delta",
+      createdAt: now,
+      updatedAt: changedAt,
     });
-    expect(chapterInsertRun).toHaveBeenCalledTimes(1);
-    expect(bodyValues[0]).toMatchObject({
-      chapterId: "chapter-1",
-      content: "remote-body",
-      contentHash: createHash("sha256").update("remote-body").digest("hex"),
-      updatedAt: "2026-03-02T00:00:00.000Z",
+    merged.worldDocuments.push(
+      {
+        id: "remote-synopsis-id",
+        userId: "user-1",
+        projectId: "project-delta",
+        docType: "synopsis",
+        payload: { synopsis: "new" },
+        updatedAt: changedAt,
+      },
+      {
+        id: "remote-plot-id",
+        userId: "user-1",
+        projectId: "project-delta",
+        docType: "plot",
+        payload: { acts: [] },
+        updatedAt: now,
+      },
+    );
+    merged.memos.push(
+      {
+        id: "memo-changed",
+        userId: "user-1",
+        projectId: "project-delta",
+        title: "New",
+        content: "new",
+        tags: ["changed"],
+        updatedAt: changedAt,
+      },
+      {
+        id: "memo-unchanged",
+        userId: "user-1",
+        projectId: "project-delta",
+        title: "Keep",
+        content: "keep",
+        tags: [],
+        updatedAt: now,
+      },
+    );
+    const delta = createEmptySyncBundle();
+    delta.worldDocuments.push(merged.worldDocuments[0]!);
+    delta.memos.push(merged.memos[0]!);
+
+    try {
+      client.transaction((tx) => {
+        applyReplicaWorldDelta(tx, delta, merged, new Set());
+      });
+    } finally {
+      client.run(
+        sql.raw('DROP TRIGGER IF EXISTS "db11_reject_unchanged_world_update";'),
+      );
+      client.run(
+        sql.raw('DROP TRIGGER IF EXISTS "db11_reject_unchanged_memo_delete";'),
+      );
+      client.run(
+        sql.raw('DROP TRIGGER IF EXISTS "db11_reject_unchanged_memo_update";'),
+      );
+    }
+
+    const documents = await client
+      .select()
+      .from(worldDocument)
+      .where(eq(worldDocument.projectId, "project-delta"));
+    const memos = await client
+      .select()
+      .from(scrapMemo)
+      .where(eq(scrapMemo.projectId, "project-delta"));
+    const synopsis = documents.find((row) => row.docType === "synopsis");
+    const plot = documents.find((row) => row.docType === "plot");
+    const scrap = documents.find((row) => row.docType === "scrap");
+
+    expect(JSON.parse(synopsis!.payload)).toMatchObject({ synopsis: "new" });
+    expect(plot).toMatchObject({
+      payload: JSON.stringify({ acts: [] }),
+      updatedAt: now,
     });
-    expect(bodyConflictValues[0]).toMatchObject({
-      content: "remote-body",
-      contentHash: createHash("sha256").update("remote-body").digest("hex"),
-      updatedAt: "2026-03-02T00:00:00.000Z",
-    });
-    expect(bodyValues[1]).toMatchObject({
-      chapterId: "chapter-2",
-      content: "new-body",
-    });
-    expect(bodyConflictValues[1]).toMatchObject({
-      content: "new-body",
-    });
-    expect(bodyConflictRun).toHaveBeenCalledTimes(2);
+    expect(memos).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "memo-changed",
+          title: "New",
+          content: "new",
+        }),
+        expect.objectContaining({
+          id: "memo-unchanged",
+          title: "Keep",
+          content: "keep",
+        }),
+      ]),
+    );
+    expect(
+      JSON.parse(scrap!.payload).memos.map((memo: { id: string }) => memo.id),
+    ).toEqual(["memo-changed", "memo-unchanged"]);
   });
 });

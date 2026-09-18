@@ -106,6 +106,55 @@ describe("Drizzle bootstrap migration", () => {
     }
   });
 
+  it("adds the WorldDocument tombstone column without losing legacy payload", async () => {
+    const dbPath = await createTempDbPath();
+    const Database = (await import("better-sqlite3")).default;
+    const preseedDb = new Database(dbPath);
+    preseedDb.exec(`
+      CREATE TABLE "Project" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "title" TEXT NOT NULL,
+        "description" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      );
+      CREATE TABLE "WorldDocument" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "projectId" TEXT NOT NULL,
+        "docType" TEXT NOT NULL,
+        "payload" TEXT NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      );
+      INSERT INTO "Project" ("id","title","createdAt","updatedAt")
+      VALUES ('p1','Legacy','now','now');
+      INSERT INTO "WorldDocument" ("id","projectId","docType","payload","updatedAt")
+      VALUES ('p1:plot','p1','plot','{"columns":[]}','now');
+    `);
+    preseedDb.close();
+
+    ensurePackagedSqliteSchema(dbPath, logger);
+
+    const database = new Database(dbPath);
+    try {
+      const columns = database
+        .prepare('PRAGMA table_info("WorldDocument")')
+        .all() as Array<{
+        name: string;
+      }>;
+      const row = database
+        .prepare(
+          'SELECT "payload", "deletedAt" FROM "WorldDocument" WHERE "id" = ?',
+        )
+        .get("p1:plot") as { payload: string; deletedAt: string | null };
+
+      expect(columns.map((column) => column.name)).toContain("deletedAt");
+      expect(row).toEqual({ payload: '{"columns":[]}', deletedAt: null });
+    } finally {
+      database.close();
+    }
+  });
+
   it("backfills MemoryChunk index text on existing baseline databases", async () => {
     const dbPath = await createTempDbPath();
     const Database = (await import("better-sqlite3")).default;
@@ -148,12 +197,12 @@ describe("Drizzle bootstrap migration", () => {
            FROM "MemoryChunk" WHERE "id" = 'c1'`,
         )
         .get() as {
-          content: string;
-          contentHash: string;
-          indexText: string;
-          indexTextHash: string;
-          sourceContentHash: string;
-        };
+        content: string;
+        contentHash: string;
+        indexText: string;
+        indexTextHash: string;
+        sourceContentHash: string;
+      };
       expect(row.indexText).toBe(row.content);
       expect(row.indexTextHash).toBe(row.contentHash);
       expect(row.sourceContentHash).toBe("");

@@ -13,6 +13,7 @@ import { trackKeywordAppearances } from "./chapterKeywords.js";
 import { readChapterContent } from "../../core/chapter/chapterContentStore.js";
 import {
   createChapterRecord,
+  type ChapterRevisionReason,
   updateChapterRecord,
 } from "../../core/chapter/chapterWriteOperations.js";
 import { chapterLogger as logger } from "../../core/chapter/chapterRuntime.js";
@@ -23,7 +24,8 @@ const loadAutoSaveManager = async () =>
   (await import("../../../manager/autoSave/index.js")).autoSaveManager;
 
 const loadAppearanceCacheService = async () =>
-  (await import("../world/cache/appearanceCacheService.js")).appearanceCacheService;
+  (await import("../world/cache/appearanceCacheService.js"))
+    .appearanceCacheService;
 
 const loadChapterSearchCacheService = async () =>
   (await import("../search/chapterSearchCacheService.js"))
@@ -126,10 +128,14 @@ export class ChapterService {
     }
   }
 
-  async updateChapter(input: ChapterUpdateInput) {
+  async updateChapter(
+    input: ChapterUpdateInput,
+    options?: { revisionReason?: ChapterRevisionReason },
+  ) {
     return await updateChapterRecord({
       data: input,
       runInWriteSerialQueue: (task) => this.runInWriteSerialQueue(task),
+      revisionReason: options?.revisionReason,
     });
   }
 

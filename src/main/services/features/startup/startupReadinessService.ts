@@ -26,6 +26,14 @@ const logger = createLogger("StartupReadinessService");
 const STARTUP_WIZARD_EVENT = "startup:wizard-completed";
 const STARTUP_SESSION_CHECK_TIMEOUT_MS = 5_000;
 
+// getReadiness는 무거운 검사(integrity_check 전체 스캔, 네트워크 세션 체크)를
+// 포함한다. 한 번의 스타트업에서 appReady·렌더러 IPC·completeWizard가 잇달아
+// 호출하면 전체 재평가가 최대 4~5회 반복되므로, 짧은 TTL 캐시로 수렴시킨다.
+// completedAt 변경(completeWizard) 시에는 즉시 무효화한다. TTL 만료 후 재호출은
+// 재평가하므로 늦은 재시도 경로가 낡은 결과를 보지 않는다.
+// docs/architecture/startup-pipeline-dissection.md §4 진단 2번.
+const READINESS_CACHE_TTL_MS = 5_000;
+
 const loadCacheDb = async () =>
   (await import("../../../infra/database/cache.js")).cacheDb;
 
@@ -46,8 +54,28 @@ const buildCheck = (
 
 class StartupReadinessService {
   private readonly events = new EventEmitter();
+  private cachedReadiness: {
+    value: StartupReadiness;
+    expiresAtMs: number;
+  } | null = null;
+  private readinessInFlight: Promise<StartupReadiness> | null = null;
 
   async getReadiness(): Promise<StartupReadiness> {
+    const now = Date.now();
+    if (this.cachedReadiness && this.cachedReadiness.expiresAtMs > now) {
+      return this.cachedReadiness.value;
+    }
+    // 무거운 검사가 진행 중일 때 동시 호출이 검사를 복제하지 않도록 병합한다.
+    if (this.readinessInFlight) {
+      return this.readinessInFlight;
+    }
+    this.readinessInFlight = this.computeReadiness(now).finally(() => {
+      this.readinessInFlight = null;
+    });
+    return this.readinessInFlight;
+  }
+
+  private async computeReadiness(nowMs: number): Promise<StartupReadiness> {
     const checks = await this.runChecks();
     const reasons = checks
       .filter((check) => check.blocking && !check.ok)
@@ -57,12 +85,21 @@ class StartupReadinessService {
     // 먼저 띄운다. UI 개편 작업용 dev 진입점이라 패키지 빌드 흐름도 전부 통과시킨다.
     const mustRunWizard =
       isStartupWizardForced() || !completedAt || reasons.length > 0;
-    return {
+    const readiness = {
       mustRunWizard,
       checks,
       reasons,
       completedAt,
     };
+    this.cachedReadiness = {
+      value: readiness,
+      expiresAtMs: nowMs + READINESS_CACHE_TTL_MS,
+    };
+    return readiness;
+  }
+
+  private invalidateReadiness(): void {
+    this.cachedReadiness = null;
   }
 
   async completeWizard(): Promise<StartupReadiness> {
@@ -71,6 +108,7 @@ class StartupReadinessService {
     // appReady의 wizard-completed 리스너가 위저드 창을 닫고 메인 흐름을 시작하게 한다.
     if (isStartupWizardForced()) {
       const readiness = await this.getReadiness();
+      this.invalidateReadiness();
       const result: StartupReadiness = {
         ...readiness,
         mustRunWizard: false,
@@ -83,6 +121,7 @@ class StartupReadinessService {
       return before;
     }
     settingsManager.setStartupCompletedAt(nowIso());
+    this.invalidateReadiness();
     const after = await this.getReadiness();
     this.events.emit(STARTUP_WIZARD_EVENT, after);
     return after;
@@ -98,16 +137,22 @@ class StartupReadinessService {
   }
 
   private async runChecks(): Promise<StartupCheck[]> {
-    const checks: StartupCheck[] = [];
-    checks.push(await this.checkSafeStorage());
-    checks.push(await this.checkDataDirRW());
-    checks.push(await this.checkDefaultLuiePath());
-    checks.push(await this.checkSqliteConnect());
-    checks.push(await this.checkSqliteIntegrity());
-    checks.push(await this.checkSqliteWal());
-    checks.push(await this.checkSupabaseRuntimeConfig());
-    checks.push(await this.checkSupabaseSession());
-    return checks;
+    // 검사들은 독립 자원(각자 DB/FS/네트워크를 자체 초기화)을 쓰므로 병렬로
+    // 실행한다 — 순차 체인이면 네트워크 세션 체크(최대 5초)가 무거운 integrity
+    // 스캔 뒤에 전부 가산됐다. 반환 배열은 기존 순서를 유지해 소비자(진단 UI)의
+    // 표시 순서를 바꾸지 않는다. integrity/WAL은 DB 파일이 존재해야 의미가 있어
+    // checkSqliteConnect(db.initialize 포함) 완료 후에 시작한다.
+    const sqliteConnect = this.checkSqliteConnect();
+    return Promise.all([
+      this.checkSafeStorage(),
+      this.checkDataDirRW(),
+      this.checkDefaultLuiePath(),
+      sqliteConnect,
+      sqliteConnect.then(() => this.checkSqliteIntegrity()),
+      sqliteConnect.then(() => this.checkSqliteWal()),
+      this.checkSupabaseRuntimeConfig(),
+      this.checkSupabaseSession(),
+    ]);
   }
 
   private async checkSafeStorage(): Promise<StartupCheck> {

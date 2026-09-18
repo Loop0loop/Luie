@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, lte, or, sql } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
 import {
   memoryBuildJob,
@@ -9,14 +9,19 @@ import {
 import { chapterSearchCacheService } from "../search/chapterSearchCacheService.js";
 import { createLogger } from "../../../../shared/logger/index.js";
 import { MEMORY_TARGET_TYPES } from "../memory/memoryJobConstants.js";
-import { getMigrationHealth } from "./dbMaintenanceHealth.js";
+import {
+  buildPendingMemoryProjectsQuery,
+  getLongPendingStats,
+  getMigrationHealth,
+} from "./dbMaintenanceHealth.js";
 import { rebuildMemoryChunks } from "./dbMaintenanceMemory.js";
+import { requestDerivedJobWakeup } from "../derivedJobs/derivedJobWakeup.js";
 
 const logger = createLogger("DbMaintenanceService");
 const MAX_SEARCH_ATTEMPTS = 5;
 const SEARCH_RETRY_BASE_BACKOFF_MS = 2_000;
 const STALE_RUNNING_THRESHOLD_MS = 30_000;
-const LONG_PENDING_THRESHOLD_MS = 60_000;
+export { buildPendingMemoryProjectsQuery } from "./dbMaintenanceHealth.js";
 
 class DbMaintenanceService {
   async purgeOrphanDerivedRows(options?: { dryRun?: boolean }): Promise<{
@@ -149,12 +154,14 @@ class DbMaintenanceService {
                 "updatedAt" = ${input.now}
             WHERE "id" = ${existing[0].id};`,
       );
+      requestDerivedJobWakeup();
       return;
     }
     await client.run(
       sql`INSERT INTO "SearchDirtyQueue" ("id","projectId","sourceType","sourceId","reason","status","attempts","createdAt","updatedAt")
           VALUES (${crypto.randomUUID()}, ${input.projectId}, ${input.sourceType}, ${input.sourceId}, ${input.reason}, 'pending', 0, ${input.now}, ${input.now});`,
     );
+    requestDerivedJobWakeup();
   }
 
   async recoverStaleRunningJobs(): Promise<void> {
@@ -279,18 +286,30 @@ class DbMaintenanceService {
     return await rebuildMemoryChunks({ client, ...input });
   }
 
-  private canRetrySearchRow(row: {
-    status: string;
-    attempts: number;
-    updatedAt: string;
-  }): boolean {
-    if (row.status === "pending") return true;
-    if (row.status !== "failed") return false;
-    if (row.attempts >= MAX_SEARCH_ATTEMPTS) return false;
-    const updatedAtMs = Date.parse(row.updatedAt);
-    if (!Number.isFinite(updatedAtMs)) return true;
-    const backoffMs = SEARCH_RETRY_BASE_BACKOFF_MS * Math.max(1, row.attempts);
-    return Date.now() - updatedAtMs >= backoffMs;
+  private retryableSearchCondition(nowMs = Date.now()) {
+    return or(
+      eq(searchDirtyQueue.status, "pending"),
+      and(
+        eq(searchDirtyQueue.status, "failed"),
+        or(
+          ...Array.from({ length: MAX_SEARCH_ATTEMPTS }, (_, attempts) =>
+            and(
+              eq(searchDirtyQueue.attempts, attempts),
+              or(
+                lte(
+                  searchDirtyQueue.updatedAt,
+                  new Date(
+                    nowMs -
+                      SEARCH_RETRY_BASE_BACKOFF_MS * Math.max(1, attempts),
+                  ).toISOString(),
+                ),
+                sql`julianday(${searchDirtyQueue.updatedAt}) IS NULL`,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   async processPendingSearchJobs(
@@ -300,15 +319,12 @@ class DbMaintenanceService {
   ): Promise<{ queued: number; processed: number; failed: number }> {
     const client = db.getClient();
     const limit = input.limit ?? 20;
-    const candidates = await client
+    const rows = await client
       .select()
       .from(searchDirtyQueue)
-      .where(inArray(searchDirtyQueue.status, ["pending", "failed"]))
+      .where(this.retryableSearchCondition())
       .orderBy(asc(searchDirtyQueue.updatedAt))
-      .limit(Math.max(limit * 3, 30));
-    const rows = candidates
-      .filter((row) => this.canRetrySearchRow(row))
-      .slice(0, limit);
+      .limit(limit);
     if (rows.length === 0) {
       return { queued: 0, processed: 0, failed: 0 };
     }
@@ -331,7 +347,18 @@ class DbMaintenanceService {
             ),
           );
         try {
-          await chapterSearchCacheService.rebuildProjectIndex(projectId);
+          if (projectRows.some((row) => row.reason === "search:rebuild-all")) {
+            await chapterSearchCacheService.rebuildProjectIndex(projectId);
+          } else {
+            const chapterIds = Array.from(
+              new Set(projectRows.map((row) => row.sourceId)),
+            );
+            await Promise.all(
+              chapterIds.map((chapterId) =>
+                chapterSearchCacheService.refreshChapter(chapterId),
+              ),
+            );
+          }
           await Promise.all(
             projectRows.map(async (row) =>
               client
@@ -421,12 +448,7 @@ class DbMaintenanceService {
   async listProjectsWithPendingMemoryJobs(limit = 20): Promise<string[]> {
     const client = db.getClient();
     const rows = await client.all<{ projectId: string }>(
-      sql`SELECT "projectId"
-          FROM "MemoryBuildJob"
-          WHERE "status" IN ('pending', 'failed')
-          GROUP BY "projectId"
-          ORDER BY MAX("updatedAt") DESC
-          LIMIT ${limit};`,
+      buildPendingMemoryProjectsQuery(limit),
     );
     return rows.map((row) => row.projectId);
   }
@@ -435,34 +457,7 @@ class DbMaintenanceService {
     searchLongPendingCount: number;
     memoryLongPendingCount: number;
   }> {
-    const cutoffIso = new Date(
-      Date.now() - LONG_PENDING_THRESHOLD_MS,
-    ).toISOString();
-    const client = db.getClient();
-    const [searchRows, memoryRows] = await Promise.all([
-      client
-        .select({ count: sql<number>`count(*)` })
-        .from(searchDirtyQueue)
-        .where(
-          and(
-            eq(searchDirtyQueue.status, "pending"),
-            sql`${searchDirtyQueue.updatedAt} <= ${cutoffIso}`,
-          ),
-        ),
-      client
-        .select({ count: sql<number>`count(*)` })
-        .from(memoryBuildJob)
-        .where(
-          and(
-            eq(memoryBuildJob.status, "pending"),
-            sql`${memoryBuildJob.updatedAt} <= ${cutoffIso}`,
-          ),
-        ),
-    ]);
-    return {
-      searchLongPendingCount: Number(searchRows[0]?.count ?? 0),
-      memoryLongPendingCount: Number(memoryRows[0]?.count ?? 0),
-    };
+    return await getLongPendingStats(db.getClient());
   }
 
   async runIntegrityCheck(): Promise<{ ok: boolean; rows: string[] }> {

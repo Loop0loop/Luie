@@ -1,13 +1,91 @@
 import crypto from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   db,
   memoryChunk,
   project,
 } from "../../../../src/main/infra/database/index.js";
-import { searchMemoryChunksForRag } from "../../../../src/main/services/features/rag/internal/contextAssembler.search.js";
+import {
+  searchMemoryChunksForRag,
+  type RagSearchStageDiagnostic,
+} from "../../../../src/main/services/features/rag/internal/contextAssembler.search.js";
 
 describe("searchMemoryChunksForRag", () => {
+  it("skips embedding on low-end lexical hits and keeps vector fallback when lexical search misses", async () => {
+    const projectId = crypto.randomUUID();
+    const chunkId = crypto.randomUUID();
+    const nowIso = "2026-09-13T00:00:00.000Z";
+    await db.getClient().insert(project).values({
+      id: projectId,
+      title: "Low-end vector policy",
+      projectPath: null,
+      updatedAt: nowIso,
+    });
+    await db.getClient().insert(memoryChunk).values({
+      id: chunkId,
+      projectId,
+      sourceType: "chapter",
+      sourceId: "chapter-low-end",
+      chapterId: "chapter-low-end",
+      chunkIndex: 0,
+      content: "하린은 붉은 등대 아래에서 오래된 열쇠를 발견했다.",
+      contentHash: "low-end-content-hash",
+      indexText: "하린 붉은 등대 오래된 열쇠 발견",
+      indexTextHash: "low-end-index-hash",
+      sourceContentHash: "low-end-source-hash",
+      paragraphStartIndex: 0,
+      paragraphEndIndex: 0,
+      tokenCount: 20,
+      updatedAt: nowIso,
+    });
+    const embedTexts = vi.fn(async () => [[1, 0, 0]]);
+    const previousMode = process.env.LUIE_SEARCH_OPTIMIZATION_MODE;
+    const previousUtility = process.env.LUIE_IS_UTILITY_PROCESS;
+    const vectorEnabled = vi
+      .spyOn(db, "isVectorSearchEnabled")
+      .mockReturnValue(true);
+    process.env.LUIE_SEARCH_OPTIMIZATION_MODE = "low-end";
+    process.env.LUIE_IS_UTILITY_PROCESS = "1";
+
+    try {
+      const lexicalDiagnostics: { stages: RagSearchStageDiagnostic[] } = {
+        stages: [],
+      };
+      const lexicalResults = await searchMemoryChunksForRag({
+        projectId,
+        query: "하린은 붉은 등대 아래에서 오래된 열쇠를 발견했다.",
+        limit: 5,
+        embedTexts,
+        diagnostics: lexicalDiagnostics,
+      });
+      expect(lexicalResults[0]?.chunkId).toBe(chunkId);
+      expect(embedTexts).not.toHaveBeenCalled();
+      expect(
+        lexicalDiagnostics.stages.find((stage) => stage.stage === "vector"),
+      ).toMatchObject({ skipped: true, candidateCount: 0 });
+
+      await searchMemoryChunksForRag({
+        projectId,
+        query: "존재하지않는검색어",
+        limit: 5,
+        embedTexts,
+      });
+      expect(embedTexts).toHaveBeenCalledTimes(1);
+    } finally {
+      vectorEnabled.mockRestore();
+      if (previousMode === undefined) {
+        delete process.env.LUIE_SEARCH_OPTIMIZATION_MODE;
+      } else {
+        process.env.LUIE_SEARCH_OPTIMIZATION_MODE = previousMode;
+      }
+      if (previousUtility === undefined) {
+        delete process.env.LUIE_IS_UTILITY_PROCESS;
+      } else {
+        process.env.LUIE_IS_UTILITY_PROCESS = previousUtility;
+      }
+    }
+  });
+
   it("boosts chunks that contain the exact quote candidate from the query", async () => {
     const projectId = crypto.randomUUID();
     const nowIso = "2026-06-08T00:00:00.000Z";

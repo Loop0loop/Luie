@@ -49,6 +49,111 @@ describe("SyncRepository scope narrowing", () => {
     expect(bundle.snapshots).toEqual([]);
   });
 
+  it("fetches all 2,001 chapter rows and 1,001 tombstones with stable Range pages", async () => {
+    const userId = "00000000-0000-0000-0000-000000000001";
+    const chapters = Array.from({ length: 2_001 }, (_, index) => ({
+      id: `chapter-${String(index).padStart(4, "0")}`,
+      user_id: userId,
+      project_id: "project-1",
+      title: `Chapter ${index}`,
+      content: `content ${index}`,
+      order: index,
+      word_count: 10,
+      created_at: "2026-09-13T00:00:00.000Z",
+      updated_at: "2026-09-13T00:00:00.000Z",
+    }));
+    const tombstones = Array.from({ length: 1_001 }, (_, index) => ({
+      id: `tombstone-${String(index).padStart(4, "0")}`,
+      user_id: userId,
+      project_id: "project-1",
+      entity_type: "chapter",
+      entity_id: `deleted-${index}`,
+      deleted_at: "2026-09-13T00:00:00.000Z",
+      updated_at: "2026-09-13T00:00:00.000Z",
+    }));
+    const rowsByTable: Record<string, Array<Record<string, unknown>>> = {
+      chapters,
+      tombstones,
+    };
+    mocked.fetch.mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = new URL(String(input));
+        const table = url.pathname.split("/").at(-1) ?? "";
+        const range = String(
+          (init?.headers as Record<string, string> | undefined)?.Range ??
+            "0-999",
+        );
+        const [start, end] = range.split("-").map(Number);
+        const rows = rowsByTable[table] ?? [];
+        const page = rows.slice(start, end + 1);
+        const contentRange =
+          rows.length === 0
+            ? "*/0"
+            : `${start}-${start + page.length - 1}/${rows.length}`;
+        return new Response(JSON.stringify(page), {
+          status: page.length === rows.length ? 200 : 206,
+          headers: { "content-range": contentRange },
+        });
+      },
+    );
+
+    const { syncRepository } =
+      await import("../../../src/main/services/features/sync/syncRepository.js");
+    const bundle = await syncRepository.fetchBundle("access-token", userId);
+
+    expect(bundle.chapters).toHaveLength(2_001);
+    expect(bundle.chapters.at(-1)?.id).toBe("chapter-2000");
+    expect(bundle.tombstones).toHaveLength(1_001);
+    expect(bundle.tombstones.at(-1)?.id).toBe("tombstone-1000");
+    const chapterCalls = mocked.fetch.mock.calls.filter((call) =>
+      String(call[0]).includes("/rest/v1/chapters?"),
+    );
+    expect(
+      chapterCalls.map(
+        (call) =>
+          ((call[1] as RequestInit).headers as Record<string, string>).Range,
+      ),
+    ).toEqual(["0-999", "1000-1999", "2000-2999"]);
+    expect(
+      chapterCalls.every(
+        (call) =>
+          new URL(String(call[0])).searchParams.get("order") === "id.asc",
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects a table response that ends before its declared total", async () => {
+    let chapterPage = 0;
+    mocked.fetch.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("/rest/v1/chapters?")) {
+        return new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "content-range": "*/0" },
+        });
+      }
+      chapterPage += 1;
+      return chapterPage === 1
+        ? new Response(JSON.stringify([{ id: "only-row" }]), {
+            status: 206,
+            headers: { "content-range": "0-0/2" },
+          })
+        : new Response(JSON.stringify([]), {
+            status: 200,
+            headers: { "content-range": "*/2" },
+          });
+    });
+
+    const { syncRepository } =
+      await import("../../../src/main/services/features/sync/syncRepository.js");
+    await expect(
+      syncRepository.fetchBundle(
+        "access-token",
+        "00000000-0000-0000-0000-000000000001",
+      ),
+    ).rejects.toThrow("SYNC_PAGINATION_INCOMPLETE:chapters");
+  });
+
   it("upsertBundle omits snapshots writes and excludes project_path payload", async () => {
     mocked.fetch.mockResolvedValue(
       new Response("", {
@@ -150,6 +255,14 @@ describe("SyncRepository scope narrowing", () => {
     );
     expect(body.includes("project_path")).toBe(false);
 
+    const worldDocumentCall = mocked.fetch.mock.calls.find((call) =>
+      String(call[0]).includes("/rest/v1/world_documents?"),
+    );
+    expect(worldDocumentCall).toBeDefined();
+    expect(
+      new URL(String(worldDocumentCall?.[0])).searchParams.get("on_conflict"),
+    ).toBe("user_id,project_id,doc_type");
+
     const memoryCall = mocked.fetch.mock.calls.find((call) =>
       String(call[0]).includes("/rest/v1/memory_canonical_rows?"),
     );
@@ -196,6 +309,7 @@ describe("SyncRepository scope narrowing", () => {
             status: 200,
             headers: {
               "content-type": "application/json",
+              "content-range": "0-1/2",
             },
           },
         );
@@ -250,6 +364,7 @@ describe("SyncRepository scope narrowing", () => {
             status: 200,
             headers: {
               "content-type": "application/json",
+              "content-range": "0-2/3",
             },
           },
         );

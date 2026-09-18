@@ -107,6 +107,14 @@ export class WorldReplicaService {
       if (!row) {
         return { found: false, payload: null };
       }
+      if (row.deletedAt) {
+        return {
+          found: false,
+          payload: null,
+          updatedAt: toIsoString(row.updatedAt),
+          deletedAt: toIsoString(row.deletedAt),
+        };
+      }
 
       const payload = parseJsonSafely(row.payload, input);
       if (payload === null && row.payload.trim().length > 0) {
@@ -159,6 +167,7 @@ export class WorldReplicaService {
             .set({
               payload: toJsonString(input.payload),
               updatedAt: new Date().toISOString(),
+              deletedAt: null,
             })
             .where(
               and(
@@ -227,6 +236,14 @@ export class WorldReplicaService {
           .orderBy(asc(scrapMemo.sortOrder), desc(scrapMemo.updatedAt)),
       ]);
       const documentRow = documentRowResults[0];
+
+      if (documentRow?.deletedAt) {
+        return {
+          found: false,
+          data: null,
+          deletedAt: toIsoString(documentRow.deletedAt),
+        };
+      }
 
       if (memoRows.length > 0) {
         return {
@@ -321,6 +338,7 @@ export class WorldReplicaService {
             .set({
               payload: toJsonString(payload),
               updatedAt: new Date().toISOString(),
+              deletedAt: null,
             })
             .where(
               and(

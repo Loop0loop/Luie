@@ -2,7 +2,9 @@ import { screen, type BrowserWindow, type BrowserWindowConstructorOptions } from
 import { APP_NAME } from "../../../shared/constants/index.js"
 import {
   applyWindowMenuBarMode,
+  attachMaximizedStateEvents,
   getTitleBarOptions,
+  getWindowsFramelessTitleBarOptions,
   resolveWindowIconPath,
   withWindowIcon,
 } from "./windowChrome.js"
@@ -158,9 +160,13 @@ export const createStartupWizardBrowserWindow = (
     backgroundColor: "#212123",
     ...withWindowIcon(resolveWindowIconPath()),
     ...getTitleBarOptions(),
+    ...getWindowsFramelessTitleBarOptions(),
     ...(process.platform !== "darwin" ? { autoHideMenuBar: true } : {}),
   })
 
+  // Windows frameless 위저드도 인앱 창 버튼(WindowsWindowControls)을 렌더하므로
+  // 최대화 상태 이벤트를 동일하게 공급한다.
+  attachMaximizedStateEvents(window)
   applyWindowMenuBarMode(window, input.getMenuBarMode())
   void loadRendererRoute({
     label: "startup wizard",

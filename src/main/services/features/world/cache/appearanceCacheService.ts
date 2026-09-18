@@ -46,6 +46,67 @@ function mapTermAppearanceRow(
 }
 
 class AppearanceCacheService {
+  async replaceChapterAppearances(input: {
+    chapterId: string;
+    characterAppearances: Array<{
+      projectId: string;
+      characterId: string;
+      position: number;
+      context?: string;
+    }>;
+    termAppearances: Array<{
+      projectId: string;
+      termId: string;
+      position: number;
+      context?: string;
+    }>;
+    clearCharacters?: boolean;
+    clearTerms?: boolean;
+  }): Promise<void> {
+    cacheDb.runSqliteTransaction((sqlite) => {
+      if (input.clearCharacters !== false) {
+        sqlite
+          .prepare('DELETE FROM "CharacterAppearance" WHERE "chapterId" = ?')
+          .run(input.chapterId);
+      }
+      if (input.clearTerms !== false) {
+        sqlite
+          .prepare('DELETE FROM "TermAppearance" WHERE "chapterId" = ?')
+          .run(input.chapterId);
+      }
+      const insertCharacter = sqlite.prepare(
+        `INSERT INTO "CharacterAppearance"
+          ("id", "projectId", "characterId", "chapterId", "position", "context")
+          VALUES (?, ?, ?, ?, ?, ?)`,
+      );
+      const insertTerm = sqlite.prepare(
+        `INSERT INTO "TermAppearance"
+          ("id", "projectId", "termId", "chapterId", "position", "context")
+          VALUES (?, ?, ?, ?, ?, ?)`,
+      );
+      for (const appearance of input.characterAppearances) {
+        insertCharacter.run(
+          crypto.randomUUID(),
+          appearance.projectId,
+          appearance.characterId,
+          input.chapterId,
+          appearance.position,
+          appearance.context ?? null,
+        );
+      }
+      for (const appearance of input.termAppearances) {
+        insertTerm.run(
+          crypto.randomUUID(),
+          appearance.projectId,
+          appearance.termId,
+          input.chapterId,
+          appearance.position,
+          appearance.context ?? null,
+        );
+      }
+    });
+  }
+
   async recordCharacterAppearance(input: {
     projectId: string;
     characterId: string;

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, getTableColumns, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../../../infra/database/index.js";
 import * as schema from "../../../../infra/database/index.js";
 import type { ProjectExportRecord } from "../../../../../shared/types/index.js";
@@ -17,6 +17,7 @@ const { project, chapter, chapterBody, character, term, faction, event, worldEnt
 
 export const getProjectForExport = async (
   projectId: string,
+  snapshotExportLimit: number,
 ): Promise<ProjectExportRecord | null> => {
   const store = db.getClient();
 
@@ -28,6 +29,15 @@ export const getProjectForExport = async (
 
   if (projectRows.length === 0) return null;
   const proj = projectRows[0];
+  const snapshotsQuery = store
+    .select()
+    .from(snapshot)
+    .where(eq(snapshot.projectId, projectId))
+    .orderBy(desc(snapshot.createdAt));
+  const limitedSnapshotsQuery =
+    snapshotExportLimit > 0
+      ? snapshotsQuery.limit(snapshotExportLimit)
+      : snapshotsQuery;
 
   const [
     chapters,
@@ -41,8 +51,11 @@ export const getProjectForExport = async (
   ] = await Promise.all([
     store
       .select({
-        ...getTableColumns(chapter),
-        bodyContent: chapterBody.content,
+        id: chapter.id,
+        title: chapter.title,
+        order: chapter.order,
+        updatedAt: chapter.updatedAt,
+        content: sql<string>`COALESCE(${chapterBody.content}, ${chapter.content})`,
       })
       .from(chapter)
       .leftJoin(chapterBody, eq(chapterBody.chapterId, chapter.id))
@@ -72,11 +85,7 @@ export const getProjectForExport = async (
       .select()
       .from(entityRelation)
       .where(eq(entityRelation.projectId, projectId)),
-    store
-      .select()
-      .from(snapshot)
-      .where(eq(snapshot.projectId, projectId))
-      .orderBy(desc(snapshot.createdAt)),
+    limitedSnapshotsQuery,
   ]);
 
   return {
@@ -86,12 +95,7 @@ export const getProjectForExport = async (
     createdAt: new Date(proj.createdAt),
     updatedAt: new Date(proj.updatedAt),
     projectPath: proj.projectPath ?? null,
-    chapters: chapters.map(({ bodyContent, ...chapterRow }) =>
-      toChapterExportDto({
-        ...chapterRow,
-        content: bodyContent ?? chapterRow.content,
-      }),
-    ),
+    chapters: chapters.map(toChapterExportDto),
     characters: characters.map(toCharacterExportDto),
     terms: terms.map(toTermExportDto),
     events: eventsRows.map(toEventExportDto),

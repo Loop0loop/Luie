@@ -40,6 +40,8 @@ function escapeRegExp(string: string) {
 class SmartLinkService {
   private pattern: RegExp | null = null;
   private entities: SmartLinkEntity[] = [];
+  private sourceSignature = this.getSourceSignature();
+  private listeners = new Set<() => void>();
   /**
    * 매치된 텍스트 → 엔티티 조회용.
    *
@@ -56,13 +58,31 @@ class SmartLinkService {
     useTermStore.subscribe(() => this.invalidate());
   }
 
+  private getSourceSignature() {
+    return JSON.stringify([
+      useCharacterStore.getState().items.map(({ id, name }) => [id, name]),
+      useEventStore.getState().items.map(({ id, name }) => [id, name]),
+      useFactionStore.getState().items.map(({ id, name }) => [id, name]),
+      useTermStore.getState().items.map(({ id, term }) => [id, term]),
+    ]);
+  }
+
   private invalidate() {
+    const sourceSignature = this.getSourceSignature();
+    if (this.sourceSignature === sourceSignature) return;
+    this.sourceSignature = sourceSignature;
     this.pattern = null;
     this.entities = [];
     // NOTE: `ensureCache`가 재빌드할 때 어차피 재할당하므로 동작상 필수는 아니다.
     // 세 캐시 필드가 한 묶음이라는 불변을 코드로 남겨, 나중에 `ensureCache`의
     // early-return 조건이 느슨해져도 Map이 stale해지지 않게 한다.
     this.entityByText = new Map();
+    this.listeners.forEach((listener) => listener());
+  }
+
+  public subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   private ensureCache() {

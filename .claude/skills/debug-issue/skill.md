@@ -1,27 +1,12 @@
 ---
-name: Debug Issue
-description: Systematically debug issues using graph-powered code navigation
+name: debug-issue
+description: "코드 그래프를 활용해 Luie 오류의 호출 경로와 원인을 추적할 때 사용한다."
 ---
 
-## Debug Issue
+# 그래프 기반 오류 조사
 
-Use the knowledge graph to systematically trace and debug issues.
+저장소 `AGENTS.md`와 [debug-agent](../../../.agents/skills/debug-agent/SKILL.md)의 진단·수정 범위를 따른다.
 
-### Steps
+질문에 맞게 `semantic_search_nodes`로 후보를 찾거나 `query_graph`로 호출자·피호출자를 확인한다. 실행 경로가 불분명하면 flow 도구를 추가한다. 이미 찾은 코드의 반복 탐색은 생략한다.
 
-1. Use `semantic_search_nodes` to find code related to the issue.
-2. Use `query_graph` with `callers_of` and `callees_of` to trace call chains.
-3. Use `get_flow` to see full execution paths through suspected areas.
-4. Run `detect_changes` to check if recent changes caused the issue.
-5. Use `get_impact_radius` on suspected files to see what else is affected.
-
-### Tips
-
-- Check both callers and callees to understand the full context.
-- Look at affected flows to find the entry point that triggers the bug.
-- Recent changes are the most common source of new issues.
-
-## Token Efficiency Rules
-- ALWAYS start with `get_minimal_context(task="<your task>")` before any other graph tool.
-- Use `detail_level="minimal"` on all calls. Only escalate to "standard" when minimal is insufficient.
-- Target: complete any review/debug/refactor task in ≤5 tool calls and ≤800 total output tokens.
+그래프가 없거나 누락·오래된 결과가 있으면 소스·git diff·관련 테스트로 확인한다. 도구 호출 수·출력 토큰 상한 때문에 필요한 조사를 생략하지 않는다.

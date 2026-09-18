@@ -16,6 +16,11 @@ import { useGraphStore } from "../../stores/graph/graphStore";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
 import { useWorldBuildingStore } from "@renderer/features/research/stores/worldBuildingStore";
 import { calculateForceLayout } from "../../utils/graphLayout";
+import GraphLayoutWorker from "../../workers/graphLayout.worker?worker";
+import type {
+  GraphLayoutRequest,
+  GraphLayoutResult,
+} from "../../workers/graphLayoutWorkerCore";
 import { buildGraphSurfaceData } from "../../utils/graphSurfaceData";
 import { CANVAS_ZOOM_MAX, CANVAS_ZOOM_MIN } from "@renderer/shared/constants/canvasSizing";
 import {
@@ -84,6 +89,120 @@ export default function GraphSurface() {
     graphDataRef.current = { filteredNodes, filteredEdges };
   }, [filteredNodes, filteredEdges]);
 
+  const layoutWorkerRef = useRef<InstanceType<typeof GraphLayoutWorker> | null>(null);
+  const layoutBusyRef = useRef(false);
+  const activeLayoutRequestRef = useRef<GraphLayoutRequest | null>(null);
+  const pendingLayoutRequestRef = useRef<GraphLayoutRequest | null>(null);
+  const latestLayoutRequestIdRef = useRef(0);
+
+  const applyLayoutResult = useCallback(
+    (request: GraphLayoutRequest, result: GraphLayoutResult) => {
+      const positionById = new Map(
+        result.positions.map(({ id, position }) => [id, position]),
+      );
+      const latestNodeById = new Map(
+        graphDataRef.current.filteredNodes.map((node) => [node.id, node]),
+      );
+      setNodes(
+        request.nodes.map((node) => {
+          const latestNode = latestNodeById.get(node.id) ?? node;
+          const position = positionById.get(node.id);
+          return position ? { ...latestNode, position } : latestNode;
+        }),
+      );
+    },
+    [setNodes],
+  );
+
+  const applyLayoutFallback = useCallback(
+    (request: GraphLayoutRequest) => {
+      applyLayoutResult(request, {
+        requestId: request.requestId,
+        positions: calculateForceLayout(
+          request.nodes,
+          request.edges,
+          request.iterations,
+          request.center,
+        ).map((node) => ({ id: node.id, position: node.position })),
+      });
+    },
+    [applyLayoutResult],
+  );
+
+  const postLayoutRequest = useCallback((request: GraphLayoutRequest) => {
+    const worker = layoutWorkerRef.current;
+    if (!worker) return false;
+    try {
+      layoutBusyRef.current = true;
+      activeLayoutRequestRef.current = request;
+      worker.postMessage(request);
+      return true;
+    } catch {
+      layoutBusyRef.current = false;
+      activeLayoutRequestRef.current = null;
+      return false;
+    }
+  }, []);
+
+  const queueLayoutRequest = useCallback(
+    (request: GraphLayoutRequest) => {
+      if (layoutBusyRef.current) {
+        pendingLayoutRequestRef.current = request;
+        return true;
+      }
+      return postLayoutRequest(request);
+    },
+    [postLayoutRequest],
+  );
+
+  useEffect(() => {
+    let worker: InstanceType<typeof GraphLayoutWorker>;
+    try {
+      worker = new GraphLayoutWorker();
+    } catch {
+      return undefined;
+    }
+    layoutWorkerRef.current = worker;
+
+    const handleMessage = (event: MessageEvent<GraphLayoutResult>) => {
+      const activeRequest = activeLayoutRequestRef.current;
+      if (!activeRequest || event.data.requestId !== activeRequest.requestId) return;
+
+      layoutBusyRef.current = false;
+      activeLayoutRequestRef.current = null;
+      if (event.data.requestId === latestLayoutRequestIdRef.current) {
+        applyLayoutResult(activeRequest, event.data);
+      }
+
+      const pendingRequest = pendingLayoutRequestRef.current;
+      pendingLayoutRequestRef.current = null;
+      if (pendingRequest) {
+        if (!postLayoutRequest(pendingRequest)) applyLayoutFallback(pendingRequest);
+      }
+    };
+    const handleError = () => {
+      const fallbackRequest =
+        pendingLayoutRequestRef.current ?? activeLayoutRequestRef.current;
+      layoutWorkerRef.current = null;
+      layoutBusyRef.current = false;
+      activeLayoutRequestRef.current = null;
+      pendingLayoutRequestRef.current = null;
+      if (fallbackRequest) applyLayoutFallback(fallbackRequest);
+    };
+
+    worker.addEventListener("message", handleMessage);
+    worker.addEventListener("error", handleError);
+    return () => {
+      worker.removeEventListener("message", handleMessage);
+      worker.removeEventListener("error", handleError);
+      worker.terminate();
+      layoutWorkerRef.current = null;
+      layoutBusyRef.current = false;
+      activeLayoutRequestRef.current = null;
+      pendingLayoutRequestRef.current = null;
+    };
+  }, [applyLayoutFallback, applyLayoutResult, postLayoutRequest]);
+
   useEffect(() => {
     const { filteredNodes: latestNodes, filteredEdges: latestEdges } =
       graphDataRef.current;
@@ -100,13 +219,25 @@ export default function GraphSurface() {
       return prevPosition ? { ...node, position: { ...prevPosition } } : node;
     });
 
-    const laidOutNodes = calculateForceLayout(nodesWithPrevPositions, latestEdges, iterations, layoutCenter);
-
-    setNodes(laidOutNodes);
+    const request: GraphLayoutRequest = {
+      requestId: latestLayoutRequestIdRef.current + 1,
+      nodes: nodesWithPrevPositions,
+      edges: latestEdges,
+      iterations,
+      center: layoutCenter,
+    };
+    latestLayoutRequestIdRef.current = request.requestId;
+    if (!queueLayoutRequest(request)) applyLayoutFallback(request);
     setEdges(latestEdges);
     // NOTE: activeMode는 topologySignature에 이미 포함되어 함께만 바뀐다. layout 상수를
     // 고르려고 값만 읽는다.
-  }, [activeMode, topologySignature, setNodes, setEdges]);
+  }, [
+    activeMode,
+    applyLayoutFallback,
+    queueLayoutRequest,
+    setEdges,
+    topologySignature,
+  ]);
 
   // NOTE: 구성(id 집합)은 그대로인데 node data만 바뀐 경우 — 별 등급, 필터 투명도.
   // force layout을 다시 돌리지 않고 위치를 유지한 채 data만 갈아끼운다. 실제로 바뀐 게

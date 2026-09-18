@@ -1,77 +1,24 @@
-# Renderer AGENTS.md
+# Renderer
 
-이 문서는 `src/renderer/**` 작업 전에 반드시 읽는다. 하위 디렉터리에 더 구체적인 `AGENTS.md`가 있으면 그 규칙도 함께 따른다.
+Electron의 React 클라이언트다. 도메인 코드는 `src/features/`, 여러 feature의 상태성 공통 로직은 `src/shared/`, 재사용 UI는 저장소의 `src/shared/ui/`에 둔다. 별칭은 `@renderer/*`, `@shared/*`다.
 
-## Scope
+## 코드·상태 경계
 
-- Electron renderer process only.
-- UI, React components, Zustand stores, hooks, renderer services, styles, i18n, and feature modules live under `src/renderer/src/**`.
-- Desktop capability access must go through preload contracts. Do not import Node or Electron APIs directly from renderer code.
+- 데스크톱 기능은 `window.api`를 사용한다. Node/Electron·main 내부 모듈을 직접 import하지 않는다.
+- 기존 Zustand store의 selector·action·persist schema를 사용한다. 프로젝트·챕터 전환 중 오래된 비동기 결과가 새 대상 상태를 덮지 않도록 대상 ID와 생명주기를 확인한다.
+- editor의 IME 조합, selection, undo, 저장 flush를 보존한다. 입력·drag·layout 같은 잦은 이벤트에서 저장·전역 구독·무거운 계산을 추가할 때 영향을 확인한다.
+- memoization이나 worker 도입은 계산 비용·참조 안정성 등 구체적 필요로 결정한다. 파일 길이나 boolean prop 개수만으로 구성요소를 분리하지 않는다.
+- 사용자 문구는 `src/i18n/`의 기존 번역 패턴을 따른다.
 
-## Required References
+## 시각·상호작용 변경
 
-- Visual/design system: `DESIGN.md`
-- Frontend/CSS hard rules: `docs/quality/frontend-css-agents.md`
-- Feature map: `src/renderer/src/features/AGENTS.md`
+해당 변경에 필요한 `DESIGN.md` 절과 `src/styles/global.tokens.css`, `global.behaviors.css`, `global.animations.css`를 확인한다.
 
-## Architecture
+- 기존 semantic token과 Tailwind v4 CSS-first 구성을 사용한다. component에 고정 색상·임의 z-index·동적 문자열 Tailwind class를 추가하지 않는다.
+- ProseMirror·ReactFlow 내부 DOM, 전역 token·keyframe·문서 본문은 scoped CSS가 필요할 수 있다. 좌표·사용자 색상 같은 런타임 데이터는 inline style을 사용할 수 있다.
+- feature 스타일에 `!important`를 추가하지 않는다. 전역 접근성·애니메이션 차단 규칙은 일반 feature 스타일과 구분한다.
+- 키보드 조작, visible focus, label, icon-only 버튼의 accessible name·title을 유지한다. 상태를 색상만으로 표현하지 않는다.
+- light/dark/sepia, 높은 대비, 애니메이션 끄기·OS reduced-motion 설정을 존중한다.
+- 패널 크기는 기존 persistence key와 commit 이벤트를 사용한다. 프로그램에 의한 레이아웃 복원이 사용자 크기 설정을 덮어쓰면 안 된다.
 
-- Keep feature-first boundaries. Prefer `src/renderer/src/features/<domain>/**` for domain code.
-- Use `@renderer/*` and `@shared/*` aliases. Avoid fragile relative paths across domains.
-- Shared renderer UI belongs in `@shared/ui` only when it is genuinely reusable.
-- Do not deep-import another feature’s internals unless there is no shared contract and the dependency is already established locally.
-- Keep component files under 300 LOC where practical. If UI, store access, model conversion, editor runtime, and visual chrome mix in one file, split it.
-
-## React Rules
-
-- Hooks only at component/custom-hook top level.
-- Do not call hooks conditionally or inside callbacks, loops, `useMemo`, `useEffect`, or `try/catch`.
-- `useEffect` is for external synchronization only. Derived values should be computed during render.
-- Keep state minimal. Do not store values that can be derived from props/state.
-- Do not mutate object or array state directly.
-- `useMemo` and `useCallback` are not default tools. Use them only when identity or expensive computation is proven relevant.
-- Rendering must stay pure. No store writes, DOM writes, timers, or global mutation during render.
-
-## Styling Rules
-
-- Tailwind utility classes are the default for component styling.
-- Use `DESIGN.md` semantic tokens: `bg-app`, `bg-sidebar`, `bg-panel`, `bg-surface`, `bg-element`, `text-fg`, `text-muted`, `text-subtle`, `border-border`, `rounded-control`, `rounded-panel`.
-- Custom CSS is allowed for global rules, tokens, keyframes, markdown/content styling, pseudo-elements, and third-party internal DOM such as ProseMirror or ReactFlow.
-- Scope custom CSS under a feature root class. Do not write broad global selectors for feature UI.
-- No `!important`.
-- No hardcoded colors.
-- No arbitrary z-index. Use project z-index utilities.
-- No dynamic Tailwind class construction such as `bg-${color}-500`; use explicit maps.
-- Inline `style` is only for runtime data values such as graph coordinates, dynamic node color, and SVG stroke.
-- If `outline-none` is used, an equivalent `focus-visible` state must exist.
-
-## UX / A11y
-
-- Use semantic HTML first: `button`, `a`, `input`, `label`, heading, list.
-- Icon-only buttons need `aria-label` and `title`.
-- Keyboard access is required for interactive UI.
-- Focus must be visible and not hidden behind panels/popovers.
-- Do not communicate state by color alone.
-- Loading, empty, error, disabled, saving/saved states must be designed for user-facing flows.
-- Prefer role/name based tests for UI behavior.
-
-## Renderer Boundaries
-
-- Renderer must not import from `src/main/**` or use Electron/Node directly.
-- IPC additions require shared channel/types, main handler, preload API, and renderer usage to stay aligned.
-- Keep heavy graph/editor/layout work out of render where possible.
-- Persist drag/resize/layout updates on commit/end events, not every paint, unless explicitly required.
-
-## Canvas-Specific Notes
-
-- Canvas UI must feel like Luie’s writing/worldbuilding workspace, not a clone of another app.
-- ReactFlow node/edge internals may use scoped CSS, but first try ReactFlow props/className and Tailwind.
-- Do not use `!important` to fight ReactFlow styles. If a style cannot be applied cleanly, adjust component structure or isolate a feature root selector.
-- Canvas document/editor code should stay split by role: shell view, chrome, editor runtime, model helpers, store hook.
-
-## Verification
-
-- Run `pnpm run typecheck` after renderer changes when the worktree is not blocked by unrelated main-process errors.
-- If typecheck fails outside the renderer files touched, report the blocker with exact paths.
-- For UI behavior changes, prefer targeted DOM/Vitest checks where existing tests exist.
-- Before finalizing, search changed renderer files for: `!important`, hardcoded hex colors, `rgba(`, `z-[`, dynamic class construction, and `console.warn/log`.
+UI 동작 변경은 관련 DOM 테스트와 실제 가능한 화면·상호작용 검증을 수행한다. 화면을 실행하지 못했으면 그 한계를 명시한다. 스타일 변경에는 `check:design-tokens`, store/persist 변경에는 관련 `check:*`를 선택한다.

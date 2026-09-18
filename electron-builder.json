@@ -31,16 +31,6 @@
   "electronLanguages": ["en", "ko", "ja"],
   "extraResources": [
     {
-      "from": "node_modules/bindings",
-      "to": "node_modules/bindings",
-      "filter": ["**/*"]
-    },
-    {
-      "from": "node_modules/file-uri-to-path",
-      "to": "node_modules/file-uri-to-path",
-      "filter": ["**/*"]
-    },
-    {
       "from": "build/icons/icon.png",
       "to": "icon.png"
     },

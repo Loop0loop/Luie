@@ -1,89 +1,24 @@
 ---
 name: vercel-composition-patterns
-description:
-  React composition patterns that scale. Use when refactoring components with
-  boolean prop proliferation, building flexible component libraries, or
-  designing reusable APIs. Triggers on tasks involving compound components,
-  render props, context providers, or component architecture. Includes React 19
-  API changes.
+description: "React 컴포넌트의 실제 variant·상태 소유권·재사용 API 문제를 해결할 때 구성 패턴을 참고한다."
 license: MIT
 metadata:
   author: vercel
-  version: '1.0.0'
+  version: "1.0.0"
 ---
 
-# React Composition Patterns
+# React 구성 패턴
 
-Composition patterns for building flexible, maintainable React components. Avoid
-boolean prop proliferation by using compound components, lifting state, and
-composing internals. These patterns make codebases easier for both humans and AI
-agents to work with as they scale.
+기존 props·호출자·상태 소유권을 먼저 확인한다. boolean 하나나 파일 길이만으로 compound component·provider·generic interface를 도입하지 않는다. 현재 필요를 해결하는 기존 구성과 단순 props를 우선한다.
 
-## When to Apply
+실제 문제가 있는 항목만 `rules/`에서 읽는다:
 
-Reference these guidelines when:
+- variant 조합 충돌: `architecture-avoid-boolean-props.md`, `patterns-explicit-variants.md`
+- 여러 부분의 공유 상태: `architecture-compound-components.md`, `state-lift-state.md`
+- 구현과 API 분리 필요: `state-decouple-implementation.md`
+- children/render prop 선택: `patterns-children-over-render-props.md`
+- ref API 변경: `react19-no-forwardref.md`; React 버전·소비자 호환성을 확인한다.
 
-- Refactoring components with many boolean props
-- Building reusable component libraries
-- Designing flexible component APIs
-- Reviewing component architecture
-- Working with compound components or context providers
+React 19에서도 기존 useContext/forwardRef를 이 스킬 적용만으로 일괄 교체하지 않는다. 전체 모음 `AGENTS.md`는 필요한 규칙을 찾기 위한 참고 자료이며 기본 전체 읽기 대상이 아니다.
 
-## Rule Categories by Priority
-
-| Priority | Category                | Impact | Prefix          |
-| -------- | ----------------------- | ------ | --------------- |
-| 1        | Component Architecture  | HIGH   | `architecture-` |
-| 2        | State Management        | MEDIUM | `state-`        |
-| 3        | Implementation Patterns | MEDIUM | `patterns-`     |
-| 4        | React 19 APIs           | MEDIUM | `react19-`      |
-
-## Quick Reference
-
-### 1. Component Architecture (HIGH)
-
-- `architecture-avoid-boolean-props` - Don't add boolean props to customize
-  behavior; use composition
-- `architecture-compound-components` - Structure complex components with shared
-  context
-
-### 2. State Management (MEDIUM)
-
-- `state-decouple-implementation` - Provider is the only place that knows how
-  state is managed
-- `state-context-interface` - Define generic interface with state, actions, meta
-  for dependency injection
-- `state-lift-state` - Move state into provider components for sibling access
-
-### 3. Implementation Patterns (MEDIUM)
-
-- `patterns-explicit-variants` - Create explicit variant components instead of
-  boolean modes
-- `patterns-children-over-render-props` - Use children for composition instead
-  of renderX props
-
-### 4. React 19 APIs (MEDIUM)
-
-> **⚠️ React 19+ only.** Skip this section if using React 18 or earlier.
-
-- `react19-no-forwardref` - Don't use `forwardRef`; use `use()` instead of `useContext()`
-
-## How to Use
-
-Read individual rule files for detailed explanations and code examples:
-
-```
-rules/architecture-avoid-boolean-props.md
-rules/state-context-interface.md
-```
-
-Each rule file contains:
-
-- Brief explanation of why it matters
-- Incorrect code example with explanation
-- Correct code example with explanation
-- Additional context and references
-
-## Full Compiled Document
-
-For the complete guide with all rules expanded: `AGENTS.md`
+루트·renderer 지침에 따라 관련 호출자와 동작을 검증한다.

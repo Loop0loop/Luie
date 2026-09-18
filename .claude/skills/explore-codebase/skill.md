@@ -1,28 +1,10 @@
 ---
-name: Explore Codebase
-description: Navigate and understand codebase structure using the knowledge graph
+name: explore-codebase
+description: "Luie 구조·호출 관계를 코드 그래프와 현재 소스로 설명할 때 사용한다."
 ---
 
-## Explore Codebase
+# 구조 탐색
 
-Use the code-review-graph MCP tools to explore and understand the codebase.
+넓은 구조 질문은 `get_architecture_overview`, 특정 기능은 `semantic_search_nodes`·`query_graph`로 시작한다. 관련 community·flow는 질문을 해결하는 데 필요할 때만 확인한다.
 
-### Steps
-
-1. Run `list_graph_stats` to see overall codebase metrics.
-2. Run `get_architecture_overview` for high-level community structure.
-3. Use `list_communities` to find major modules, then `get_community` for details.
-4. Use `semantic_search_nodes` to find specific functions or classes.
-5. Use `query_graph` with patterns like `callers_of`, `callees_of`, `imports_of` to trace relationships.
-6. Use `list_flows` and `get_flow` to understand execution paths.
-
-### Tips
-
-- Start broad (stats, architecture) then narrow down to specific areas.
-- Use `children_of` on a file to see all its functions and classes.
-- Use `find_large_functions` to identify complex code.
-
-## Token Efficiency Rules
-- ALWAYS start with `get_minimal_context(task="<your task>")` before any other graph tool.
-- Use `detail_level="minimal"` on all calls. Only escalate to "standard" when minimal is insufficient.
-- Target: complete any review/debug/refactor task in ≤5 tool calls and ≤800 total output tokens.
+그래프의 경로·관계를 현재 코드로 확인하고 누락은 범위를 좁힌 검색으로 보완한다. 구조 설명을 요청받았으면 변경 없이 근거와 미확인 범위를 보고한다. 매 탐색의 전체 통계·도구 호출 한도는 요구하지 않는다.

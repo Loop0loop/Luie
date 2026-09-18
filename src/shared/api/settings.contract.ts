@@ -180,10 +180,14 @@ export type SettingsRendererApi = {
     ) => Promise<IPCResponse<{ success: boolean; exported: boolean }>>;
   };
   window: {
+    minimize: () => Promise<IPCResponse<unknown>>;
     maximize: () => Promise<IPCResponse<unknown>>;
+    unmaximize: () => Promise<IPCResponse<unknown>>;
     close: () => Promise<IPCResponse<unknown>>;
     toggleFullscreen: () => Promise<IPCResponse<unknown>>;
     setFullscreen: (flag: boolean) => Promise<IPCResponse<unknown>>;
+    /** 메인 창 최대화 상태 변경 이벤트. Windows 인앱 창 버튼의 아이콘 전환에 쓴다. */
+    onMaximizeChanged: (callback: (maximized: boolean) => void) => () => void;
     /** macOS 전용. 다른 플랫폼에서는 no-op으로 응답한다. */
     setTrafficLightVisibility: (
       visible: boolean,

@@ -1,0 +1,108 @@
+{
+  "runtime": {
+    "node": "v22.23.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "scope": "actual current writeLuieContainerEntry source; synthetic temp package; SQLite triggers simulate failure of later statements, not actual power-loss or disk-full",
+  "cases": [
+    {
+      "stage": "metadata",
+      "error": "injected metadata failure",
+      "bodyCommittedDespiteRejectedPromise": true,
+      "metaChanged": false,
+      "infoChanged": false,
+      "before": {
+        "body": "before",
+        "meta": {
+          "projectId": "atomicity-audit",
+          "title": "Synthetic",
+          "createdAt": "2020-01-01T00:00:00.000Z",
+          "updatedAt": "2020-01-01T00:00:00.000Z",
+          "chapters": [
+            {
+              "id": "c0",
+              "title": "Chapter",
+              "order": 0,
+              "file": "manuscript/c0.md"
+            }
+          ],
+          "format": "luie",
+          "container": "sqlite",
+          "version": 2
+        },
+        "infoUpdatedAt": "2026-09-08T08:16:29.908Z"
+      },
+      "after": {
+        "body": "after",
+        "meta": {
+          "projectId": "atomicity-audit",
+          "title": "Synthetic",
+          "createdAt": "2020-01-01T00:00:00.000Z",
+          "updatedAt": "2020-01-01T00:00:00.000Z",
+          "chapters": [
+            {
+              "id": "c0",
+              "title": "Chapter",
+              "order": 0,
+              "file": "manuscript/c0.md"
+            }
+          ],
+          "format": "luie",
+          "container": "sqlite",
+          "version": 2
+        },
+        "infoUpdatedAt": "2026-09-08T08:16:29.908Z"
+      }
+    },
+    {
+      "stage": "container-info",
+      "error": "injected container info failure",
+      "bodyCommittedDespiteRejectedPromise": true,
+      "metaChanged": true,
+      "infoChanged": false,
+      "before": {
+        "body": "before",
+        "meta": {
+          "projectId": "atomicity-audit",
+          "title": "Synthetic",
+          "createdAt": "2020-01-01T00:00:00.000Z",
+          "updatedAt": "2020-01-01T00:00:00.000Z",
+          "chapters": [
+            {
+              "id": "c0",
+              "title": "Chapter",
+              "order": 0,
+              "file": "manuscript/c0.md"
+            }
+          ],
+          "format": "luie",
+          "container": "sqlite",
+          "version": 2
+        },
+        "infoUpdatedAt": "2026-09-08T08:16:29.911Z"
+      },
+      "after": {
+        "body": "after",
+        "meta": {
+          "projectId": "atomicity-audit",
+          "title": "Synthetic",
+          "createdAt": "2020-01-01T00:00:00.000Z",
+          "updatedAt": "2026-09-08T08:16:29.913Z",
+          "chapters": [
+            {
+              "id": "c0",
+              "title": "Chapter",
+              "order": 0,
+              "file": "manuscript/c0.md"
+            }
+          ],
+          "format": "luie",
+          "container": "sqlite",
+          "version": 2
+        },
+        "infoUpdatedAt": "2026-09-08T08:16:29.911Z"
+      }
+    }
+  ]
+}

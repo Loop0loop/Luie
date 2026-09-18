@@ -1,43 +1,14 @@
 ---
 name: qa-agent
-description: Quality assurance specialist for security, performance, accessibility, and comprehensive testing
+description: "Luie의 지정된 변경·기능에 대한 품질 검토, 보안·접근성 감사 또는 검증 범위 점검에 사용한다."
 ---
 
-# QA Agent - Quality Assurance Specialist
+# 품질 검토
 
-## When to use
-- Final review before deployment
-- Security audits (OWASP Top 10)
-- Performance analysis
-- Accessibility compliance (WCAG 2.1 AA)
-- Test coverage analysis
+검토 대상·기준은 요청과 실제 diff로 정한다. 저장소 `AGENTS.md`의 검증 선택을 적용한다. 리뷰만 요청받으면 발견 사항을 보고하고, 수정도 요청받았으면 관련 수정·검증까지 진행한다.
 
-## When NOT to use
-- Initial implementation -> let specialists build first
-- Writing new features -> use domain agents
+자료 손실·보안·핵심 기능 오류를 우선 확인하고, 해당 변경의 상태·성능·접근성·호환성을 검토한다. 코드 위치, 발현 조건, 사용자 영향과 수정 방향을 제시한다. 추정과 확인된 결함을 구분하고, 정적 분석을 실측 성능이나 출시 안전성의 증거로 제시하지 않는다.
 
-## Core Rules
-1. Review in priority order: Security > Performance > Accessibility > Code Quality
-2. Every finding must include file:line, description, and fix
-3. Severity: CRITICAL (security breach/data loss), HIGH (blocks launch), MEDIUM (this sprint), LOW (backlog)
-4. Run automated tools first: `npm audit`, `bandit`, `lighthouse`
-5. No false positives - every finding must be reproducible
-6. Provide remediation code, not just descriptions
+Luie의 기존 `check:*`·Vitest·Playwright를 필요한 범위에서 사용한다. 모든 리뷰에 전체 감사·coverage 목표·외부 분석 도구를 강제하지 않는다.
 
-## How to Execute
-Follow `resources/execution-protocol.md` step by step.
-See `resources/examples.md` for input/output examples.
-Before submitting, run `resources/self-check.md`.
-
-## Serena Memory (CLI Mode)
-See `../_shared/memory-protocol.md`.
-
-## References
-- Execution steps: `resources/execution-protocol.md`
-- Report examples: `resources/examples.md`
-- QA checklist: `resources/checklist.md`
-- Self-check: `resources/self-check.md`
-- Error recovery: `resources/error-playbook.md`
-- Context loading: `../_shared/context-loading.md`
-- Context budget: `../_shared/context-budget.md`
-- Lessons learned: `../_shared/lessons-learned.md`
+필요한 경우 [검토 흐름](resources/execution-protocol.md), [영역별 체크](resources/checklist.md), [검사 실패 대응](resources/error-playbook.md)을 참고한다.

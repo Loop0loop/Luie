@@ -9,6 +9,7 @@ import type {
   WorldEntityCreateInput,
   WorldEntityUpdateInput,
   WorldEntityUpdatePositionInput,
+  WorldGraphNode,
   WorldTimelineTrack,
 } from "@shared/types";
 import {
@@ -23,8 +24,8 @@ import {
   getResolvedRelationKind,
   isValidRelationForPair,
   isWorldEntityBackedType,
-  removeNodeFromGraph,
-  removeRelationFromGraph,
+  removeNodesFromGraph,
+  removeRelationsFromGraph,
   replaceNodeInGraph,
   replaceRelationInGraph,
   toRelationSourceType,
@@ -224,24 +225,48 @@ export function createWorldBuildingActions(
       await get().updateGraphNodePosition(input);
     },
 
-    deleteGraphNode: async (id) => {
-      const current = get().graphData?.nodes.find((node) => node.id === id);
+    deleteGraphNode: async (id) => get().deleteGraphNodes([id]),
+
+    deleteGraphNodes: async (ids) => {
       const projectId = get().activeProjectId;
-      if (!current || !projectId) return false;
+      const graphData = get().graphData;
+      if (!projectId || !graphData) return false;
 
-      const deleted = await deleteGraphNodeByType(current);
-      if (!deleted) return false;
+      const idsToDelete = [...new Set(ids)];
+      const nodesById = new Map(graphData.nodes.map((node) => [node.id, node]));
+      const nodes = idsToDelete
+        .map((id) => nodesById.get(id))
+        .filter((node): node is NonNullable<typeof node> => node !== undefined);
+      if (nodes.length === 0) return false;
 
+      const deletedNodes = await nodes.reduce<Promise<WorldGraphNode[]>>(
+        (chain, node) =>
+          chain.then(async (deleted) =>
+            (await deleteGraphNodeByType(node)) ? [...deleted, node] : deleted,
+          ),
+        Promise.resolve([]),
+      );
+      if (deletedNodes.length === 0) return false;
+
+      const deletedIds = deletedNodes.map((node) => node.id);
       const nextGraphSnapshot = applyActiveGraphUpdate(
         set,
         projectId,
-        (graphData) => removeNodeFromGraph(graphData, id),
+        (currentGraph) => removeNodesFromGraph(currentGraph, deletedIds),
       );
-      clearGraphBackedSelection(current.entityType, id);
-      await syncGraphBackedStore(current.entityType, projectId);
+      deletedNodes.forEach((node) =>
+        clearGraphBackedSelection(node.entityType, node.id),
+      );
+      await Promise.all(
+        [...new Set(deletedNodes.map((node) => node.entityType))].map(
+          (entityType) => syncGraphBackedStore(entityType, projectId),
+        ),
+      );
       await persistGraphDocument(projectId, nextGraphSnapshot);
-      return true;
+      return deletedNodes.length === nodes.length;
     },
+
+    deleteWorldEntity: async (id) => get().deleteGraphNode(id),
 
     createWorldEntity: async (input: WorldEntityCreateInput) =>
       get().createGraphNode({
@@ -269,8 +294,6 @@ export function createWorldBuildingActions(
         attributes: input.attributes,
       });
     },
-
-    deleteWorldEntity: async (id) => get().deleteGraphNode(id),
 
     createRelation: async (input: EntityRelationCreateInput) => {
       const resolvedProjectId = input.projectId || get().activeProjectId;
@@ -328,18 +351,35 @@ export function createWorldBuildingActions(
       return true;
     },
 
-    deleteRelation: async (id: string) => {
+    deleteRelation: async (id: string) => get().deleteRelations([id]),
+
+    deleteRelations: async (ids) => {
       const projectId = get().activeProjectId;
-      const response = await api.entityRelation.delete(id);
-      if (!response.success || !projectId) return false;
+      const graphData = get().graphData;
+      if (!projectId || !graphData) return false;
+
+      const graphRelationIds = new Set(graphData.edges.map((edge) => edge.id));
+      const relationIds = [...new Set(ids)].filter((id) => graphRelationIds.has(id));
+      if (relationIds.length === 0) return false;
+
+      const deletedIds = await relationIds.reduce<Promise<string[]>>(
+        (chain, id) =>
+          chain.then(async (deleted) =>
+            (await api.entityRelation.delete(id)).success
+              ? [...deleted, id]
+              : deleted,
+          ),
+        Promise.resolve([]),
+      );
+      if (deletedIds.length === 0) return false;
 
       const nextGraphSnapshot = applyActiveGraphUpdate(
         set,
         projectId,
-        (graphData) => removeRelationFromGraph(graphData, id),
+        (currentGraph) => removeRelationsFromGraph(currentGraph, deletedIds),
       );
       await persistGraphDocument(projectId, nextGraphSnapshot);
-      return true;
+      return deletedIds.length === relationIds.length;
     },
 
     setGraphCanvasBlocks: async (blocks: WorldGraphCanvasBlock[]) => {

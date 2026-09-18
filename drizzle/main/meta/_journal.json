@@ -8,6 +8,27 @@
       "when": 1788224656878,
       "tag": "0000_lonely_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789288068955,
+      "tag": "0001_faithful_purple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789304680061,
+      "tag": "0002_busy_roughhouse",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789344165841,
+      "tag": "0003_daily_joshua_kane",
+      "breakpoints": true
     }
   ]
 }

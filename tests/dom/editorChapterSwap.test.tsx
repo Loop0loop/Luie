@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Editor from "../../src/renderer/src/features/editor/components/Editor.js";
 
@@ -48,6 +48,7 @@ const mocked = vi.hoisted(() => {
   return {
     editor,
     useEditor: vi.fn(() => editor),
+    useEditorAutosave: vi.fn(),
     updateStats: vi.fn(),
     resetContent: () => {
       currentHtml = "<p>A</p>";
@@ -83,7 +84,7 @@ vi.mock(
 
 vi.mock(
   "../../src/renderer/src/features/editor/hooks/useEditorAutosave.js",
-  () => ({ useEditorAutosave: vi.fn() }),
+  () => ({ useEditorAutosave: mocked.useEditorAutosave }),
 );
 
 vi.mock(
@@ -230,6 +231,32 @@ describe("Editor chapter swap (no remount on chapter switch)", () => {
     expect(mocked.editor.commands.setContent).toHaveBeenCalledWith("<p>B</p>");
     // 여러 커밋을 거쳐도 리마운트는 없다.
     expect(view.onEditorReady).toHaveBeenCalledTimes(1);
+
+    view.unmount();
+  });
+
+  it("passes the pending TipTap serialization to autosave", async () => {
+    const view = await renderEditor({
+      chapterId: "ch-a",
+      initialContent: "<p>A</p>",
+      contentReady: true,
+      hideToolbar: true,
+      hideFooter: true,
+      hideTitle: true,
+    });
+    const options = mocked.useEditor.mock.calls[0]?.[0] as {
+      onCreate?: (context: { editor: typeof mocked.editor }) => void;
+      onUpdate?: (context: { editor: typeof mocked.editor }) => void;
+    };
+    options.onCreate?.({ editor: mocked.editor });
+    mocked.editor.getHTML.mockReturnValueOnce("<p>최신 본문</p>");
+    options.onUpdate?.({ editor: mocked.editor });
+
+    const autosaveProps = mocked.useEditorAutosave.mock.calls[0]?.[0] as
+      | { flushPendingContent?: () => string | undefined }
+      | undefined;
+    expect(autosaveProps?.flushPendingContent?.()).toBe("<p>최신 본문</p>");
+    expect(mocked.updateStats).toHaveBeenCalledWith("B text");
 
     view.unmount();
   });

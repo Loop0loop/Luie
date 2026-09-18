@@ -1,0 +1,2 @@
+CREATE INDEX `SearchDirtyQueue_runnable_idx` ON `SearchDirtyQueue` (`status`,`attempts`,`updatedAt`);--> statement-breakpoint
+CREATE INDEX `MemoryBuildJob_runnable_idx` ON `MemoryBuildJob` (`projectId`,`jobType`,`status`,`attempts`,`priority`,`createdAt`,`updatedAt`);

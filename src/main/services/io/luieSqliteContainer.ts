@@ -344,19 +344,21 @@ export const writeLuieSqliteEntry = async (input: {
       const entryContent =
         normalizedEntryPath === metaEntryPath ? refreshedMetaContent : input.content;
 
-      writeEntry.run(normalizedEntryPath, entryContent, nowIso, nowIso);
-      if (normalizedEntryPath !== metaEntryPath) {
-        writeEntry.run(
-          metaEntryPath,
-          refreshedMetaContent,
-          existingMetaRow?.createdAt ?? nowIso,
-          nowIso,
-        );
-      }
+      database.transaction(() => {
+        writeEntry.run(normalizedEntryPath, entryContent, nowIso, nowIso);
+        if (normalizedEntryPath !== metaEntryPath) {
+          writeEntry.run(
+            metaEntryPath,
+            refreshedMetaContent,
+            existingMetaRow?.createdAt ?? nowIso,
+            nowIso,
+          );
+        }
 
-      database
-        .prepare(`UPDATE "LuieContainerInfo" SET "updatedAt" = ? WHERE "id" = 1`)
-        .run(nowIso);
+        database
+          .prepare(`UPDATE "LuieContainerInfo" SET "updatedAt" = ? WHERE "id" = 1`)
+          .run(nowIso);
+      })();
     } finally {
       database.close();
     }

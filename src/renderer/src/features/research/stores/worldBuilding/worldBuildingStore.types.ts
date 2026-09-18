@@ -56,6 +56,7 @@ export interface WorldBuildingState {
     input: WorldEntityUpdatePositionInput,
   ) => Promise<void>;
   deleteGraphNode: (id: string) => Promise<boolean>;
+  deleteGraphNodes: (ids: string[]) => Promise<boolean>;
   createWorldEntity: (
     input: WorldEntityCreateInput,
   ) => Promise<WorldGraphNode | null>;
@@ -66,6 +67,7 @@ export interface WorldBuildingState {
   ) => Promise<EntityRelation | null>;
   updateRelation: (input: EntityRelationUpdateInput) => Promise<boolean>;
   deleteRelation: (id: string) => Promise<boolean>;
+  deleteRelations: (ids: string[]) => Promise<boolean>;
   setGraphCanvasBlocks: (blocks: WorldGraphCanvasBlock[]) => Promise<void>;
   setGraphCanvasEdges: (edges: WorldGraphCanvasEdge[]) => Promise<void>;
   setGraphCanvasFiles: (files: WorldGraphCanvasFile[]) => Promise<void>;

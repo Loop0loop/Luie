@@ -1,36 +1,15 @@
-# Frontend Agent - Tech Stack Reference
+# Renderer 도구·위치
 
-## Core Stack
-- **Framework**: Next.js 14+ (App Router), React 18+
-- **Language**: TypeScript (strict mode)
-- **Styling**: Tailwind CSS 3+ (NO inline styles)
-- **Components**: shadcn/ui, Radix UI
-- **State**: React Context, Zustand, or Redux Toolkit
-- **Forms**: React Hook Form + Zod
-- **API Client**: TanStack Query
-- **Testing**: Vitest, React Testing Library, Playwright
+버전은 저장소 `package.json`을 확인한다.
 
-## Code Standards
-- Explicit TypeScript interfaces for props
-- Tailwind classes only (no inline styles)
-- Semantic HTML with ARIA labels
-- Keyboard navigation support
+Electron + React 클라이언트, TypeScript, Zustand, TipTap/ProseMirror, ReactFlow, Tailwind v4, Radix/Lucide를 사용한다.
 
-## Project Structure
+- 앱 진입점: `src/renderer/src/app/main.tsx`
+- feature: `src/renderer/src/features/`
+- feature 간 상태성 공통 코드: `src/renderer/src/shared/`
+- 재사용 UI: `src/shared/ui/`
+- 번역: `src/renderer/src/i18n/`
+- 스타일: `src/renderer/src/styles/global.css`와 tokens/behaviors/animations CSS
+- 검증: `tests/dom/`, `tests/renderer/`, `tests/e2e/`
 
-```
-src/
-  app/           # Next.js App Router pages
-  components/
-    ui/          # Reusable primitives (button, card)
-    [feature]/   # Feature components
-  lib/
-    api/         # API clients (TanStack Query hooks)
-    hooks/       # Custom hooks
-  types/         # TypeScript types
-```
-
-## Serena MCP Shortcuts
-- `find_symbol("ComponentName")`: Locate existing component
-- `get_symbols_overview("src/components")`: List all components
-- `find_referencing_symbols("Button")`: Find usages before changes
+별칭은 `@renderer/*`, `@shared/*`다. 별도 Next.js 서버·Jotai·TanStack Query·새 toast/icon 패키지를 기본으로 추가하지 않는다.

@@ -1,11 +1,17 @@
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { layoutFallback } from "@renderer/features/workspace/components/layout/rootShell";
 import { THEME_CARDS } from "../../constants/themeCards";
 import type { TempChoice, ThemeChoice } from "../../types/wizard";
 import { PreviewBoundary } from "../PreviewBoundary";
 import { WizardDockDivider, WizardFloatingDock } from "../WizardFloatingDock";
-import { WizardEditor } from "../preview/WizardEditor";
+
+// 첫 Intro/Model에서는 editor 런타임을 읽지 않고, 기존 preview 경계에서만 로드한다.
+const WizardEditor = lazy(() =>
+  import("../preview/WizardEditor").then((module) => ({
+    default: module.WizardEditor,
+  })),
+);
 
 const noop = () => {};
 
@@ -42,7 +48,7 @@ export function ThemeStep({
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 animate-in fade-in duration-300">
+      <div className="absolute inset-0">
         <PreviewBoundary
           fallback={
             <div className="flex h-full w-full items-center justify-center bg-app text-xs text-muted">

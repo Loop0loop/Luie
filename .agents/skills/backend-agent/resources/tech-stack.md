@@ -1,39 +1,9 @@
-# Backend Agent - Tech Stack Reference
+# Main 도구·위치
 
-## Python (Preferred)
-- **Framework**: FastAPI 0.110+
-- **ORM**: SQLAlchemy 2.0 (async)
-- **Validation**: Pydantic v2
-- **Database**: PostgreSQL 16+, Redis 7+
-- **Auth**: python-jose (JWT), passlib (bcrypt)
-- **Testing**: pytest, httpx (async test client)
-- **Migrations**: Alembic
+버전은 저장소 `package.json`을 확인한다.
 
-## Node.js (Alternative)
-- **Framework**: Express.js, NestJS, Hono
-- **ORM**: Prisma, Drizzle
-- **Validation**: Zod
-- **Auth**: jsonwebtoken, bcrypt
-- **Testing**: Jest, Supertest
+Electron main + TypeScript, Drizzle + better-sqlite3/SQLite, Zod, pnpm을 사용한다. 주요 진입점은 `src/main/domains/`, 기반 기능은 `src/main/infra/`, 구현은 기존 services/manager/database에 있다.
 
-## Architecture
+IPC 계약은 `src/shared/contracts/`, `src/shared/api/`, `src/shared/ipc/`, `src/shared/schemas/`와 `src/preload/api/`를 잇는다. Supabase 함수는 `supabase/functions/`, 로컬 AI 작업은 `src/main/utility/` 경계를 확인한다.
 
-```
-backend/
-  domain/           # Business logic (pure Python, no framework deps)
-  application/      # Use cases, services
-  infrastructure/   # Database, cache, external APIs
-  presentation/     # API endpoints, middleware
-```
-
-## Security Requirements
-- Password hashing: bcrypt (cost factor 10-12)
-- JWT: 15min access tokens, 7 day refresh tokens
-- Rate limiting on auth endpoints
-- Input validation with Pydantic/Zod
-- Parameterized queries (never string interpolation)
-
-## Serena MCP Shortcuts
-- `find_symbol("create_todo")`: Locate existing function
-- `get_symbols_overview("app/api")`: List all endpoints
-- `find_referencing_symbols("User")`: Find all usages of a model
+DB migration은 `drizzle.main.config.ts`, `drizzle.cache.config.ts`와 `generate:drizzle`·`check:drizzle` 명령을 확인한다. 생성과 실사용 DB 적용은 구분한다.

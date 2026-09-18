@@ -17,13 +17,16 @@ const summaryPath = path.resolve(
 const shouldBuild = !args.includes("--skip-build");
 
 if (!Number.isInteger(runs) || runs < 3) {
-  throw new Error("E2E save latency certification requires at least three runs.");
+  throw new Error(
+    "E2E save latency certification requires at least three runs.",
+  );
 }
 
 const sourceFiles = [
   "scripts/certify-save-latency-e2e-repeat.mjs",
   "src/renderer/src/features/workspace/services/saveCoordinator.ts",
   "src/shared/performance/saveLatencyStatistics.ts",
+  "tests/e2e/_helpers/electronApp.ts",
   "tests/e2e/saveLatencyCertification.spec.ts",
 ];
 const sourceHash = createHash("sha256");

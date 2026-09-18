@@ -28,6 +28,7 @@ export type SyncProjectRecord = {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  localRevision?: number;
 };
 
 export type SyncChapterRecord = SyncEntityBase & {

@@ -1,1 +1,4 @@
-export { applyReplicaWorldState } from "./worldState.js";
+export {
+  applyReplicaWorldDelta,
+  applyReplicaWorldState,
+} from "./worldState.js";

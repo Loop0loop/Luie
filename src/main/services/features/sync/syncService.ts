@@ -363,8 +363,8 @@ export class SyncService {
       ensureAccessToken: async (syncSettings) =>
         await this.ensureAccessToken(syncSettings),
       buildLocalBundle: async (userId) => await this.buildLocalBundle(userId),
-      applyMergedBundleToLocal: async (bundle) =>
-        await this.applyMergedBundleToLocal(bundle),
+      applyMergedBundleToLocal: async (delta, merged, localSnapshot) =>
+        await this.applyMergedBundleToLocal(delta, merged, localSnapshot),
       countBundleRows: (bundle) => this.countBundleRows(bundle),
       updateStatus: (next) => this.updateStatus(next),
       applyAuthFailureState: (message, lastRun) =>
@@ -418,13 +418,19 @@ export class SyncService {
     });
   }
 
-  private async applyMergedBundleToLocal(bundle: SyncBundle): Promise<void> {
+  private async applyMergedBundleToLocal(
+    bundle: SyncBundle,
+    packageBundle: SyncBundle,
+    localSnapshot: SyncBundle,
+  ) {
     const applyMergedBundleToLocalFirstLuie =
       await loadApplyMergedBundleToLocalFirstLuie();
     const hydrateMissingWorldDocsFromPackage =
       await loadHydrateMissingWorldDocsFromPackage();
-    await applyMergedBundleToLocalFirstLuie({
+    return await applyMergedBundleToLocalFirstLuie({
       bundle,
+      packageBundle,
+      localSnapshot,
       hydrateMissingWorldDocsFromPackage: async (worldDocs, projectPath) =>
         await hydrateMissingWorldDocsFromPackage(
           worldDocs,
@@ -452,7 +458,9 @@ export class SyncService {
       bundle.memos.length +
       bundle.snapshots.length +
       (bundle.memoryCanonicalRows?.length ?? 0) +
-      bundle.tombstones.length
+      bundle.tombstones.length +
+      bundle.events.length +
+      bundle.factions.length
     );
   }
 

@@ -1,86 +1,11 @@
 ---
-description: Full QA review pipeline — security audit (OWASP Top 10), performance analysis, accessibility check (WCAG 2.1 AA), and code quality review
+description: "지정한 diff·기능의 결함과 검증 공백을 근거 중심으로 검토한다."
 ---
 
-# MANDATORY RULES — VIOLATION IS FORBIDDEN
+# 리뷰
 
-- **Response language follows `language` setting in `.agent/config/user-preferences.yaml` if configured.**
-- **NEVER skip steps.** Execute from Step 1 in order.
-- **You MUST use MCP tools throughout the workflow.**
-  - Use code analysis tools (`get_symbols_overview`, `find_symbol`, `find_referencing_symbols`, `search_for_pattern`) for code analysis and review.
-  - Use memory write tool to record review results.
-  - Memory path: configurable via `memoryConfig.basePath` (default: `.serena/memories`)
-  - Tool names: configurable via `memoryConfig.tools` in `mcp.json`
-  - Do NOT use raw file reads or grep as substitutes.
+리뷰 범위는 요청·브랜치·diff에서 정한다. [qa-agent](../skills/qa-agent/SKILL.md) 또는 요청된 리뷰 스킬 중 맞는 하나를 사용한다.
 
----
+변경부와 호출자·계약·관련 테스트를 확인하고, 실제 발현 조건과 영향이 있는 문제부터 보고한다. 보안·성능·접근성은 해당 변경과 관련된 영역을 검사한다. 모든 리뷰에 전체 보안 감사·benchmark를 붙이지 않는다.
 
-## Step 1: Identify Review Scope
-
-Ask the user what to review: specific files, a feature branch, or the entire project.
-If a PR or branch is provided, diff against the base branch to scope the review.
-
----
-
-## Step 2: Run Automated Security Checks
-
-// turbo
-Run available security tools: `npm audit` (Node.js), `bandit` (Python), or equivalent.
-Check for known vulnerabilities in dependencies. Flag any CRITICAL or HIGH findings.
-
----
-
-## Step 3: Manual Security Review (OWASP Top 10)
-
-Use MCP code analysis tools (`search_for_pattern` and `find_symbol`) to review code for:
-- Injection (SQL, XSS, command)
-- Broken auth, sensitive data exposure
-- Broken access control, security misconfig
-- Insecure deserialization
-- Known vulnerable components
-- Insufficient logging
-
----
-
-## Step 4: Performance Analysis
-
-Use MCP tools to check for:
-- N+1 queries, missing indexes
-- Unbounded pagination, memory leaks
-- Unnecessary re-renders (React)
-- Missing lazy loading
-- Large bundle sizes, unoptimized images
-
----
-
-## Step 5: Accessibility Review (WCAG 2.1 AA)
-
-Check for:
-- Semantic HTML, ARIA labels
-- Keyboard navigation, color contrast
-- Focus management, screen reader compatibility
-- Image alt text
-
----
-
-## Step 6: Code Quality Review
-
-Use MCP code analysis tools (`get_symbols_overview` and `find_referencing_symbols`) to check for:
-- Consistent naming, proper error handling
-- Test coverage, TypeScript strict mode compliance
-- Unused imports/variables
-- Proper async/await usage
-- Public API documentation
-
----
-
-## Step 7: Generate QA Report
-
-Compile all findings into a prioritized report:
-- **CRITICAL**: Security breaches, data loss risks
-- **HIGH**: Blocks launch
-- **MEDIUM**: Fix this sprint
-- **LOW**: Backlog
-
-Each finding must include: `file:line`, description, and remediation code.
-Use memory write tool to record the final report.
+각 발견에는 파일·위치, 발현 조건, 영향, 수정 방향을 적는다. 불확실한 가설은 확정 결함과 구분한다. 검토만 요청받으면 파일이나 외부 PR을 수정하지 않는다.

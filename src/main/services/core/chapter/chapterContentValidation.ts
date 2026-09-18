@@ -4,11 +4,8 @@ import type {
   ChapterUpdateInput,
 } from "../../../../shared/types/index.js";
 import { isTestEnv } from "../../../utils/env/index.js";
-import { trackKeywordAppearances } from "../../features/manuscript/chapterKeywords.js";
 import {
   chapterLogger,
-  fireAndForget,
-  SKIP_NONCRITICAL_DERIVED_ON_STRESS,
 } from "./chapterRuntime.js";
 
 const loadSnapshotService = async () =>
@@ -82,10 +79,4 @@ export const applyChapterContentUpdate = async (
 
   updateData.content = input.content;
   updateData.wordCount = input.content.length;
-  if (!projectId || SKIP_NONCRITICAL_DERIVED_ON_STRESS) return;
-
-  fireAndForget(
-    trackKeywordAppearances(input.id, input.content, projectId),
-    "chapter:update:track-keyword-appearances",
-  );
 };

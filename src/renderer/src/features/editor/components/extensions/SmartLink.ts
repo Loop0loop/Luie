@@ -2,10 +2,6 @@ import { Extension } from "@tiptap/core";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import type { Transaction, EditorState, EditorStateConfig } from "@tiptap/pm/state";
 import type { DecorationSet } from "@tiptap/pm/view";
-import { useCharacterStore } from "@renderer/features/research/stores/characterStore";
-import { useEventStore } from "@renderer/features/research/stores/eventStore";
-import { useFactionStore } from "@renderer/features/research/stores/factionStore";
-import { useTermStore } from "@renderer/features/research/stores/termStore";
 import { smartLinkService } from "@renderer/features/editor/services/smartLinkService";
 
 export const SmartLink = Extension.create({
@@ -52,16 +48,11 @@ export const SmartLink = Extension.create({
                  editorView.dispatch(tr);
              };
 
-             const unsubscribers = [
-                 useCharacterStore.subscribe(requestRescan),
-                 useEventStore.subscribe(requestRescan),
-                 useFactionStore.subscribe(requestRescan),
-                 useTermStore.subscribe(requestRescan),
-             ];
+             const unsubscribe = smartLinkService.subscribe(requestRescan);
 
              return {
                  destroy() {
-                     unsubscribers.forEach((unsubscribe) => unsubscribe());
+                     unsubscribe();
                  }
              };
         }

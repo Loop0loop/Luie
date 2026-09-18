@@ -14,9 +14,7 @@ import {
 } from "../../../src/main/services/io/luieContainer.js";
 import { listPackageWriteArtifacts } from "../../../src/main/services/io/luiePackageWriter.js";
 import { writeLuieSqliteEntry } from "../../../src/main/services/io/luieSqliteContainer.js";
-import {
-  makeMixedNarrativeText,
-} from "../luieFixtures.js";
+import { makeMixedNarrativeText } from "../luieFixtures.js";
 
 const logger = {
   info: () => undefined,

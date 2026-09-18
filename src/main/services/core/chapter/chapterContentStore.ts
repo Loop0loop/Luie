@@ -1,20 +1,24 @@
 import crypto from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../../../infra/database/index.js";
+import type { MainDrizzleClient } from "../../../infra/database/index.js";
 import { chapter, chapterBody } from "../../../infra/database/index.js";
+
+type ChapterBodyWriteStore = Pick<MainDrizzleClient, "insert">;
 
 export const hashChapterContent = (content: string): string =>
   crypto.createHash("sha256").update(content).digest("hex");
 
-export const upsertChapterBody = async (input: {
+export const upsertChapterBody = (input: {
   chapterId: string;
   content: string;
+  contentHash?: string;
   now: string;
-  tx?: ReturnType<typeof db.getClient>;
-}): Promise<void> => {
+  tx?: ChapterBodyWriteStore;
+}): void => {
   const store = input.tx ?? db.getClient();
-  const contentHash = hashChapterContent(input.content);
-  await store
+  const contentHash = input.contentHash ?? hashChapterContent(input.content);
+  store
     .insert(chapterBody)
     .values({
       chapterId: input.chapterId,
@@ -29,7 +33,8 @@ export const upsertChapterBody = async (input: {
         contentHash,
         updatedAt: input.now,
       },
-    });
+    })
+    .run();
 };
 
 export const readChapterContent = async (

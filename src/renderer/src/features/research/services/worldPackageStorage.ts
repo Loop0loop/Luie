@@ -80,19 +80,17 @@ const migrateLegacyLocalDocument = async (
   }
 };
 
-// NOTE: SynopsisEditor가 탭을 오갈 때마다 3단 폴백 로드(replica IPC → .luie 패키지 IPC →
-// 동기 localStorage JSON 파스)를 반복한다. 세션 스코프 메모 캐시로 재마운트를 IPC 없이
-// 만든다. 저장(saveSynopsis)이 캐시를 갱신하므로 세션 내 신선도는 유지된다.
-const synopsisCacheByProject = new Map<string, WorldSynopsisData>();
-
 const resolveSynopsisFromSources = async (
   projectId: string,
   projectPath: string | null | undefined,
   synopsisFallback: string,
 ): Promise<WorldSynopsisData> => {
   const replica = await loadReplicaDocument(projectId, "synopsis");
-  if (replica !== null) {
-    return normalizeSynopsis(replica, synopsisFallback);
+  if (replica.state === "deleted") {
+    return normalizeSynopsis(null);
+  }
+  if (replica.state === "found") {
+    return normalizeSynopsis(replica.payload, synopsisFallback);
   }
 
   if (isLuieProjectPath(projectPath)) {
@@ -131,18 +129,11 @@ export const worldPackageStorage = {
       return { ...DEFAULT_WORLD_SYNOPSIS, synopsis: synopsisFallback };
     }
 
-    const cached = synopsisCacheByProject.get(projectId);
-    if (cached) {
-      return cached;
-    }
-
-    const resolved = await resolveSynopsisFromSources(
+    return await resolveSynopsisFromSources(
       projectId,
       projectPath,
       synopsisFallback,
     );
-    synopsisCacheByProject.set(projectId, resolved);
-    return resolved;
   },
 
   async saveSynopsis(
@@ -164,7 +155,6 @@ export const worldPackageStorage = {
         payload,
       );
     }
-    synopsisCacheByProject.set(projectId, payload);
   },
 
   async loadPlot(
@@ -176,8 +166,11 @@ export const worldPackageStorage = {
     }
 
     const replica = await loadReplicaDocument(projectId, "plot");
-    if (replica !== null) {
-      return normalizePlot(replica);
+    if (replica.state === "deleted") {
+      return { ...DEFAULT_WORLD_PLOT };
+    }
+    if (replica.state === "found") {
+      return normalizePlot(replica.payload);
     }
 
     if (isLuieProjectPath(projectPath)) {
@@ -239,8 +232,11 @@ export const worldPackageStorage = {
     }
 
     const replica = await loadReplicaDocument(projectId, "drawing");
-    if (replica !== null) {
-      return normalizeDrawing(replica);
+    if (replica.state === "deleted") {
+      return { ...DEFAULT_WORLD_DRAWING };
+    }
+    if (replica.state === "found") {
+      return normalizeDrawing(replica.payload);
     }
 
     if (isLuieProjectPath(projectPath)) {
@@ -302,8 +298,11 @@ export const worldPackageStorage = {
     }
 
     const replica = await loadReplicaDocument(projectId, "mindmap");
-    if (replica !== null) {
-      return normalizeMindmap(replica);
+    if (replica.state === "deleted") {
+      return { ...DEFAULT_WORLD_MINDMAP };
+    }
+    if (replica.state === "found") {
+      return normalizeMindmap(replica.payload);
     }
 
     if (isLuieProjectPath(projectPath)) {
@@ -367,8 +366,11 @@ export const worldPackageStorage = {
     }
 
     const replica = await loadReplicaScrapMemos(projectId);
-    if (replica) {
-      return replica;
+    if (replica.state === "deleted") {
+      return { ...DEFAULT_WORLD_SCRAP_MEMOS };
+    }
+    if (replica.state === "found") {
+      return replica.data;
     }
 
     if (isLuieProjectPath(projectPath)) {

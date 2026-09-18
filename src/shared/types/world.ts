@@ -147,10 +147,12 @@ export interface WorldReplicaDocumentResult {
   found: boolean;
   payload: unknown | null;
   updatedAt?: string;
+  deletedAt?: string;
 }
 export interface WorldReplicaScrapMemosResult {
   found: boolean;
   data: WorldScrapMemosData | null;
+  deletedAt?: string;
 }
 export interface CharacterCreateInput {
   projectId: string;

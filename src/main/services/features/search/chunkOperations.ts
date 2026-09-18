@@ -42,6 +42,7 @@ export async function searchChunks(
       normalizedQuery,
       resultLimit: limit,
       candidateCap,
+      vectorSearchMode: searchPolicy.vectorSearchMode,
       logger,
       embedQuery,
       vectorWarningMessage: "Embedding unavailable; fallback to FTS only",

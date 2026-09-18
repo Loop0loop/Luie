@@ -1,8 +1,60 @@
 import crypto from "node:crypto";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { MainDrizzleClient } from "../../../infra/database/index.js";
-import { chapterBody } from "../../../infra/database/index.js";
+import {
+  chapterBody,
+  memoryBuildJob,
+  searchDirtyQueue,
+} from "../../../infra/database/index.js";
 import { ENTITY_RELATION_WORLD_TYPES } from "../../../infra/database/index.js";
+import { retryableMemoryBuildJobCondition } from "../memory/projection/jobPolicy.js";
+
+const LONG_PENDING_THRESHOLD_MS = 60_000;
+
+export const buildPendingMemoryProjectsQuery = (
+  limit: number,
+  nowMs = Date.now(),
+) => sql`
+  SELECT "projectId"
+  FROM "MemoryBuildJob" INDEXED BY "MemoryBuildJob_global_runnable_idx"
+  WHERE ${retryableMemoryBuildJobCondition(nowMs)}
+  GROUP BY "projectId"
+  ORDER BY max("updatedAt") DESC
+  LIMIT ${limit};
+`;
+
+export async function getLongPendingStats(client: MainDrizzleClient): Promise<{
+  searchLongPendingCount: number;
+  memoryLongPendingCount: number;
+}> {
+  const cutoffIso = new Date(
+    Date.now() - LONG_PENDING_THRESHOLD_MS,
+  ).toISOString();
+  const [searchRows, memoryRows] = await Promise.all([
+    client
+      .select({ count: sql<number>`count(*)` })
+      .from(searchDirtyQueue)
+      .where(
+        and(
+          eq(searchDirtyQueue.status, "pending"),
+          sql`${searchDirtyQueue.updatedAt} <= ${cutoffIso}`,
+        ),
+      ),
+    client
+      .select({ count: sql<number>`count(*)` })
+      .from(memoryBuildJob)
+      .where(
+        and(
+          eq(memoryBuildJob.status, "pending"),
+          sql`${memoryBuildJob.updatedAt} <= ${cutoffIso}`,
+        ),
+      ),
+  ]);
+  return {
+    searchLongPendingCount: Number(searchRows[0]?.count ?? 0),
+    memoryLongPendingCount: Number(memoryRows[0]?.count ?? 0),
+  };
+}
 
 function hash(input: string): string {
   return crypto.createHash("sha256").update(input).digest("hex");

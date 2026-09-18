@@ -68,7 +68,9 @@ export const exportProjectPackageWithOptions = async (input: {
     worldSourcePath?: string | null;
   };
 }): Promise<boolean> => {
-  const project = await getProjectForExport(input.projectId);
+  const snapshotExportLimit =
+    settingsManager.getAll().snapshotExportLimit ?? SNAPSHOT_FILE_KEEP_COUNT;
+  const project = await getProjectForExport(input.projectId, snapshotExportLimit);
   if (!project) return false;
   const attachedProjectPath = await getProjectAttachmentPath(input.projectId);
 
@@ -85,8 +87,6 @@ export const exportProjectPackageWithOptions = async (input: {
   const { exportChapters, chapterMeta } = buildExportChapterData(project.chapters);
   const characters = buildExportCharacterData(project.characters);
   const terms = buildExportTermData(project.terms);
-  const snapshotExportLimit =
-    settingsManager.getAll().snapshotExportLimit ?? SNAPSHOT_FILE_KEEP_COUNT;
   const snapshots = buildExportSnapshotData(project.snapshots, snapshotExportLimit);
   const memory = await buildMemoryCanonicalPackagePayload(input.projectId);
   const replicaWorld = await readWorldPayloadFromReplica(input.projectId, input.logger);
@@ -98,7 +98,7 @@ export const exportProjectPackageWithOptions = async (input: {
     "memos",
     "graph",
   ] as Array<keyof ParsedWorldPayload>).filter(
-    (docType) => !replicaWorld[docType].found,
+    (docType) => !replicaWorld[docType].found && !replicaWorld[docType].deleted,
   );
   const parsedWorld =
     worldSourcePath === null || missingPackageDocTypes.length === 0
@@ -111,22 +111,34 @@ export const exportProjectPackageWithOptions = async (input: {
 
   const synopsis = buildWorldSynopsis(
     project,
-    replicaWorld.synopsis.found ? replicaWorld.synopsis.parsed : parsedWorld.synopsis,
+    replicaWorld.synopsis.found || replicaWorld.synopsis.deleted
+      ? replicaWorld.synopsis.parsed
+      : parsedWorld.synopsis,
   );
   const plot = buildWorldPlot(
-    replicaWorld.plot.found ? replicaWorld.plot.parsed : parsedWorld.plot,
+    replicaWorld.plot.found || replicaWorld.plot.deleted
+      ? replicaWorld.plot.parsed
+      : parsedWorld.plot,
   );
   const drawing = buildWorldDrawing(
-    replicaWorld.drawing.found ? replicaWorld.drawing.parsed : parsedWorld.drawing,
+    replicaWorld.drawing.found || replicaWorld.drawing.deleted
+      ? replicaWorld.drawing.parsed
+      : parsedWorld.drawing,
   );
   const mindmap = buildWorldMindmap(
-    replicaWorld.mindmap.found ? replicaWorld.mindmap.parsed : parsedWorld.mindmap,
+    replicaWorld.mindmap.found || replicaWorld.mindmap.deleted
+      ? replicaWorld.mindmap.parsed
+      : parsedWorld.mindmap,
   );
   const memos = buildWorldScrapMemos(
-    replicaWorld.memos.found ? replicaWorld.memos.parsed : parsedWorld.memos,
+    replicaWorld.memos.found || replicaWorld.memos.deleted
+      ? replicaWorld.memos.parsed
+      : parsedWorld.memos,
   );
   const graphLayout =
-    replicaWorld.graph.found ? replicaWorld.graph.parsed : parsedWorld.graph;
+    replicaWorld.graph.found || replicaWorld.graph.deleted
+      ? replicaWorld.graph.parsed
+      : parsedWorld.graph;
   const graph = graphLayout.success
     ? mergeWorldGraphLayout(buildWorldGraph(project), graphLayout.data)
     : buildWorldGraph(project);

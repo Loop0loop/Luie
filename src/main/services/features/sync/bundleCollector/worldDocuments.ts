@@ -51,6 +51,7 @@ export const addWorldDocumentRecord = (
   docType: WorldDocumentType,
   payload: unknown,
   updatedAtFallback: string,
+  deletedAt?: string | null,
 ): void => {
   bundle.worldDocuments.push({
     id: `${projectId}:${docType}`,
@@ -58,7 +59,10 @@ export const addWorldDocumentRecord = (
     projectId,
     docType,
     payload,
-    updatedAt: toWorldUpdatedAt(payload) ?? updatedAtFallback,
+    updatedAt: deletedAt
+      ? updatedAtFallback
+      : (toWorldUpdatedAt(payload) ?? updatedAtFallback),
+    deletedAt,
   });
 };
 
@@ -124,15 +128,40 @@ export const collectReplicaWorldDocuments = (
   projectRow: Record<string, unknown>,
   projectId: string,
   logger: LoggerLike,
-): Map<WorldDocumentType, unknown> => {
-  const collected = new Map<WorldDocumentType, unknown>();
+): {
+  active: Map<WorldDocumentType, unknown>;
+  deleted: Map<
+    WorldDocumentType,
+    { payload: unknown; updatedAt: string; deletedAt: string }
+  >;
+} => {
+  const active = new Map<WorldDocumentType, unknown>();
+  const deleted = new Map<
+    WorldDocumentType,
+    { payload: unknown; updatedAt: string; deletedAt: string }
+  >();
   const rows = Array.isArray(projectRow.worldDocuments)
     ? (projectRow.worldDocuments as Array<Record<string, unknown>>)
     : [];
 
   for (const row of rows) {
     const docType = toNullableString(row.docType);
-    if (!docType || !isWorldDocumentType(docType) || collected.has(docType)) {
+    if (
+      !docType ||
+      !isWorldDocumentType(docType) ||
+      active.has(docType) ||
+      deleted.has(docType)
+    ) {
+      continue;
+    }
+
+    const deletedAt = toNullableString(row.deletedAt);
+    if (deletedAt) {
+      deleted.set(docType, {
+        payload: parseWorldJsonSafely(toNullableString(row.payload)) ?? {},
+        updatedAt: toIsoString(row.updatedAt),
+        deletedAt,
+      });
       continue;
     }
 
@@ -151,10 +180,10 @@ export const collectReplicaWorldDocuments = (
       continue;
     }
 
-    collected.set(docType, parsed);
+    active.set(docType, parsed);
   }
 
-  return collected;
+  return { active, deleted };
 };
 
 export const appendReplicaScrapMemoRecords = (

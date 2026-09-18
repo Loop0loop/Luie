@@ -1,34 +1,11 @@
-# SHARED BOUNDARY KNOWLEDGE BASE
+# Shared 계약
 
-## OVERVIEW
+`README.md`의 taxonomy를 기준으로 배치한다.
 
-`src/shared` is the cross-process contract boundary: IPC channels, schemas, constants, shared DTO/types, logging, and renderer-safe shared UI/hooks.
+- `contracts/`, `api/`, `ipc/`, `schemas/`: 프로세스 경계의 진입점·타입·채널·응답·검증.
+- `types/`, `constants/`, `utils/`, `world/`: 공유 DTO·상수·순수 계산/codec. renderer가 소비하는 모듈에 Node/Electron 의존이나 process별 초기화 부작용을 넣지 않는다.
+- `ui/`, `hooks/`: renderer-safe 공유 UI. 여러 feature에 걸친 renderer 상태 로직은 `src/renderer/src/shared/`에 둔다.
 
-## WHERE TO LOOK
+공개 계약 변경은 main/preload/renderer 소비자와 persist·파일 호환성까지 추적한다. 기존 재노출 경로를 제거할 때는 호출자를 확인한다. 새 IPC 채널은 handler 등록·스키마와 preload 노출까지 맞춘다.
 
-| Task                         | Location                             | Notes                                                    |
-| ---------------------------- | ------------------------------------ | -------------------------------------------------------- |
-| Add IPC channel              | `ipc/channels.ts`, `ipc/response.ts` | Update map + typed response contracts together           |
-| Add shared API contracts     | `contracts/`, `api/`                 | Prefer contract-first path for preload-renderer boundary |
-| Add shared validation        | `schemas/`                           | Keep payload checks centralized                          |
-| Shared constants and paths   | `constants/`                         | Cross-process safe values only                           |
-| Shared logging/observability | `logger/`                            | Structured events reused in main + renderer              |
-| Shared UI primitives         | `ui/`, `hooks/`                      | Renderer-safe only; no Node/Electron direct access       |
-
-## CONVENTIONS
-
-- This directory is the stable interface between main/preload/renderer.
-- Prefer adding new boundary changes here before touching process-specific code.
-- Keep modules platform-agnostic where possible (especially `types`, `utils`, `world`).
-- Preserve alias usage (`@shared/*`) to avoid brittle relative imports.
-
-## ANTI-PATTERNS
-
-- Don’t import main-process-only modules from shared UI/hooks.
-- Don’t create process-specific side effects in shared constants/types files.
-- Don’t add IPC channels without corresponding handler + preload coverage.
-
-## NOTES
-
-- `src/shared/README.md` documents taxonomy and renderer-owned shared exception paths.
-- Existing compatibility paths are maintained; new boundary work should prefer contract-centric modules.
+`schemas/narrative-benchmark/`, `validation/narrative-benchmark/` 변경은 여러 corpus에 영향을 준다. `corpus/AGENTS.md`의 truth·검수·revision 제약을 확인하고 새로운 검증에는 거부해야 할 입력 테스트를 포함한다.

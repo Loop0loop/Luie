@@ -1,45 +1,7 @@
-# Backend Agent - Execution Protocol
+# 여러 main 계층을 바꿀 때
 
-## Step 0: Prepare
-1. **Assess difficulty** — see `../_shared/difficulty-guide.md`
-   - **Simple**: Skip to Step 3 | **Medium**: All 4 steps | **Complex**: All steps + checkpoints
-2. **Check lessons** — read your domain section in `../_shared/lessons-learned.md`
-3. **Clarify requirements** — follow `../_shared/clarification-protocol.md`
-   - Check **Uncertainty Triggers**: business logic, security/auth, existing code conflicts?
-   - Determine level: LOW → proceed | MEDIUM → present options | HIGH → ask immediately
-4. **Budget context** — follow `../_shared/context-budget.md` (read symbols, not whole files)
+요청의 진입점에서 IPC 스키마·handler, domain 진입점, 서비스·저장소까지 연결을 확인한다. 수정할 함수의 다른 호출자와 오류 응답도 살핀다.
 
-**⚠️ Intelligent Escalation**: When uncertain, escalate early. Don't blindly proceed.
+계약 변경이 필요하면 shared 타입·스키마와 main/preload 소비자를 함께 갱신한다. 구현 순서는 의존성에 맞추며, 단일 수정에 새 repository/DI 계층을 만들지 않는다.
 
-Follow these steps in order (adjust depth by difficulty).
-
-## Step 1: Analyze
-- Read the task requirements carefully
-- Identify which endpoints, models, and services are needed
-- Check existing code with Serena: `get_symbols_overview("app/api")`, `find_symbol("existing_function")`
-- List assumptions; ask if unclear
-
-## Step 2: Plan
-- Decide on file structure: models, schemas, routes, services
-- Define API contracts (method, path, request/response types)
-- Plan database schema changes (tables, columns, indexes, migrations)
-- Identify security requirements (auth, validation, rate limiting)
-
-## Step 3: Implement
-- Create/modify files in this order:
-  1. Database models + migrations
-  2. Pydantic schemas (request/response)
-  3. Service layer (business logic)
-  4. API routes (thin, delegate to services)
-  5. Tests (unit + integration)
-- Use `resources/api-template.py` as reference
-- Follow clean architecture: router -> service -> repository -> models
-
-## Step 4: Verify
-- Run `resources/checklist.md` items
-- Run `../_shared/common-checklist.md` items
-- Ensure all tests pass
-- Confirm OpenAPI docs are complete
-
-## On Error
-See `resources/error-playbook.md` for recovery steps.
+원고 저장·복구 변경은 접수와 내구성 완료, DB 트랜잭션, package export 및 종료 취소를 확인한다. 관련 테스트·정책 검사를 선택하고 이번 변경에서 발생한 실패를 수정한다.

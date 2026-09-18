@@ -17,28 +17,13 @@ import {
 } from "./jobControl.js";
 import {
   DERIVED_JOB_MAX_ATTEMPTS,
-  DERIVED_JOB_RETRY_BASE_BACKOFF_MS,
 } from "../../../constants/memory.js";
+import { retryableMemoryBuildJobCondition } from "./projection/jobPolicy.js";
 
 const logger = createLogger("ChapterSummaryProjector");
 
 function isLlmDerivedSummaryEnabled(): boolean {
   return process.env.LUIE_ENABLE_LLM_DERIVED_SUMMARY === "1";
-}
-
-function canRetry(job: {
-  status: string;
-  attempts: number;
-  updatedAt: string;
-}): boolean {
-  if (job.status === "pending") return true;
-  if (job.status !== "failed") return false;
-  if (job.attempts >= DERIVED_JOB_MAX_ATTEMPTS) return false;
-  const updatedAtMs = Date.parse(job.updatedAt);
-  if (!Number.isFinite(updatedAtMs)) return true;
-  const backoffMs =
-    DERIVED_JOB_RETRY_BASE_BACKOFF_MS * Math.max(1, job.attempts);
-  return Date.now() - updatedAtMs >= backoffMs;
 }
 
 function trimTo200Chars(text: string): string {
@@ -72,21 +57,19 @@ export class ChapterSummaryProjector {
     const client = db.getClient();
     const limit = input.limit ?? 1;
 
-    const candidates = await client
+    const jobs = await client
       .select()
       .from(memoryBuildJob)
       .where(
         and(
           eq(memoryBuildJob.projectId, input.projectId),
           eq(memoryBuildJob.jobType, MEMORY_JOB_TYPES.REBUILD_SUMMARY),
-          inArray(memoryBuildJob.status, ["pending", "failed"]),
+          retryableMemoryBuildJobCondition(),
           eq(memoryBuildJob.targetType, MEMORY_TARGET_TYPES.CHAPTER),
         ),
       )
       .orderBy(asc(memoryBuildJob.priority), asc(memoryBuildJob.createdAt))
-      .limit(Math.max(limit * 3, 10));
-
-    const jobs = candidates.filter((job) => canRetry(job)).slice(0, limit);
+      .limit(limit);
     if (jobs.length === 0) return { queued: 0, processed: 0 };
 
     const chapterIds = jobs.map((job) => job.targetId);

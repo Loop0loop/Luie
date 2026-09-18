@@ -1,4 +1,4 @@
-import { app, screen } from "electron";
+import { app, BrowserWindow } from "electron";
 import { windowManager } from "../../../app/windows/index.js";
 import { applyTrafficLightPosition } from "../../../manager/window/windowChrome.js";
 import { IPC_CHANNELS } from "../../../../shared/ipc/channels.js";
@@ -17,103 +17,27 @@ import {
   windowSetStartupWizardSizeArgsSchema,
   windowSetTrafficLightVisibilityArgsSchema,
 } from "../../../../shared/schemas/index.js";
-import type { BrowserWindow } from "electron";
-import {
-  calculateStartupWizardExpandedBounds,
-  calculateStartupWizardInitialBounds,
-} from "../../../manager/window/windowStartupWizard.js";
+import { resizeStartupWizardWindow } from "../../../manager/window/windowStartupWizardResize.js";
 
-// 위저드 단계 전환(A 인트로 → B 테마)의 창 확장 애니메이션. 창이 커지는 동안 내용물이
-// 재배치되는 걸 따라갈 수 있도록 여유 있는 길이로 보간하고(easeOutCubic), 프레임마다
-// 시작 중심점 기준으로 bounds를 잡아 폭이 커질 때 창이 한쪽으로 늘어나 보이지 않게 한다.
-const WIZARD_RESIZE_ANIMATION_MS = 800;
-const WIZARD_RESIZE_TICK_MS = 16;
-
-let wizardResizeTimer: ReturnType<typeof setTimeout> | null = null;
-
-// 디스플레이 작업 영역(workArea) 내에서 대상 영역을 계산한다.
-// 1. 음수 크기(-1, -1 등): A 인트로/모델 단계의 초기 콤팩트 bounds로 복원
-// 2. 최대 크기(4000 이상 또는 workArea 이상): 여백 없이 workArea 100% 채움
-// 3. 가로형 확장 프리뷰(1200 이상): 화면 82% 비율 + clamp 기반 동적 bounds 적용
-// 4. 기타 크기: workArea 내 중앙 정렬
-const getTargetWizardBounds = (
-  win: BrowserWindow,
-  width: number,
-  height: number,
-): { x: number; y: number; width: number; height: number } => {
-  if (width < 0 || height < 0) {
-    const initial = calculateStartupWizardInitialBounds(win);
-    return {
-      x: initial.x,
-      y: initial.y,
-      width: initial.width,
-      height: initial.height,
-    };
-  }
-
-  const workArea = screen.getDisplayMatching(win.getBounds()).workArea;
-
-  if (width >= 4000 || (width >= workArea.width && height >= workArea.height)) {
-    return {
-      x: workArea.x,
-      y: workArea.y,
-      width: workArea.width,
-      height: workArea.height,
-    };
-  }
-
-  if (width >= 1200 || (width === 0 && height === 0)) {
-    return calculateStartupWizardExpandedBounds(win);
-  }
-
-  const clampedWidth = Math.min(width, workArea.width);
-  const clampedHeight = Math.min(height, workArea.height);
-
-  return {
-    x: Math.round(workArea.x + (workArea.width - clampedWidth) / 2),
-    y: Math.round(workArea.y + (workArea.height - clampedHeight) / 2),
-    width: clampedWidth,
-    height: clampedHeight,
-  };
-};
-
-const animateWizardResize = (
-  win: BrowserWindow,
-  target: { x: number; y: number; width: number; height: number },
-): void => {
-  if (wizardResizeTimer) clearTimeout(wizardResizeTimer);
-
-  const [startWidth, startHeight] = win.getSize();
-  const [startX, startY] = win.getPosition();
-  const startedAt = Date.now();
-
-  const tick = () => {
-    const progress = Math.min(
-      1,
-      (Date.now() - startedAt) / WIZARD_RESIZE_ANIMATION_MS,
-    );
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const width = Math.round(startWidth + (target.width - startWidth) * eased);
-    const height = Math.round(
-      startHeight + (target.height - startHeight) * eased,
-    );
-    const x = Math.round(startX + (target.x - startX) * eased);
-    const y = Math.round(startY + (target.y - startY) * eased);
-
-    win.setBounds({
-      x,
-      y,
-      width,
-      height,
-    });
-
-    if (progress < 1) {
-      wizardResizeTimer = setTimeout(tick, WIZARD_RESIZE_TICK_MS);
-    } else {
-      wizardResizeTimer = null;
+// NOTE: 창 제어 채널(minimize/maximize/unmaximize/close)은 "호출한 렌더러가 속한
+// 창"을 대상으로 해야 한다(메인·내보내기 창 동시 실행 대응). 핸들러 규약상 event를
+// 받지 못하므로 포커스된 창으로 호출 주체를 판정한다 — 버튼/단축키는 클릭·포커스된
+// 창의 렌더러에서 발화하므로 성립한다. 포커스를 잃은 비정상 경로의 폴백으로, 시작
+// 위저드는 메인 창 이전에 단독으로 뜨고(appReady의 wizard-first 플로우) 완료 후에는
+// 메인 창 준비 직전까지 공존하는 짧은 교체 전환 구간이 있다 — 이때는 포커스 판정이
+// 우선이고 위저드 폴백은 그 다음이다.
+const resolveWindowControlTarget = (): BrowserWindow | null => {
+  if (typeof BrowserWindow.getFocusedWindow === "function") {
+    const focused = BrowserWindow.getFocusedWindow();
+    if (focused && !focused.isDestroyed()) {
+      return focused;
     }
-  };
-  tick();
+  }
+  const wizard = windowManager.getStartupWizardWindow();
+  if (wizard && !wizard.isDestroyed()) {
+    return wizard;
+  }
+  return windowManager.getMainWindow();
 };
 
 export function registerWindowIPCHandlers(logger: LoggerLike): void {
@@ -124,7 +48,7 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       failMessage: "Failed to close window",
       handler: () => {
         logger.info("WINDOW_CLOSE requested from renderer");
-        const win = windowManager.getMainWindow();
+        const win = resolveWindowControlTarget();
         if (!win) return false;
         win.close();
         return true;
@@ -199,14 +123,39 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       },
     },
     {
+      channel: IPC_CHANNELS.WINDOW_MINIMIZE,
+      logTag: "WINDOW_MINIMIZE",
+      failMessage: "Failed to minimize window",
+      handler: () => {
+        const win = resolveWindowControlTarget();
+        if (!win) return false;
+        win.minimize();
+        return true;
+      },
+    },
+    {
       channel: IPC_CHANNELS.WINDOW_MAXIMIZE,
       logTag: "WINDOW_MAXIMIZE",
       failMessage: "Failed to maximize window",
       handler: () => {
-        const win = windowManager.getMainWindow();
+        const win = resolveWindowControlTarget();
         if (!win) return false;
         if (!win.isMaximized()) {
           win.maximize();
+        }
+        win.focus();
+        return true;
+      },
+    },
+    {
+      channel: IPC_CHANNELS.WINDOW_UNMAXIMIZE,
+      logTag: "WINDOW_UNMAXIMIZE",
+      failMessage: "Failed to unmaximize window",
+      handler: () => {
+        const win = resolveWindowControlTarget();
+        if (!win) return false;
+        if (win.isMaximized()) {
+          win.unmaximize();
         }
         win.focus();
         return true;
@@ -300,24 +249,14 @@ export function registerWindowIPCHandlers(logger: LoggerLike): void {
       logTag: "WINDOW_SET_STARTUP_WIZARD_SIZE",
       failMessage: "Failed to resize startup wizard window",
       argsSchema: windowSetStartupWizardSizeArgsSchema,
-      handler: (width: number, height: number, animate: boolean) => {
-        // NOTE: 위저드 단계 전환(A 인트로 → B 테마)에 맞춘 리사이즈다. 메인 창이
-        // 아니라 위저드 창을 움직여야 하므로 전용 접근자를 쓴다. 애니메이션은
-        // renderer의 enableAnimations(및 OS reduced-motion) 판정을 그대로 받는다.
-        const win = windowManager.getStartupWizardWindow();
-        if (!win) return false;
-        const targetBounds = getTargetWizardBounds(win, width, height);
-        if (!animate) {
-          if (wizardResizeTimer) {
-            clearTimeout(wizardResizeTimer);
-            wizardResizeTimer = null;
-          }
-          win.setBounds(targetBounds);
-          return true;
-        }
-        animateWizardResize(win, targetBounds);
-        return true;
-      },
+      handler: (width: number, height: number, animate: boolean) =>
+        resizeStartupWizardWindow(
+          windowManager.getStartupWizardWindow(),
+          width,
+          height,
+          animate,
+          logger,
+        ),
     },
   ]);
 }

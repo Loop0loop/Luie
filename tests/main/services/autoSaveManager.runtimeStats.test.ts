@@ -5,7 +5,8 @@ const updateChapterMock = vi.fn();
 const createSnapshotMock = vi.fn();
 const deleteOldSnapshotsMock = vi.fn();
 
-vi.mock("../../../src/main/database/index.js", () => ({
+vi.mock("../../../src/main/infra/database/index.js", () => ({
+  chapter: {},
   db: {
     getClient: () => ({
       chapter: {
@@ -15,21 +16,18 @@ vi.mock("../../../src/main/database/index.js", () => ({
   },
 }));
 
-vi.mock("../../../src/main/services/features/manuscript/chapterService.js", () => ({
+vi.mock("../../../src/main/domains/manuscript/index.js", () => ({
   chapterService: {
     updateChapter: updateChapterMock,
   },
 }));
 
-vi.mock(
-  "../../../src/main/services/features/snapshot/snapshotService.js",
-  () => ({
-    snapshotService: {
-      createSnapshot: createSnapshotMock,
-      deleteOldSnapshots: deleteOldSnapshotsMock,
-    },
-  }),
-);
+vi.mock("../../../src/main/domains/recovery/index.js", () => ({
+  snapshotService: {
+    createSnapshot: createSnapshotMock,
+    deleteOldSnapshots: deleteOldSnapshotsMock,
+  },
+}));
 
 describe("AutoSaveManager runtime stats", () => {
   beforeEach(() => {
@@ -78,6 +76,10 @@ describe("AutoSaveManager runtime stats", () => {
     expect(after.saveStarted - before.saveStarted).toBe(1);
     expect(after.saveSucceeded - before.saveSucceeded).toBe(1);
     expect(after.averageQueueDelayMs).toBeGreaterThanOrEqual(0);
+    expect(updateChapterMock).toHaveBeenCalledWith(
+      { id: "chapter-1", content: "x".repeat(300) },
+      { revisionReason: "manual_save" },
+    );
 
     autoSaveManager.clearProject("project-1");
   });
@@ -112,6 +114,10 @@ describe("AutoSaveManager runtime stats", () => {
     expect(
       after.duplicateTriggers - before.duplicateTriggers,
     ).toBeGreaterThanOrEqual(1);
+    expect(updateChapterMock).toHaveBeenCalledWith(
+      { id: "chapter-2", content: "y".repeat(300) },
+      { revisionReason: "autosave" },
+    );
 
     autoSaveManager.clearProject("project-2");
   });

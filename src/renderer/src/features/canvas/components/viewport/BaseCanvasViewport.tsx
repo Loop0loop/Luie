@@ -167,34 +167,26 @@ export default function BaseCanvasViewport({
     [currentProjectId, createRelation],
   );
 
-  const deleteGraphNode = useWorldBuildingStore((s) => s.deleteGraphNode);
-  const deleteRelation = useWorldBuildingStore((s) => s.deleteRelation);
+  const deleteGraphNodes = useWorldBuildingStore((s) => s.deleteGraphNodes);
+  const deleteRelations = useWorldBuildingStore((s) => s.deleteRelations);
 
-  // NOTE: 두 삭제 모두 프로젝트 그래프 문서를 통째로 다시 쓴다(persistGraphDocument).
-  // 병렬로 실행하면 각 호출이 자기 시점의 스냅샷을 저장해 마지막 것만 남는다.
-  // reduce로 chain을 만들어 loop 안 await 없이 순차 실행을 보장한다.
   const onNodesDelete = useCallback(
     async (deletedNodes: Node[]) => {
-      await deletedNodes.reduce<Promise<unknown>>(
-        (chain, node) => chain.then(() => deleteGraphNode(node.id)),
-        Promise.resolve(),
-      );
+      await deleteGraphNodes(deletedNodes.map((node) => node.id));
       clearSelection();
     },
-    [deleteGraphNode, clearSelection],
+    [deleteGraphNodes, clearSelection],
   );
 
   const onEdgesDelete = useCallback(
     async (deletedEdges: Edge[]) => {
       // NOTE: canvasFlowAdapter가 edge id에 `rel-` 접두사를 붙인다. 그대로 넘기면
       // 존재하지 않는 id로 삭제를 시도해 캔버스에서만 사라지고 저장은 남는다.
-      await deletedEdges.reduce<Promise<unknown>>(
-        (chain, edge) =>
-          chain.then(() => deleteRelation(edge.data?.rawId ?? edge.id)),
-        Promise.resolve(),
+      await deleteRelations(
+        deletedEdges.map((edge) => edge.data?.rawId ?? edge.id),
       );
     },
-    [deleteRelation],
+    [deleteRelations],
   );
 
   return (

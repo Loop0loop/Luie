@@ -1,10 +1,17 @@
 import type { LuiePackageExportData } from "../../io/luiePackageTypes.js";
-import { inArray } from "drizzle-orm";
-import { db } from "../../../infra/database/index.js";
-import { project } from "../../../infra/database/index.js";
+import { parseWorldJsonSafely } from "../../../../shared/world/worldDocumentCodec.js";
+import { and, eq, inArray } from "drizzle-orm";
+import {
+  chapter,
+  chapterBody,
+  db,
+  project,
+  type DbLike,
+  worldDocument,
+} from "../../../infra/database/index.js";
 import {
   applyChapterTombstones,
-  applyReplicaWorldState,
+  applyReplicaWorldDelta,
   applyProjectDeletes,
   collectDeletedProjectIds,
   upsertChapter,
@@ -15,17 +22,162 @@ import {
   upsertTerms,
 } from "./syncLocalApply.js";
 import { applyMemoryCanonicalSyncRows } from "./syncMemoryCanonicalApply.js";
-import {
-  buildProjectPackagePayload as buildProjectPackagePayloadImpl,
-  persistBundleToLuiePackages,
-} from "./syncPackagePersistence.js";
+import { buildProjectPackagePayload as buildProjectPackagePayloadImpl } from "./syncPackagePersistence.js";
+import { projectService } from "../project/projectService.js";
 import type { SyncBundle } from "./syncMapper.js";
+import {
+  collectSyncBundleProjectIds,
+  filterSyncBundleByProjectIds,
+} from "./syncDelta.js";
 
 export type SyncCapturedRevisions = ReadonlyMap<string, number>;
+
+export type SyncLocalApplyResult =
+  | { status: "applied" }
+  | {
+      status: "local-changed";
+      chapterIds: string[];
+      entityKeys?: string[];
+    };
 
 type LoggerLike = {
   warn: (message: string, details?: unknown) => void;
   error: (message: string, details?: unknown) => void;
+};
+
+const findChangedChaptersSinceSnapshot = (
+  tx: DbLike,
+  chapterIds: string[],
+  snapshot: SyncBundle["chapters"],
+): string[] => {
+  const snapshotById = new Map(snapshot.map((row) => [row.id, row]));
+  const changed: string[] = [];
+
+  for (const chapterId of chapterIds) {
+    const before = snapshotById.get(chapterId);
+    const current = tx
+      .select({
+        id: chapter.id,
+        projectId: chapter.projectId,
+        title: chapter.title,
+        content: chapter.content,
+        synopsis: chapter.synopsis,
+        order: chapter.order,
+        wordCount: chapter.wordCount,
+        updatedAt: chapter.updatedAt,
+        deletedAt: chapter.deletedAt,
+      })
+      .from(chapter)
+      .where(eq(chapter.id, chapterId))
+      .limit(1)
+      .get();
+    const currentBody = current
+      ? tx
+          .select({ content: chapterBody.content })
+          .from(chapterBody)
+          .where(eq(chapterBody.chapterId, chapterId))
+          .limit(1)
+          .get()
+      : undefined;
+
+    if (
+      (!before && current) ||
+      (before &&
+        (!current ||
+          current.projectId !== before.projectId ||
+          current.title !== before.title ||
+          (currentBody?.content ?? current.content) !== before.content ||
+          (current.synopsis ?? null) !== (before.synopsis ?? null) ||
+          current.order !== before.order ||
+          current.wordCount !== before.wordCount ||
+          String(current.updatedAt) !== before.updatedAt ||
+          (current.deletedAt ? String(current.deletedAt) : null) !==
+            (before.deletedAt ?? null)))
+    ) {
+      changed.push(chapterId);
+    }
+  }
+
+  return changed;
+};
+
+const findChangedWorldDocumentsSinceSnapshot = (
+  tx: DbLike,
+  keys: Array<{
+    projectId: string;
+    docType: SyncBundle["worldDocuments"][number]["docType"];
+  }>,
+  snapshot: SyncBundle["worldDocuments"],
+): string[] => {
+  const snapshotByKey = new Map(
+    snapshot.map((row) => [`${row.projectId}:${row.docType}`, row]),
+  );
+  const changed: string[] = [];
+
+  for (const { projectId, docType } of keys) {
+    const key = `${projectId}:${docType}`;
+    const before = snapshotByKey.get(key);
+    const current = tx
+      .select({
+        payload: worldDocument.payload,
+        updatedAt: worldDocument.updatedAt,
+        deletedAt: worldDocument.deletedAt,
+      })
+      .from(worldDocument)
+      .where(
+        and(
+          eq(worldDocument.projectId, projectId),
+          eq(worldDocument.docType, docType),
+        ),
+      )
+      .limit(1)
+      .get();
+    const currentPayload = current
+      ? parseWorldJsonSafely(current.payload)
+      : undefined;
+
+    if (
+      (!before && current) ||
+      (before &&
+        (!current ||
+          JSON.stringify(currentPayload) !== JSON.stringify(before.payload) ||
+          String(current.updatedAt) !== before.updatedAt ||
+          (current.deletedAt ? String(current.deletedAt) : null) !==
+            (before.deletedAt ?? null)))
+    ) {
+      changed.push(`world:${key}`);
+    }
+  }
+
+  return changed;
+};
+
+const findChangedDeletedProjectsSinceSnapshot = (
+  tx: DbLike,
+  projectIds: Set<string>,
+  snapshot: SyncBundle,
+): string[] => {
+  const snapshotById = new Map(snapshot.projects.map((row) => [row.id, row]));
+  const changed: string[] = [];
+  for (const projectId of projectIds) {
+    const before = snapshotById.get(projectId);
+    const current = tx
+      .select({ revision: project.revision })
+      .from(project)
+      .where(eq(project.id, projectId))
+      .limit(1)
+      .get();
+    if (
+      (!before && current) ||
+      (before &&
+        (!current ||
+          (before.localRevision !== undefined &&
+            current.revision !== before.localRevision)))
+    ) {
+      changed.push(`project:${projectId}`);
+    }
+  }
+  return changed;
 };
 
 export const buildSyncProjectPackagePayload = async (input: {
@@ -59,6 +211,8 @@ export const buildSyncProjectPackagePayload = async (input: {
 
 export const applyMergedBundleToLocalFirstLuie = async (input: {
   bundle: SyncBundle;
+  packageBundle?: SyncBundle;
+  localSnapshot?: SyncBundle;
   hydrateMissingWorldDocsFromPackage: (
     worldDocs: Map<SyncBundle["worldDocuments"][number]["docType"], unknown>,
     projectPath: string,
@@ -77,23 +231,58 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
     }>;
   }) => Promise<LuiePackageExportData | null>;
   logger: LoggerLike;
-}): Promise<void> => {
+}): Promise<SyncLocalApplyResult> => {
   const client = db.getClient();
   const deletedProjectIds = collectDeletedProjectIds(input.bundle);
-  const bundleProjectIds = input.bundle.projects.map((project) => project.id);
+  const affectedProjectIds = collectSyncBundleProjectIds(input.bundle);
+  const bundleProjectIds = [...affectedProjectIds];
+  const packageBundle = filterSyncBundleByProjectIds(
+    input.packageBundle ?? input.bundle,
+    affectedProjectIds,
+  );
   const activeProjectIds = [
     ...new Set(
-      input.bundle.projects
+      packageBundle.projects
         .filter(
-          (project) =>
-            !project.deletedAt && !deletedProjectIds.has(project.id),
+          (project) => !project.deletedAt && !deletedProjectIds.has(project.id),
         )
         .map((project) => project.id),
     ),
   ];
   let capturedRevisions: SyncCapturedRevisions;
   try {
-    capturedRevisions = client.transaction((tx) => {
+    const transactionResult = client.transaction((tx) => {
+      if (input.localSnapshot) {
+        const changedProjectKeys = findChangedDeletedProjectsSinceSnapshot(
+          tx,
+          deletedProjectIds,
+          input.localSnapshot,
+        );
+        const changedChapterIds = findChangedChaptersSinceSnapshot(
+          tx,
+          input.bundle.chapters.map((row) => row.id),
+          input.localSnapshot.chapters,
+        );
+        const changedWorldKeys = findChangedWorldDocumentsSinceSnapshot(
+          tx,
+          input.bundle.worldDocuments,
+          input.localSnapshot.worldDocuments,
+        );
+        const changedEntityKeys = [
+          ...changedProjectKeys,
+          ...changedWorldKeys,
+        ];
+        if (changedChapterIds.length > 0 || changedEntityKeys.length > 0) {
+          return {
+            status: "local-changed" as const,
+            chapterIds: changedChapterIds,
+            ...(changedEntityKeys.length > 0
+              ? { entityKeys: changedEntityKeys }
+              : {}),
+          };
+        }
+      }
+
       applyProjectDeletes(tx, deletedProjectIds);
       upsertProjects(tx, input.bundle.projects, deletedProjectIds);
 
@@ -106,11 +295,18 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
       upsertEvents(tx, input.bundle.events, deletedProjectIds);
       upsertFactions(tx, input.bundle.factions, deletedProjectIds);
       upsertTerms(tx, input.bundle.terms, deletedProjectIds);
-      applyReplicaWorldState(tx, input.bundle, deletedProjectIds);
+      applyReplicaWorldDelta(
+        tx,
+        input.bundle,
+        input.packageBundle ?? input.bundle,
+        deletedProjectIds,
+      );
       applyChapterTombstones(tx, input.bundle.tombstones, deletedProjectIds);
       applyMemoryCanonicalSyncRows(tx, input.bundle, deletedProjectIds);
 
-      if (activeProjectIds.length === 0) return new Map();
+      if (activeProjectIds.length === 0) {
+        return { status: "applied" as const, revisions: new Map() };
+      }
       const rows = tx
         .select({ id: project.id, revision: project.revision })
         .from(project)
@@ -119,8 +315,15 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
       if (rows.length !== activeProjectIds.length) {
         throw new Error("SYNC_PROJECT_REVISION_CAPTURE_INCOMPLETE");
       }
-      return new Map(rows.map((row) => [row.id, row.revision]));
+      return {
+        status: "applied" as const,
+        revisions: new Map(rows.map((row) => [row.id, row.revision])),
+      };
     });
+    if (transactionResult.status === "local-changed") {
+      return transactionResult;
+    }
+    capturedRevisions = transactionResult.revisions;
   } catch (error) {
     input.logger.error(
       "Failed to apply merged bundle to DB cache before .luie persistence",
@@ -135,12 +338,25 @@ export const applyMergedBundleToLocalFirstLuie = async (input: {
     );
   }
 
-  await persistBundleToLuiePackages({
-    bundle: input.bundle,
-    capturedRevisions,
-    hydrateMissingWorldDocsFromPackage:
-      input.hydrateMissingWorldDocsFromPackage,
-    buildProjectPackagePayload: input.buildProjectPackagePayload,
-    logger: input.logger,
-  });
+  const failedProjects: string[] = [];
+  for (const projectId of capturedRevisions.keys()) {
+    try {
+      const exported = await projectService.exportProjectPackageNow(
+        projectId,
+        "sync",
+      );
+      if (!exported) throw new Error("SYNC_PACKAGE_EXPORT_RETURNED_FALSE");
+    } catch (error) {
+      failedProjects.push(projectId);
+      projectService.schedulePackageExport(projectId, "sync:retry");
+      input.logger.error("Failed to export authoritative sync package", {
+        projectId,
+        error,
+      });
+    }
+  }
+  if (failedProjects.length > 0) {
+    throw new Error(`SYNC_LUIE_PERSIST_FAILED:${failedProjects.join(",")}`);
+  }
+  return { status: "applied" };
 };

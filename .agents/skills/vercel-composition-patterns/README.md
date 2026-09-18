@@ -1,60 +1,7 @@
-# React Composition Patterns
+# React 구성 자료
 
-A structured repository for React composition patterns that scale. These
-patterns help avoid boolean prop proliferation by using compound components,
-lifting state, and composing internals.
+Vercel 원본 패턴의 로컬 참고 자료다. Luie 적용 범위와 선택 기준은 [SKILL.md](SKILL.md)에 있다.
 
-## Structure
+개별 예시는 `rules/`, 전체 모음은 `AGENTS.md`에 있다. 실제 variant·상태 소유권 문제를 해결할 때 필요한 항목만 선택한다. 앱 코드에 provider·compound component 구조를 일괄 강제하지 않는다.
 
-- `rules/` - Individual rule files (one per rule)
-  - `_sections.md` - Section metadata (titles, impacts, descriptions)
-  - `_template.md` - Template for creating new rules
-  - `area-description.md` - Individual rule files
-- `metadata.json` - Document metadata (version, organization, abstract)
-- **`AGENTS.md`** - Compiled output (generated)
-
-## Rules
-
-### Component Architecture (CRITICAL)
-
-- `architecture-avoid-boolean-props.md` - Don't add boolean props to customize
-  behavior
-- `architecture-compound-components.md` - Structure as compound components with
-  shared context
-
-### State Management (HIGH)
-
-- `state-lift-state.md` - Lift state into provider components
-- `state-context-interface.md` - Define clear context interfaces
-  (state/actions/meta)
-- `state-decouple-implementation.md` - Decouple state management from UI
-
-### Implementation Patterns (MEDIUM)
-
-- `patterns-children-over-render-props.md` - Prefer children over renderX props
-- `patterns-explicit-variants.md` - Create explicit component variants
-
-## Core Principles
-
-1. **Composition over configuration** — Instead of adding props, let consumers
-   compose
-2. **Lift your state** — State in providers, not trapped in components
-3. **Compose your internals** — Subcomponents access context, not props
-4. **Explicit variants** — Create ThreadComposer, EditComposer, not Composer
-   with isThread
-
-## Creating a New Rule
-
-1. Copy `rules/_template.md` to `rules/area-description.md`
-2. Choose the appropriate area prefix:
-   - `architecture-` for Component Architecture
-   - `state-` for State Management
-   - `patterns-` for Implementation Patterns
-3. Fill in the frontmatter and content
-4. Ensure you have clear examples with explanations
-
-## Impact Levels
-
-- `CRITICAL` - Foundational patterns, prevents unmaintainable code
-- `HIGH` - Significant maintainability improvements
-- `MEDIUM` - Good practices for cleaner code
+자료 수정 시 관련 규칙의 예시·메타데이터·참조를 맞춘다. Luie 루트의 package 명령을 별도 규칙 패키지의 생성기로 해석하지 않는다. 원본 license·attribution을 유지한다.

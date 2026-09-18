@@ -195,16 +195,22 @@ export const updateNodePositionInGraph = (
 export const removeNodeFromGraph = (
   graphData: WorldGraphData | null,
   id: string,
+): WorldGraphData | null => removeNodesFromGraph(graphData, [id]);
+
+export const removeNodesFromGraph = (
+  graphData: WorldGraphData | null,
+  ids: readonly string[],
 ): WorldGraphData | null => {
   if (!graphData) return null;
+  const removedIds = new Set(ids);
   return {
     ...graphData,
-    nodes: graphData.nodes.filter((node) => node.id !== id),
+    nodes: graphData.nodes.filter((node) => !removedIds.has(node.id)),
     edges: graphData.edges.filter(
-      (edge) => edge.sourceId !== id && edge.targetId !== id,
+      (edge) => !removedIds.has(edge.sourceId) && !removedIds.has(edge.targetId),
     ),
     canvasEdges: (graphData.canvasEdges ?? []).filter(
-      (edge) => edge.sourceId !== id && edge.targetId !== id,
+      (edge) => !removedIds.has(edge.sourceId) && !removedIds.has(edge.targetId),
     ),
   };
 };
@@ -239,11 +245,17 @@ export const replaceRelationInGraph = (
 export const removeRelationFromGraph = (
   graphData: WorldGraphData | null,
   relationId: string,
+): WorldGraphData | null => removeRelationsFromGraph(graphData, [relationId]);
+
+export const removeRelationsFromGraph = (
+  graphData: WorldGraphData | null,
+  relationIds: readonly string[],
 ): WorldGraphData | null => {
   if (!graphData) return null;
+  const removedIds = new Set(relationIds);
   return {
     ...graphData,
-    edges: graphData.edges.filter((edge) => edge.id !== relationId),
+    edges: graphData.edges.filter((edge) => !removedIds.has(edge.id)),
   };
 };
 

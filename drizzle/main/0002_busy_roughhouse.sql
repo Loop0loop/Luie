@@ -1,0 +1,1 @@
+CREATE INDEX `MemoryBuildJob_global_runnable_idx` ON `MemoryBuildJob` (`status`,`attempts`,`updatedAt`,`projectId`) WHERE "MemoryBuildJob"."status" = 'pending' OR ("MemoryBuildJob"."status" = 'failed' AND "MemoryBuildJob"."attempts" < 5);

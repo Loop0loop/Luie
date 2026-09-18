@@ -12,8 +12,10 @@ import {
 import { settingsManager } from "../settings/index.js"
 import {
   applyWindowMenuBarMode,
+  attachMaximizedStateEvents,
   createSecureWebPreferences,
   getTitleBarOptions,
+  getWindowsFramelessTitleBarOptions,
   resolveWindowIconPath,
   shouldShowMenuBar,
   resolveWindowBackgroundColor,
@@ -183,10 +185,13 @@ class WindowManager {
       backgroundColor: resolveWindowBackgroundColor(),
       ...withWindowIcon(windowIconPath),
       ...getTitleBarOptions(),
+      ...getWindowsFramelessTitleBarOptions(),
       ...(process.platform !== "darwin"
         ? { autoHideMenuBar: !shouldShowMenuBar(this.getMenuBarMode()) }
         : {}),
     })
+
+    attachMaximizedStateEvents(this.mainWindow)
 
     this.applyMenuBarMode(this.mainWindow)
     windowState.manage(this.mainWindow)

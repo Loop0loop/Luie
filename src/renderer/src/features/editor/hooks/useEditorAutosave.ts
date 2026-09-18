@@ -21,6 +21,8 @@ interface UseEditorAutosaveProps {
    * 챕터에 쓰는" 데이터 손실이 생기므로 자동/수동 저장을 모두 무시한다.
    */
   suppressed?: boolean;
+  /** React state 반영 전 TipTap 원시 버퍼를 저장 직전에 직렬화한다. */
+  flushPendingContent?: (syncState?: boolean) => string | undefined;
 }
 
 const RETRY_DELAYS = [1000, 2000, 5000];
@@ -37,6 +39,7 @@ export function useEditorAutosave({
   content,
   chapterId,
   suppressed = false,
+  flushPendingContent,
 }: UseEditorAutosaveProps) {
   const { showToast } = useToast();
   const { t } = useTranslation();
@@ -65,10 +68,15 @@ export function useEditorAutosave({
   const lastSaveErrorRef = useRef<unknown>(null);
   const hasLastSaveErrorRef = useRef(false);
   const onSaveRef = useRef(onSave);
+  const flushPendingContentRef = useRef(flushPendingContent);
 
   useEffect(() => {
     onSaveRef.current = onSave;
   }, [onSave]);
+
+  useEffect(() => {
+    flushPendingContentRef.current = flushPendingContent;
+  }, [flushPendingContent]);
 
   // NOTE: 저장이 "어느 챕터의 draft인지"는 챕터가 바뀌기 전까지 유지돼야 한다.
   // 전환 커밋 이후 effect가 다시 실행되기 전의 draft는 이전 챕터의 것이다.
@@ -211,6 +219,17 @@ export function useEditorAutosave({
     performSaveRef.current = performSave;
   }, [performSave]);
 
+  const syncPendingContent = useCallback((syncState = true) => {
+    const pendingContent = flushPendingContentRef.current?.(syncState);
+    if (pendingContent === undefined) return;
+
+    const latestDraft = latestDraftRef.current;
+    if (pendingContent === latestDraft.content) return;
+    latestDraftRef.current = { ...latestDraft, content: pendingContent };
+    lastSaveErrorRef.current = null;
+    hasLastSaveErrorRef.current = false;
+  }, []);
+
   useEffect(() => {
     const previousDraft = latestDraftRef.current;
     latestDraftRef.current = { title, content };
@@ -265,6 +284,9 @@ export function useEditorAutosave({
     clearTimerRef(debounceTimerRef);
     clearTimerRef(retryTimerRef);
 
+    // 새 chapterId가 커밋되기 전까지 editor는 이전 본문을 표시한다. 그 원시 버퍼를
+    // 먼저 반영해야 아래의 명시적 previousChapterId 저장이 마지막 입력을 보존한다.
+    if (onSaveRef.current) syncPendingContent();
     const latest = latestDraftRef.current;
     const hasUnsavedChanges =
       latest.title !== lastSavedRef.current.title ||
@@ -278,13 +300,15 @@ export function useEditorAutosave({
     }
     // 전환 창(suppressed) 동안 draft 판정이 다시 발화하지 않게 기준을 맞춘다.
     lastSavedRef.current = { title: latest.title, content: latest.content };
-  }, [chapterId]);
+  }, [chapterId, syncPendingContent]);
 
   const flushLatestDraft = useCallback(async () => {
     // 전환 창에서의 수동 저장은 옛 본문을 새 챕터에 쓸 위험이 있어 무시한다.
     if (suppressedRef.current) return;
+    if (!onSaveRef.current) return;
     clearTimerRef(debounceTimerRef);
     clearTimerRef(retryTimerRef);
+    syncPendingContent();
 
     for (;;) {
       const currentSave = currentSavePromiseRef.current;
@@ -314,7 +338,7 @@ export function useEditorAutosave({
       // eslint-disable-next-line no-await-in-loop -- save 중 들어온 최신 draft까지 순차 반영해야 한다.
       await performSaveRef.current?.(latest.title, latest.content);
     }
-  }, []);
+  }, [syncPendingContent]);
 
   useEffect(
     () => registerSaveBufferFlush(flushLatestDraft),
@@ -326,6 +350,7 @@ export function useEditorAutosave({
       clearTimerRef(debounceTimerRef);
       clearTimerRef(idleResetTimerRef);
       clearTimerRef(retryTimerRef);
+      if (onSaveRef.current) syncPendingContent(false);
       isMountedRef.current = false;
       const latestDraft = latestDraftRef.current;
       if (
@@ -337,7 +362,7 @@ export function useEditorAutosave({
       }
       retryCount.current = 0;
     };
-  }, []);
+  }, [syncPendingContent]);
 
   return { saveStatus };
 }

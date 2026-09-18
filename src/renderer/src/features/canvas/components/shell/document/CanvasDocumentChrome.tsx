@@ -1,10 +1,13 @@
 import type { CSSProperties, ReactNode } from "react";
+import { useEffect } from "react";
 import { GitBranch, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDate, getString, getStringArray, getTagValues } from "./canvasDocumentModel";
 import { useUIStore } from "@renderer/features/workspace/stores/uiStore";
+import { useWindowsWindowControlsStore } from "@renderer/app/shell/windowsWindowControlsStore";
 
 const isMacOS = navigator.userAgent.toLowerCase().includes("mac");
+const isWindows = navigator.userAgent.toLowerCase().includes("win");
 /**
  * MainLayout 좌측 토글 버튼이 사이드바 닫힐 때 `left-[92px]`로 이동한다.
  * 이 헤더도 같은 위치에 맞추기 위해 px-3(12px)를 뺀 80px을 marginLeft로 준다.
@@ -25,6 +28,22 @@ export function DocumentShell({
   const isContextOpen = useUIStore((state) => state.regions.rightPanel.open);
   const toggleLeftSidebar = useUIStore((state) => state.toggleLeftSidebar);
   const setRegionOpen = useUIStore((state) => state.setRegionOpen);
+  const setPlacement = useWindowsWindowControlsStore(
+    (state) => state.setPlacement,
+  );
+  const resetPlacement = useWindowsWindowControlsStore(
+    (state) => state.resetPlacement,
+  );
+
+  // NOTE: Windows 인앱 창 버튼을 이 헤더(h-12)의 세로 중앙에 맞춘다. 이 크롬이
+  // unmount되면 배치를 되돌려 다른 화면에 topInset이 새지 않게 한다.
+  useEffect(() => {
+    if (!isWindows) return;
+    setPlacement({ topInset: 8 });
+    return () => {
+      resetPlacement();
+    };
+  }, [setPlacement, resetPlacement]);
 
   // NOTE: macOS hiddenInset 타이틀바에서 사이드바가 닫히면 콘텐츠 영역이
   // 창 왼쪽 끝까지 확장되어 트래픽 라이트 버튼(16,16 / 너비 ~52px)과 겹친다.
@@ -60,7 +79,13 @@ export function DocumentShell({
           <span className="truncate font-medium text-fg">{title}</span>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div
+          className={`flex items-center gap-1 shrink-0 ${
+            // NOTE: Windows는 이 헤더의 우측 끝(버튼 3개 폭 132px)을 인앱 창 버튼이 덮는다.
+            // 인스펙터 토글을 버튼 왼쪽으로 밀어 겹침을 피한다.
+            isWindows ? "mr-32" : ""
+          }`}
+        >
           <button
             type="button"
             onClick={() => setRegionOpen("rightPanel", !isContextOpen)}

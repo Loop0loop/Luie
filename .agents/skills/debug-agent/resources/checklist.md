@@ -1,30 +1,9 @@
-# Debug Agent - Self-Verification Checklist
+# 회귀 검증
 
-Run through every item before submitting your fix.
+- 증상과 원인을 연결하는 코드·입력·이벤트 순서가 확인됐는가?
+- 변경 함수의 다른 호출자와 실패 경로에서도 계약이 유지되는가?
+- 요청 범위의 원인 수정이며 기존 사용자 변경을 보존했는가?
+- 관련 재현 테스트·실행 결과가 있는가? 미실행·수동 확인 범위를 구분했는가?
+- 보안·저장 버그라면 검증·실패 전파·복구를 약화하지 않았는가?
 
-## Fix Quality
-- [ ] Root cause identified (not just symptom patched)
-- [ ] Fix is minimal and focused (no unrelated changes)
-- [ ] Edge cases handled (null, empty, boundary values)
-- [ ] No new bugs introduced
-
-## Regression Test
-- [ ] Test written that fails without the fix
-- [ ] Test passes with the fix
-- [ ] Test covers the specific triggering condition
-- [ ] All existing tests still pass
-
-## Similar Patterns
-- [ ] Searched for same pattern elsewhere in codebase
-- [ ] Reported or fixed similar occurrences
-- [ ] Noted if systemic issue needs architectural fix
-
-## Documentation
-- [ ] Bug report saved to `.gemini/antigravity/brain/bugs/`
-- [ ] Root cause clearly explained
-- [ ] Prevention advice included
-- [ ] Files modified listed
-
-## Security Check (if applicable)
-- [ ] Fix doesn't introduce SQL injection, XSS, or auth bypass
-- [ ] Sensitive data not exposed in error messages or logs
+소스 전체 유사 패턴 검색, 별도 버그 보고서, 전체 suite는 영향 범위나 요청이 필요로 할 때만 추가한다.

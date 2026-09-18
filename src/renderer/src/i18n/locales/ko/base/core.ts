@@ -7,6 +7,12 @@ export const koBaseCore = {
   undo: "실행 취소",
   clear: "지우기",
   exit: "나가기",
+  windowControls: {
+    minimize: "최소화",
+    maximize: "최대화",
+    restore: "이전 크기로 복원",
+    close: "닫기",
+  },
   menu: {
     file: "파일",
     edit: "편집",

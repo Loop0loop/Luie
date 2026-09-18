@@ -67,6 +67,7 @@ export const worldDocument = sqliteTable(
     payload: text("payload").notNull(),
     createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt").notNull(),
+    deletedAt: text("deletedAt"),
   },
   (table) => [
     uniqueIndex("WorldDocument_projectId_docType_key").on(table.projectId, table.docType),

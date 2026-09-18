@@ -3,8 +3,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Editor as TiptapEditor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
+import type { Plugin } from "@tiptap/pm/state";
 import type { DecorationSet } from "@tiptap/pm/view";
 import { SmartLink } from "../../src/renderer/src/features/editor/components/extensions/SmartLink.js";
+import { smartLinkService } from "../../src/renderer/src/features/editor/services/smartLinkService.js";
 
 /**
  * 리서치 스토어 목업. 실제 zustand 인스턴스라 subscribe/getState/setState가 동작한다.
@@ -79,7 +81,7 @@ vi.mock(
  * 전역 레지스트리가 이름 충돌마다 접미사를 붙이므로("smartLink$", "smartLink$1", …) 키
  * 문자열로 정확히 찾을 수 없다. 접두사로 찾는다.
  */
-function findSmartLinkPlugin(state: { plugins: import("@tiptap/pm/state").Plugin[] }) {
+function findSmartLinkPlugin(state: { plugins: Plugin[] }) {
   return state.plugins.find((candidate) =>
     String((candidate.spec as { key?: { key?: string } }).key?.key ?? "").startsWith(
       "smartLink",
@@ -159,6 +161,16 @@ describe("SmartLink 초기 문서 스캔", () => {
 
     const attrs = getSmartLinkDecorations(editor);
     expect(attrs.map((attr) => attr["data-id"])).toEqual(["char-2"]);
+  });
+
+  it("현재 선택 같은 링크 대상 외 스토어 갱신에는 다시 스캔하지 않는다", () => {
+    const findSmartLinks = vi.spyOn(smartLinkService, "findSmartLinks");
+    editor = createEditor("<p>Hero</p>");
+    findSmartLinks.mockClear();
+
+    holders.stores.character.setState({ currentItem: { id: "char-1" } });
+
+    expect(findSmartLinks).not.toHaveBeenCalled();
   });
 
   it("자료가 비어 있으면 하이라이트 없이 빈 데코레이션을 유지한다", () => {

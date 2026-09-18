@@ -39,15 +39,19 @@ const ensureLanguageResources = async (
   i18n.addResourceBundle(language, "common", resources.common, true, true);
 };
 
-const loadAllLocaleResources = async (): Promise<
-  Record<SupportedLanguage, LocaleResources>
-> => {
-  const [ko, en, ja] = await Promise.all([
-    loadLocaleResources("ko"),
-    loadLocaleResources("en"),
-    loadLocaleResources("ja"),
-  ]);
-  return { ko, en, ja };
+// NOTE: 첫 paint는 initI18n의 await 뒤에 온다. 감지 언어 + fallback(ko) 번들만
+// 초기 주입하고 나머지 로케일은 setLanguage/loadSavedLanguagePreference의
+// ensureLanguageResources 경로로 지연 로딩한다 — 미로딩 번들 도착 전에는
+// useSuspense:false 덕분에 렌더가 막히지 않는다.
+const loadInitialLocaleResources = async (
+  language: SupportedLanguage,
+): Promise<Record<string, LocaleResources>> => {
+  const languages: SupportedLanguage[] =
+    language === "ko" ? [language] : [language, "ko"];
+  const loaded = await Promise.all(
+    languages.map(async (lng) => [lng, await loadLocaleResources(lng)] as const),
+  );
+  return Object.fromEntries(loaded);
 };
 
 const loadSavedLanguagePreference = async (): Promise<void> => {
@@ -76,18 +80,14 @@ export async function initI18n(): Promise<typeof i18n> {
   }
 
   const initialLanguage = detectInitialLanguage();
-  const allResources = await loadAllLocaleResources();
+  const initialResources = await loadInitialLocaleResources(initialLanguage);
 
   initPromise = i18n
     .use(initReactI18next)
     .use(LanguageDetector)
     .init({
       lng: initialLanguage,
-      resources: {
-        ko: allResources.ko,
-        en: allResources.en,
-        ja: allResources.ja,
-      },
+      resources: initialResources,
       fallbackLng: "ko",
       supportedLngs: SUPPORTED_LANGUAGES,
       defaultNS: "common",

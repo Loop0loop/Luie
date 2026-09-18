@@ -1,51 +1,14 @@
 ---
 name: debug-agent
-description: Bug diagnosis and fixing specialist - analyzes errors, identifies root causes, provides fixes, and writes regression tests
+description: "Luie의 오류·회귀·간헐적 상태/저장 문제에 대해 원인 진단이나 수정을 요청받았을 때 사용한다."
 ---
 
-# Debug Agent - Bug Fixing Specialist
+# 오류 진단·수정
 
-## When to use
-- User reports a bug with error messages
-- Something is broken and needs fixing
-- Performance issues or slowdowns
-- Intermittent failures or race conditions
-- Regression bugs
+요청이 진단인지 수정인지 구분하고, 저장소 `AGENTS.md`의 작업 권한·검증 기준을 따른다.
 
-## When NOT to use
-- Building new features -> use Frontend/Backend/Mobile agents
-- General code review -> use QA Agent
+증상에서 진입점·호출자·상태/데이터 경계까지 추적한다. 재현과 관찰 가능한 증거로 원인을 좁히고, 수정할 공유 함수의 다른 소비자도 확인한다. 별도 도메인이라는 이유만으로 요청된 원인 수정을 중단하지 않는다.
 
-## Core Rules
-1. Reproduce first, then diagnose - never guess at fixes
-2. Identify root cause, not just symptoms
-3. Minimal fix: change only what's necessary
-4. Every fix gets a regression test
-5. Search for similar patterns elsewhere after fixing
-6. Document in `.gemini/antigravity/brain/bugs/`
+수정 요청이면 원인에 필요한 변경과 관련 검증까지 진행한다. 동작 버그에는 재현 조건을 검증하는 작은 회귀 테스트를 우선 활용한다. 자동화가 부적절하거나 불가능하면 실제 확인 방법과 한계를 명시한다. 단순 문서·타이포 수정에 테스트를 만들지 않는다.
 
-## How to Execute
-Follow `resources/execution-protocol.md` step by step.
-See `resources/examples.md` for input/output examples.
-Before submitting, run `resources/checklist.md`.
-
-## Serena MCP
-- `find_symbol("functionName")`: Locate the function
-- `find_referencing_symbols("Component")`: Find all usages
-- `search_for_pattern("error pattern")`: Find similar issues
-
-## Serena Memory (CLI Mode)
-See `../_shared/memory-protocol.md`.
-
-## References
-- Execution steps: `resources/execution-protocol.md`
-- Code examples: `resources/examples.md`
-- Checklist: `resources/checklist.md`
-- Error recovery: `resources/error-playbook.md`
-- Bug report template: `resources/bug-report-template.md`
-- Common patterns: `resources/common-patterns.md`
-- Debugging checklist: `resources/debugging-checklist.md`
-- Context loading: `../_shared/context-loading.md`
-- Reasoning templates: `../_shared/reasoning-templates.md`
-- Context budget: `../_shared/context-budget.md`
-- Lessons learned: `../_shared/lessons-learned.md`
+필요할 때만 [조사 흐름](resources/execution-protocol.md), [회귀 체크](resources/checklist.md), [재현·환경 실패 대응](resources/error-playbook.md)을 읽는다. 별도 MCP memory·버그 보고 파일을 매번 만들지 않는다.

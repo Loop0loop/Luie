@@ -7,6 +7,12 @@ export const enBaseCore = {
   undo: "Undo",
   clear: "Clear",
   exit: "Exit",
+  windowControls: {
+    minimize: "Minimize",
+    maximize: "Maximize",
+    restore: "Restore",
+    close: "Close",
+  },
   menu: {
     file: "File",
     edit: "Edit",

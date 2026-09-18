@@ -89,11 +89,15 @@ export const flushAllPendingSaves = async (
   );
   for (const projectId of projectIds) {
     await enqueueProjectTask(projectId, async () => {
-      const pending = Array.from(pendingSaves.entries()).filter(
-        ([, entry]) => entry.projectId === projectId,
-      );
-      for (const [chapterId] of pending) {
-        await performSave(chapterId);
+      while (true) {
+        const pendingChapterIds = Array.from(pendingSaves.entries())
+          .filter(([, entry]) => entry.projectId === projectId)
+          .map(([chapterId]) => chapterId);
+        if (pendingChapterIds.length === 0) break;
+
+        for (const chapterId of pendingChapterIds) {
+          await performSave(chapterId);
+        }
       }
     });
   }

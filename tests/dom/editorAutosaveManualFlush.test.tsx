@@ -32,6 +32,7 @@ type HarnessProps = {
   title: string;
   content: string;
   onSave?: (title: string, content: string) => Promise<void>;
+  flushPendingContent?: () => string | undefined;
 };
 
 const mountedRoots = new Set<Root>();
@@ -108,6 +109,40 @@ describe("editor autosave manual flush", () => {
       vi.advanceTimersByTimeAsync(EDITOR_AUTOSAVE_DEBOUNCE_MS),
     );
     expect(onSave).toHaveBeenCalledOnce();
+  });
+
+  it("serializes the pending TipTap draft before a manual flush", async () => {
+    const onSave = vi.fn(async () => undefined);
+    const flushPendingContent = vi.fn(() => "<p>원시 최신 본문</p>");
+    mountAutosave({
+      title: "현재 제목",
+      content: "<p>이전 본문</p>",
+      onSave,
+      flushPendingContent,
+    });
+
+    await act(async () => flushSaveBuffers());
+
+    expect(flushPendingContent).toHaveBeenCalledWith(true);
+    expect(onSave).toHaveBeenCalledWith("현재 제목", "<p>원시 최신 본문</p>");
+  });
+
+  it("drains the pending TipTap draft on unmount", async () => {
+    const onSave = vi.fn(async () => undefined);
+    const root = mountAutosave({
+      title: "현재 제목",
+      content: "<p>이전 본문</p>",
+      onSave,
+      flushPendingContent: () => "<p>언마운트 직전 본문</p>",
+    });
+
+    root.unmount();
+    await act(async () => Promise.resolve());
+
+    expect(onSave).toHaveBeenCalledWith(
+      "현재 제목",
+      "<p>언마운트 직전 본문</p>",
+    );
   });
 
   it("waits for the latest draft queued behind an in-flight save", async () => {
