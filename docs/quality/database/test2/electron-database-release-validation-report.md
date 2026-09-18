@@ -4,7 +4,7 @@
 
 **PASS — 현재 source의 로컬 macOS Electron production bundle과 ad-hoc packaged startup 범위**
 
-Electron 저장·crash 검증 기준은 `a693ecdc5e5df4401447926d34c01806fd0853d5`, packaged DB 자원 계약은 `cda19209`, startup smoke는 `0f24aa0a`다. 테스트 DB, Electron `userData`, `.luie`는 격리 경로에 두고 sync를 비활성화했다. 사용자 DB와 사용자 프로젝트 파일은 사용하지 않았다.
+Electron 저장·crash 검증 기준은 `a693ecdc5e5df4401447926d34c01806fd0853d5`, chapter 본문 assertion 강화는 `99a1bac5`, packaged DB 자원 계약은 `cda19209`, startup smoke는 `0f24aa0a`다. 테스트 DB, Electron `userData`, `.luie`는 격리 경로에 두고 sync를 비활성화했다. 사용자 DB와 사용자 프로젝트 파일은 사용하지 않았다.
 
 이 결과는 Developer ID 서명·공증·설치본, Windows/Linux, 실제 embedding model, 저속·외장 볼륨, 전원 차단을 검증한 결과가 아니다.
 

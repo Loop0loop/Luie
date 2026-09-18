@@ -69,11 +69,11 @@
 
 - [X] **DB-07** 모든 원격 table 조회에 안정적 pagination과 종료 검증을 적용한다.
   - 테스트: [`db-07-remote-pagination-test-report.md`](db-07-remote-pagination-test-report.md)
-- [X] **DB-11** baseline/hash/`updatedAt`으로 변경된 row만 local apply와 remote upsert에 포함하고 후속 정확성 반례를 보정한다.
+- [X] **DB-11** baseline/hash/`updatedAt`으로 변경된 row만 local apply와 remote upsert에 포함하고 후속 정확성 반례를 3차 보정한다.
   - 구현: local/remote row delta, no-op write 생략, world/memo sibling 비변경. local apply 뒤 package는 stale merged payload 대신 `ProjectExportQueue`가 authoritative DB에서 구성한다.
-  - [X] DB-11A: world tombstone을 local DB에 보존해 즉시 export·실패 retry·DB 재연결에서 package fallback 부활을 막고 local save 시 되살린다.
-  - [X] DB-11B: apply transaction에서 current chapter와 snapshot을 비교하고, stale이면 local을 1회 재수집해 B/C conflict 또는 bounded stale 실패로 끝낸다.
-  - 테스트: [`db-11-authoritative-package-remediation-test-report.md`](db-11-authoritative-package-remediation-test-report.md), [`test2/db-11a-world-deletion-remediation-test-report.md`](test2/db-11a-world-deletion-remediation-test-report.md), [`test2/db-11b-concurrent-chapter-remediation-test-report.md`](test2/db-11b-concurrent-chapter-remediation-test-report.md)
+  - [X] DB-11A: world tombstone을 local DB와 renderer까지 보존해 package·localStorage fallback 부활을 막고 local save 시 되살린다.
+  - [X] DB-11B: apply transaction에서 current chapter·world와 snapshot을 비교한다. 프로젝트 삭제는 local-only `Project.revision` snapshot으로 모든 project-scoped row의 동시 변경을 막고, 재수집 뒤에는 삭제 시각보다 최신인 편집을 보존한다.
+  - 테스트: [`db-11-authoritative-package-remediation-test-report.md`](db-11-authoritative-package-remediation-test-report.md), [`test2/db-11a-world-deletion-remediation-test-report.md`](test2/db-11a-world-deletion-remediation-test-report.md), [`test2/db-11b-concurrent-chapter-remediation-test-report.md`](test2/db-11b-concurrent-chapter-remediation-test-report.md), [`test2/db-11c-sync-boundary-remediation-test-report.md`](test2/db-11c-sync-boundary-remediation-test-report.md)
 
 ## 후속 진행 순서
 

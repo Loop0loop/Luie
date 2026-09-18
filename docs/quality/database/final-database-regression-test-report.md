@@ -1,6 +1,6 @@
 # Database TODO 최종 회귀 테스트 보고서
 
-현재 판정: **Conditionally Stable — 코드·로컬 Electron·packaged startup 검증 완료, 배포 서명판 검증 미완료**. 2026-09-18 현재 R1/R2 통합 회귀 182건과 DB-04B·DB-06B·DB-12B 후속 회귀가 통과했고, database 누적 변경의 source LOC 위반 8건을 해소했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했고, 로컬 arm64 `.app`의 packaged resources와 main/cache DB startup도 확인했다. 기존 LOC gate 16건과 Developer ID 서명·공증·설치본, 다중 OS·저속 볼륨·실제 embedding model 검증은 남는다.
+현재 판정: **Conditionally Stable — 코드·로컬 Electron·packaged startup 검증 완료, 배포 서명판 검증 미완료**. 2026-09-18 현재 확장 R1/R2 통합 회귀 199건과 DB-11 3차·DB-04B·DB-06B·DB-12B 후속 회귀가 통과했고, database 누적 변경의 source LOC 위반 8건을 해소했다. 현재 source의 macOS Electron production bundle에서 사용자 규모 성능, 실제 `Cmd+S`, package 교체 중 강제 종료와 재시작을 검증했고, 로컬 arm64 `.app`의 packaged resources와 main/cache DB startup도 확인했다. 기존 LOC gate 16건과 Developer ID 서명·공증·설치본, 다중 OS·저속 볼륨·실제 embedding model 검증은 남는다.
 
 ## 문서 정보
 
@@ -10,7 +10,7 @@
 | 테스트 설계 기법 | ISTQB 명세 기반 테스트, 상태 전이, 경곗값 분석, 오류 추정, 회귀 테스트                         |
 | 테스트 레벨      | Unit / Component Integration / Real DB·Filesystem·Process / Actual Electron / Build            |
 | 실행일           | 2026-09-13 KST; 후속 보정·Electron 검증 2026-09-18 KST                                        |
-| 기준             | Electron 검증 `a693ecdc`; 기존 154건 실행 기준은 `0faf4fad` 위 변경                            |
+| 기준             | DB-11 3차 `e0e2954e`·`e1494023`·`7a8b4a9b`; crash 증거 `99a1bac5`; Electron 검증 `a693ecdc` |
 | 환경             | Darwin 25.6.0 arm64, Node.js v22.23.0, Electron 44.2.0, pnpm 12.3.4, worker별 임시 DB·`.luie`   |
 
 ## QA 검토 소스의 커밋 기준
@@ -27,12 +27,14 @@
 
 문서 커밋 `b76d6f0e` 뒤 작업 트리에서 DB-04 claim 전 generation 유실, DB-06 동시 FTS 중복, DB-09 대량 revision bind 실패, DB-11 stale sync package/revision, DB-12 전체 rebuild와 global history scan을 수정했다.
 
+`f1c731c8` 이후 QA 재점검에서 발견한 renderer tombstone 부활, world 동시 편집 덮어쓰기, 프로젝트 삭제 경쟁을 `e0e2954e`·`e1494023`·`7a8b4a9b`에서 보정했다. `99a1bac5`는 crash E2E의 chapter 본문 검증과 저장 공간 측정 문구를 바로잡았다.
+
 ## 기존 실행의 검증 범위
 
 | 묶음 | 실행 상태                                                                                      | 결과                    |
 | ---- | ---------------------------------------------------------------------------------------------- | ----------------------- |
-| R1   | 실제 main/cache DB, FTS/vector, transaction rollback, 300장/1,000 appearance, `.luie`, SIGKILL | 22 files, 79 tests PASS |
-| R2   | DB setup 생략, mock IPC/service/HTTP, autosave 경쟁, export queue, sync pagination/delta        | 14 files, 103 tests PASS |
+| R1   | 실제 main/cache DB, FTS/vector, transaction rollback, 300장/1,000 appearance, `.luie`, SIGKILL | 22 files, 80 tests PASS |
+| R2   | DB setup 생략, mock IPC/service/HTTP, autosave 경쟁, export queue, sync pagination/delta        | 17 files, 119 tests PASS |
 | R3   | main/cache Drizzle migration journal·schema                                                    | PASS                    |
 | R4   | 1K/3K chapter derived DB benchmark threshold                                                   | PASS                    |
 | R5   | Electron main/preload/renderer production bundle                                               | PASS                    |
@@ -41,7 +43,7 @@
 | R8   | 실제 Electron 사용자 규모·저장 지연·package crash/restart                                      | 로컬 macOS 범위 PASS    |
 | R9   | 로컬 arm64 `.app` packaged resources·main/cache DB·FTS startup                                 | ad-hoc 서명 범위 PASS   |
 
-총 회귀 결과는 **36 files, 182 tests passed**다. LOC 보정으로 3개 test file을 분리해 file 수만 늘었고 assertion 수는 같다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
+현재 확장 회귀 결과는 **39 files, 199 tests passed**다. 과거 36 files/182 tests에 DB-11 3차 actual DB·renderer·executor 회귀를 추가했다. R1과 R2에는 중복 파일이 없으며 사용자 DB와 사용자 `.luie`는 사용하지 않았다.
 
 ## 기존 실행 기록
 
@@ -75,7 +77,7 @@ pnpm exec vitest run \
 
 상태: `SKIP_DB_TEST_SETUP`을 사용하지 않았다. worker별 임시 main/cache SQLite를 초기화하고 FTS5/sqlite-vec, transaction failure trigger, 300장 FTS, 1,000 appearance bulk, revision retention, `.luie` entry transaction, child `SIGKILL` 후 startup recovery를 실행했다. sync world/memo delta에는 미변경 sibling UPDATE/DELETE를 `RAISE(ABORT)` 하는 TEMP trigger 3개를 설치했다.
 
-2026-09-18 LOC 보정 후 재실행 결과: **22 files passed, 79 tests passed**. 분리된 3개 file의 assertion을 포함한다.
+2026-09-18 DB-11 3차 보정 후 재실행 결과: **22 files passed, 80 tests passed**.
 
 초기 분류 실행에서 이 묶음 중 `chapterService`, `chapterDerivedJobs`, `chapterKeywordDispatchAfterCommit`을 비DB 묶음에 잘못 넣어 DB 초기화 전 8건이 실패했다. 실제 DB setup으로 옮긴 뒤 `chapterDerivedJobs`의 paused 보존/failed 재활성화 모순 2건을 발견했고 공통 enqueue helper를 수정했다. 최종 동일 실제 DB 범위는 모두 통과했다.
 
@@ -96,12 +98,15 @@ SKIP_DB_TEST_SETUP=1 pnpm exec vitest run \
   tests/main/services/syncMapper.test.ts \
   tests/main/services/syncRepository.test.ts \
   tests/main/services/syncService.test.ts \
-  tests/main/services/worldReplicaService.test.ts
+  tests/main/services/worldReplicaService.test.ts \
+  tests/main/services/syncRunExecutor.concurrentChapter.test.ts \
+  tests/renderer/services/worldPackageStorage.test.ts \
+  tests/renderer/services/worldPackageStorage.tombstone.test.ts
 ```
 
 상태: 실제 DB를 검증하지 않는 mock 범위만 넣었다. 저장 세대 경쟁과 실패 전파, export 선택, 5K~5M snapshot body 전달, idle wake-up, 2,001/1,001 원격 pagination, 무작업/directional sync delta를 실행했다.
 
-2026-09-18 재실행 결과: **14 files passed, 103 tests passed**. 기존 101건 뒤 world tombstone read/revive 회귀 2건이 추가됐다.
+2026-09-18 DB-11 3차 보정 후 재실행 결과: **17 files passed, 119 tests passed**. renderer tombstone fallback과 executor bounded retry, local-only revision delta 회귀를 포함한다.
 
 ### R3: migration
 
@@ -173,9 +178,9 @@ TS6133: 'handleRenameProject' is declared but its value is never read.
 
 검토 기준은 원 HEAD `0faf4fad`와 그 위의 database 변경분이다. 누적 보정은 `21448949`, DB-04B는 `b7e7f957`, DB-06B는 `9a23054e`, DB-12B는 `2d3219bf`, source LOC 보정은 `dadea8af`·`d9480be4`·`e8900ce4`, Electron harness는 `a693ecdc`에 고정했다. 위 문서 정보의 HEAD는 이전 실행 기준으로 보존한다. 그보다 앞선 개별 실행에는 변경분 fingerprint와 raw Vitest 산출물이 연결되어 있지 않아 HEAD만으로 당시의 정확한 소스 상태를 재구성할 수 없다.
 
-- R1의 갱신된 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **22 files, 79 tests PASS**. DB-06 upsert/clear 경쟁·mapping 실패 rollback·FTS 부재 fallback, DB-09 33,000건 retention·5분 경계·DELETE 실패 rollback, DB-11 stale package/revision, DB-12 failed/paused 전체 rebuild와 50,000건 global query를 포함한다.
-- R2의 동일 명령을 `SKIP_DB_TEST_SETUP=1`인 mock 계약 환경에서 재실행: **14 files, 103 tests PASS**. DB-11이 재사용하는 export queue와 world tombstone read/revive 회귀를 포함한다.
-- 합계 **36 files, 182 tests PASS**. DB-04 claim 전 경쟁, DB-06 upsert/clear 동시성, DB-09 대량 이력, DB-11 stale package/world tombstone, DB-12 전체 rebuild/global query를 영구 회귀에 포함했다.
+- R1의 갱신된 동일 명령을 실제 worker별 main/cache SQLite·임시 `.luie` 환경에서 재실행: **22 files, 80 tests PASS**. DB-11 world snapshot과 project revision 삭제 guard를 포함한다.
+- R2의 확장 명령을 `SKIP_DB_TEST_SETUP=1`인 mock 계약 환경에서 재실행: **17 files, 119 tests PASS**. renderer tombstone fallback, executor bounded retry, local-only revision delta를 포함한다.
+- 합계 **39 files, 199 tests PASS**. DB-04 claim 전 경쟁, DB-06 upsert/clear 동시성, DB-09 대량 이력, DB-11 stale package/world/project delete, DB-12 전체 rebuild/global query를 영구 회귀에 포함했다.
 - `pnpm run check:drizzle` main/cache와 `git diff --check` 재실행: PASS. packaged Electron에서의 기존 DB 업그레이드 실행을 뜻하지 않는다.
 - `pnpm run build` 재실행: PASS — main 938, preload 31, renderer 2,952 modules transformed.
 - 변경된 database source·회귀 테스트 ESLint: PASS. `check:core-complexity`는 renderer 기존 advisory 2건을 출력하고 PASS했다.
@@ -244,7 +249,7 @@ LOC 3차 보정은 `.luie` entry rollback 회귀를 별도 파일로 옮기고, 
 | ------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **DB-04 · 해결**                | pending/failed UUID generation 교체, running successor, paused 보존 | 실제 SQLite RED에서 claim 전 B 유실을 재현하고 수정 후 이전 claim 0행·새 pending·다음 cycle B chunk를 확인했다. [보정 보고서](db-04-preclaim-generation-remediation-test-report.md)                                                                                                              |
 | **DB-09 · 해결**                | reason 분리, coalescing, SQL subquery 최신 100개 retention          | 실제 `ChapterService.updateChapter`와 SQLite에서 33,000건 저장·100건 상한, 299,999/300,000ms 경계, 강제 DELETE 실패 rollback을 확인했다. [보정 보고서](db-09-large-history-remediation-test-report.md)                                                                                       |
-| **DB-11 · 2차 보정 완료**       | 양방향 row delta, authoritative export, world tombstone, snapshot precondition | DB-11A 즉시 export·실패 retry·DB 재연결·revive와 DB-11B body/metadata stale 거부·B/C conflict·bounded retry를 확인했다. [DB-11A](test2/db-11a-world-deletion-remediation-test-report.md), [DB-11B](test2/db-11b-concurrent-chapter-remediation-test-report.md) |
+| **DB-11 · 3차 보정 완료**       | 양방향 row delta, renderer tombstone, chapter·world snapshot, project revision guard | stale fallback 차단, world overwrite 거부, 프로젝트 삭제 경쟁 보존을 확인했다. [DB-11C](test2/db-11c-sync-boundary-remediation-test-report.md) |
 | **DB-06 · 해결**                | 전체·단건 FTS transaction, prepared INSERT, rowid mapping           | 동시 단건 upsert 뒤 projection/FTS 각 1건과 mapping 일치, mapping 실패 시 전체 단건 rollback을 실제 cache SQLite에서 확인했다. [보정 보고서](db-06-concurrent-upsert-remediation-test-report.md)                                                                                                  |
 | **DB-12 · 해결**                | 전체 rebuild generation reset, global partial index, idle wake-up  | failed-only는 새 ID의 pending/0/null, paused는 보존했다. 50,000 completed + 1 pending의 실제 global query가 terminal 제외 partial index를 사용하고 20회 p95 < 50ms를 통과했다. [보정 보고서](db-12-full-rebuild-global-query-remediation-test-report.md)                                                |
 
@@ -255,6 +260,6 @@ LOC 3차 보정은 `.luie` entry rollback 회귀를 별도 파일로 옮기고, 
 ## 최신 최종 판정
 
 - 기존 DB-01~14 보고 범위와 DB-11A·DB-11B·DB-04B·DB-06B 후속 정확성 반례, DB-12B production query 근거 보정을 완료했다.
-- 현재 R1/R2 회귀 182건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests, DB-12 관련 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 현재 source의 로컬 macOS Electron 사용자 규모·실제 `Cmd+S`·package crash/restart 검증도 통과했다.
+- 현재 확장 R1/R2 회귀 199건, DB-04B 관련 실제 DB 4 files/31 tests, DB-06B 관련 실제 DB 4 files/20 tests, DB-12 관련 실제 DB 5 files/35 tests·비DB 2 files/3 tests가 통과했다. 현재 source의 로컬 macOS Electron 사용자 규모·실제 `Cmd+S`·package crash/restart 검증도 통과했다.
 - database 누적 변경의 source LOC 위반 8건은 모두 해소했다. TypeScript 기존 renderer 오류 1건, 기존 source LOC 16건, 기존 persist/main-service boundary gate 실패는 남는다.
 - DB-10D는 로컬 Electron package 교체 중 강제 종료와 재실행까지 확대 완료했고 DB-10E는 조건부 확대 보류다. 로컬 ad-hoc packaged resources·DB startup도 통과했다. Developer ID 서명·공증·설치본과 packaged crash/restart, 다중 OS·저속 볼륨·실제 embedding model 검증 전까지 판정은 **Conditionally Stable**이다.
